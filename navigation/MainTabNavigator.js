@@ -6,6 +6,7 @@ import TabBarIcon from '../components/TabBarIcon';
 import HomeScreen from '../screens/HomeScreen';
 import LinksScreen from '../screens/LinksScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import SoccerField from '../screens/SoccerField';
 
 const HomeStack = createStackNavigator({
   Home: HomeScreen,
@@ -18,7 +19,7 @@ HomeStack.navigationOptions = {
       focused={focused}
       name={
         Platform.OS === 'ios'
-          ? `ios-information-circle${focused ? '' : '-outline'}`
+          ? 'ios-information-circle'
           : 'md-information-circle'
       }
     />
@@ -35,6 +36,20 @@ LinksStack.navigationOptions = {
     <TabBarIcon
       focused={focused}
       name={Platform.OS === 'ios' ? 'ios-link' : 'md-link'}
+    />
+  ),
+};
+
+const GameStack = createStackNavigator({
+  Game: SoccerField,
+});
+
+GameStack.navigationOptions = {
+  tabBarLabel: 'Game',
+  tabBarIcon: ({ focused }) => (
+    <TabBarIcon
+      focused={focused}
+      name={Platform.OS === 'ios' ? 'ios-football' : 'md-football'}
     />
   ),
 };
@@ -57,4 +72,5 @@ export default createBottomTabNavigator({
   HomeStack,
   LinksStack,
   SettingsStack,
+  SoccerField,
 });
