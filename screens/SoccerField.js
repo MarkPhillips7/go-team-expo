@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, FlatList, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Button, FlatList, ScrollView, Slider, StyleSheet, Switch, Text, View } from 'react-native';
 import FormationLine from '../components/FormationLine';
 import Player from '../components/Player';
 import moment from 'moment';
@@ -10,6 +10,7 @@ import {
   positions as thePositions,
   positionCategories,
 } from '../constants/Soccer';
+
 export default class SoccerField extends React.Component {
   static navigationOptions = {
     title: 'Game',
@@ -18,26 +19,34 @@ export default class SoccerField extends React.Component {
   constructor(props) {
     super(props);
     // Don't call this.setState() here!
-    this.state = {
-      assignmentsIndex: 0,
-      gameDurationSeconds: 50.0*60,
-      gameStartTime: new Date(),
-      gameRoster: theGameRoster,
-      gamePositions: this.getGamePositions(theGameRoster),
-      // assignmentsHistory: [],
-      isGameOver: false,
-      mode: modes.default,
-    };
-    this.state.gamePlan = this.getGamePlan(this.state);
+    this.state = this.getInitialState();
 
     this.onPressSubstituteNow = this.onPressSubstituteNow.bind(this);
-    this.onPressDemo = this.onPressDemo.bind(this);
     this.onPressDebug = this.onPressDebug.bind(this);
     this.onPressManageRoster = this.onPressManageRoster.bind(this);
     this.onPlayerAvailableChange = this.onPlayerAvailableChange.bind(this);
     this.onPressStartPauseResume = this.onPressStartPauseResume.bind(this);
-    this.onPressEndHalf = this.onPressEndHalf.bind(this);
-    this.processDemo = this.processDemo.bind(this);
+    this.onPressReset = this.onPressReset.bind(this);
+    this.updateGame = this.updateGame.bind(this);
+  }
+
+  getInitialState() {
+    const state = {
+      assignmentsIndex: 0,
+      clockMultiplier: 1.0,
+      currentGameTime: undefined,
+      gameDurationSeconds: 50.0*60,
+      gameStartTime: undefined,
+      gamePlan: undefined,
+      gameRoster: theGameRoster,
+      gamePositions: this.getGamePositions(theGameRoster),
+      // assignmentsHistory: [],
+      isClockRunning: false,
+      isGameOver: false,
+      mode: modes.default,
+    };
+    state.gamePlan = this.getGamePlan(state);
+    return state;
   }
 
   getGamePositions(gameRoster) {
@@ -129,12 +138,10 @@ export default class SoccerField extends React.Component {
     });
   }
 
-  onPressStartPauseResume() {
-
-  }
-
-  onPressEndHalf() {
-
+  onPressReset() {
+    this.setState(() => {
+      return this.getInitialState();
+    });
   }
 
   onPlayerAvailableChange(rosterPlayer, playerIsAvailable) {
@@ -163,18 +170,18 @@ export default class SoccerField extends React.Component {
     })
   }
 
-  onPressDemo() {
+  onPressStartPauseResume() {
     this.setState((previousState) => {
-      if (previousState.isDemoRunning) {
+      if (previousState.isClockRunning) {
         return {
           ...previousState,
-          isDemoRunning: false,
+          isClockRunning: false,
         };
       }
 
-      setTimeout(this.processDemo, 200);
+      setTimeout(this.updateGame, 200);
 
-      const gameStartTime = new Date();
+      const gameStartTime = previousState.gameStartTime || new Date();
       const gamePlan = previousState.gamePlan;
       const assignmentsIndex = 0;
       gamePlan.assignmentsList[assignmentsIndex].startTime = gameStartTime;
@@ -183,23 +190,23 @@ export default class SoccerField extends React.Component {
         gameStartTime,
         gamePlan,
         assignmentsIndex,
-        isDemoRunning: true,
+        isClockRunning: true,
         isGameOver: false,
       };
     });
   }
 
-  processDemo() {
+  updateGame() {
     this.setState((previousState) => {
-      if (!this.state.isDemoRunning) {
+      if (!this.state.isClockRunning) {
         return;
       }
 
       const now = moment();
-      const demoTimeMultiplier = previousState.gameDurationSeconds / totalDemoSeconds;
+      // const demoTimeMultiplier = previousState.gameDurationSeconds / totalDemoSeconds;
       const actualMillisecondsSinceGameStart = now.diff(previousState.gameStartTime);
       const currentGameTime = moment(previousState.gameStartTime).add(
-        actualMillisecondsSinceGameStart*demoTimeMultiplier, "milliseconds").toDate();
+        actualMillisecondsSinceGameStart*previousState.clockMultiplier, "milliseconds").toDate();
       const gamePlan = previousState.gamePlan && {
         ...previousState.gamePlan,
       };
@@ -224,7 +231,7 @@ export default class SoccerField extends React.Component {
       }
 
       if (!isGameOver) {
-        setTimeout(this.processDemo, 200);
+        setTimeout(this.updateGame, 200);
       }
 
       return {
@@ -266,6 +273,20 @@ export default class SoccerField extends React.Component {
             <Text>
               isGameOver {this.state && this.state.isGameOver}
             </Text>
+            <Slider
+              minimumValue={1}
+              maximumValue={200}
+              onValueChange={(clockMultiplier) => {
+                console.log(`hello ${clockMultiplier}`);
+                this.setState((previousState) => {
+                  return {
+                    ...previousState,
+                    clockMultiplier
+                  }
+                });
+              }}
+              value={this.state.clockMultiplier}
+            />
           </ScrollView>
         )}
         {this.state.mode === modes.roster && (
@@ -373,18 +394,13 @@ export default class SoccerField extends React.Component {
         <View style={styles.buttons}>
           <Button
             style={styles.button}
-            onPress={this.onPressDemo}
-            title="Demo"
-          />
-          <Button
-            style={styles.button}
             onPress={this.onPressStartPauseResume}
-            title="Start"
+            title={this.state.gameStartTime ? (this.state.isClockRunning ? "Pause" : "Resume") : "Start"}
           />
           <Button
             style={styles.button}
-            onPress={this.onPressEndHalf}
-            title="Halftime"
+            onPress={this.onPressReset}
+            title="Reset"
           />
           <Button
             style={styles.button}
@@ -408,7 +424,7 @@ export default class SoccerField extends React.Component {
 }
 
 const numberOfLineups = 8;
-const totalDemoSeconds = 15;
+// const totalDemoSeconds = 15;
 
 const modes = {
   "default": "default",
