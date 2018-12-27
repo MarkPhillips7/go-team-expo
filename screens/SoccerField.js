@@ -287,6 +287,13 @@ export default class SoccerField extends React.Component {
               }}
               value={this.state.clockMultiplier}
             />
+            <Button
+              style={styles.button}
+              onPress={() => {
+                console.log(JSON.stringify(this.state));
+              }}
+              title="State"
+            />
           </ScrollView>
         )}
         {this.state.mode === modes.roster && (
@@ -402,11 +409,13 @@ export default class SoccerField extends React.Component {
             onPress={this.onPressReset}
             title="Reset"
           />
-          <Button
-            style={styles.button}
-            onPress={this.onPressSubstituteNow}
-            title="Sub"
-          />
+          {
+            // <Button
+            //   style={styles.button}
+            //   onPress={this.onPressSubstituteNow}
+            //   title="Sub"
+            // />
+          }
           <Button
             style={styles.button}
             onPress={this.onPressDebug}
