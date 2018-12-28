@@ -2,6 +2,27 @@ import React from 'react';
 import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { AppLoading, Asset, Font, Icon } from 'expo';
 import AppNavigator from './navigation/AppNavigator';
+import ApolloClient from "apollo-boost";
+
+const client = new ApolloClient({
+  uri: "https://api.graph.cool/simple/v1/cjpeel49p81sr0135wsewoo11"
+});
+import gql from "graphql-tag";
+import { ApolloProvider } from "react-apollo";
+
+client
+  .query({
+    query: gql`
+      {
+        allUsers {
+          name
+        }
+      }
+    `
+  })
+  .then(result => console.log(result));
+// import { render } from "react-dom";
+
 
 export default class App extends React.Component {
   state = {
@@ -19,10 +40,12 @@ export default class App extends React.Component {
       );
     } else {
       return (
-        <View style={styles.container}>
-          {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
-          <AppNavigator />
-        </View>
+        <ApolloProvider client={client}>
+          <View style={styles.container}>
+            {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
+            <AppNavigator />
+          </View>
+        </ApolloProvider>
       );
     }
   }

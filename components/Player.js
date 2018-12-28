@@ -62,7 +62,9 @@ export default class Player extends React.Component {
     const playTime = moment.utc(gameTimeSeconds*1000).format("m:ss") || "0:00";
     const playerNameStyle = {
       ...styles.playerName,
-      backgroundColor: this.props.player.preferredPositionCategories[0].color,
+      backgroundColor: this.props.player.positionCategoryPreferencesAsPlayer &&
+      this.props.player.positionCategoryPreferencesAsPlayer.length &&
+      this.props.player.positionCategoryPreferencesAsPlayer[0].positionCategory.color || "gray",
     };
     return (
       <View
@@ -105,7 +107,7 @@ export default class Player extends React.Component {
 
 const styles = {
   playerName: {
-    fontSize: 15,
+    fontSize: 13,
     color: 'white',
     lineHeight: 16,
     textAlign: 'center',

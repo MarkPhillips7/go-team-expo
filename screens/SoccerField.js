@@ -5,7 +5,7 @@ import Player from '../components/Player';
 import moment from 'moment';
 import _ from 'lodash';
 import {
-  gameRoster as theGameRoster,
+  // gameRoster as theGameRoster,
   playerAvailability,
   positions as thePositions,
   positionCategories,
@@ -38,8 +38,8 @@ export default class SoccerField extends React.Component {
       gameDurationSeconds: 50.0*60,
       gameStartTime: undefined,
       gamePlan: undefined,
-      gameRoster: theGameRoster,
-      gamePositions: this.getGamePositions(theGameRoster),
+      gameRoster: this.props.players || [],
+      gamePositions: this.getGamePositions(this.props.players || []),
       // assignmentsHistory: [],
       isClockRunning: false,
       isGameOver: false,
@@ -441,7 +441,7 @@ const modes = {
   roster: "roster",
 };
 //
-// let gamePositions = theGameRoster.map((player, index) => {
+// let gamePositions = this.props.players.map((player, index) => {
 //   switch (index) {
 //     case 0:
 //       return thePositions.keeper;

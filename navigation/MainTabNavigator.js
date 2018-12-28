@@ -6,7 +6,7 @@ import TabBarIcon from '../components/TabBarIcon';
 import HomeScreen from '../screens/HomeScreen';
 import LinksScreen from '../screens/LinksScreen';
 import SettingsScreen from '../screens/SettingsScreen';
-import SoccerField from '../screens/SoccerField';
+import Game from '../screens/Game';
 
 const HomeStack = createStackNavigator({
   Home: HomeScreen,
@@ -41,7 +41,7 @@ LinksStack.navigationOptions = {
 };
 
 const GameStack = createStackNavigator({
-  Game: SoccerField,
+  Game: Game,
 });
 
 GameStack.navigationOptions = {
@@ -72,5 +72,5 @@ export default createBottomTabNavigator({
   HomeStack,
   LinksStack,
   SettingsStack,
-  SoccerField,
+  Game,
 });
