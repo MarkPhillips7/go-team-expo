@@ -10,17 +10,17 @@ const client = new ApolloClient({
 import gql from "graphql-tag";
 import { ApolloProvider } from "react-apollo";
 
-client
-  .query({
-    query: gql`
-      {
-        allUsers {
-          name
-        }
-      }
-    `
-  })
-  .then(result => console.log(result));
+// client
+//   .query({
+//     query: gql`
+//       {
+//         allUsers {
+//           name
+//         }
+//       }
+//     `
+//   })
+//   .then(result => console.log(result));
 // import { render } from "react-dom";
 
 

@@ -121,7 +121,7 @@ const styles = {
     textAlign: 'center',
   },
   pendingMoveTime: {
-    fontSize: 13,
+    fontSize: 12,
     color: 'black',
     lineHeight: 16,
     textAlign: 'center',

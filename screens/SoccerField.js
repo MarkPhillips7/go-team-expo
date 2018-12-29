@@ -8,7 +8,7 @@ import {
   // gameRoster as theGameRoster,
   playerAvailability,
   positions as thePositions,
-  positionCategories,
+  // positionCategories,
 } from '../constants/Soccer';
 
 export default class SoccerField extends React.Component {
@@ -324,8 +324,8 @@ export default class SoccerField extends React.Component {
         <View style={styles.park}>
           <View style={styles.field}>
           {
-            _.chain(positionCategories)
-            .filter((category) => category.location === "field")
+            _.chain(this.props.positionCategories)
+            .filter((category) => category.parkLocation === "FIELD")
             .reverse()
             .map((category, categoryIndex) => (
               <FormationLine
@@ -336,7 +336,8 @@ export default class SoccerField extends React.Component {
               >
                 {
                   _.chain(this.state.gamePlan.assignmentsList[this.state.assignmentsIndex].assignments)
-                  .filter((positionAssignment) => positionAssignment.position.positionCategory === category)
+                  .filter((positionAssignment) =>
+                  positionAssignment.position.positionCategory.name === category.name)
                   .map((positionAssignment, positionAssignmentIndex) => (
                     <Player
                       key={positionAssignmentIndex}
@@ -361,8 +362,8 @@ export default class SoccerField extends React.Component {
           </View>
           <View style={styles.bench}>
           {
-            _.chain(positionCategories)
-            .filter((category) => category.location === "bench")
+            _.chain(this.props.positionCategories)
+            .filter((category) => category.parkLocation === "BENCH")
             .reverse()
             .map((category, categoryIndex) => (
               <FormationLine
@@ -373,7 +374,8 @@ export default class SoccerField extends React.Component {
               >
                 {
                   _.chain(this.state.gamePlan.assignmentsList[this.state.assignmentsIndex].assignments)
-                  .filter((positionAssignment) => positionAssignment.position.positionCategory === category)
+                  .filter((positionAssignment) =>
+                  positionAssignment.position.positionCategory.name === category.name)
                   .map((positionAssignment, positionAssignmentIndex) => (
                     <Player
                       key={positionAssignmentIndex}

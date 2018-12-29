@@ -75,63 +75,63 @@ export const positions = {
     positionCategory: positionCategories.unavailable,
   },
 };
-
-export const gameRoster = [
-  {
-    name: "Willow",
-    preferredPositionCategories: [
-      positionCategories.offense,
-    ],
-  },{
-    name: "Katherine",
-    preferredPositionCategories: [
-      positionCategories.keeper,
-      positionCategories.defense,
-    ],
-  },{
-    name: "Parker",
-    preferredPositionCategories: [
-      positionCategories.offense,
-    ],
-  },{
-    name: "Lily Z",
-    preferredPositionCategories: [
-      positionCategories.offense,
-    ],
-  },{
-    name: "Xiana",
-    preferredPositionCategories: [
-      positionCategories.midfield,
-    ],
-  },{
-    name: "Ellie",
-    preferredPositionCategories: [
-      positionCategories.midfield,
-    ],
-  },{
-    name: "Abby",
-    preferredPositionCategories: [
-      positionCategories.offense,
-    ],
-  },{
-    name: "Taylor",
-    preferredPositionCategories: [
-      positionCategories.offense,
-    ],
-  },{
-    name: "Kaylee",
-    preferredPositionCategories: [
-      positionCategories.midfield,
-    ],
-  },{
-    name: "Lily B",
-    preferredPositionCategories: [
-      positionCategories.defense,
-    ],
-  },{
-    name: "Iona",
-    preferredPositionCategories: [
-      positionCategories.keeper,
-    ],
-  },
-];
+//
+// export const gameRoster = [
+//   {
+//     name: "Willow",
+//     preferredPositionCategories: [
+//       positionCategories.offense,
+//     ],
+//   },{
+//     name: "Katherine",
+//     preferredPositionCategories: [
+//       positionCategories.keeper,
+//       positionCategories.defense,
+//     ],
+//   },{
+//     name: "Parker",
+//     preferredPositionCategories: [
+//       positionCategories.offense,
+//     ],
+//   },{
+//     name: "Lily Z",
+//     preferredPositionCategories: [
+//       positionCategories.offense,
+//     ],
+//   },{
+//     name: "Xiana",
+//     preferredPositionCategories: [
+//       positionCategories.midfield,
+//     ],
+//   },{
+//     name: "Ellie",
+//     preferredPositionCategories: [
+//       positionCategories.midfield,
+//     ],
+//   },{
+//     name: "Abby",
+//     preferredPositionCategories: [
+//       positionCategories.offense,
+//     ],
+//   },{
+//     name: "Taylor",
+//     preferredPositionCategories: [
+//       positionCategories.offense,
+//     ],
+//   },{
+//     name: "Kaylee",
+//     preferredPositionCategories: [
+//       positionCategories.midfield,
+//     ],
+//   },{
+//     name: "Lily B",
+//     preferredPositionCategories: [
+//       positionCategories.defense,
+//     ],
+//   },{
+//     name: "Iona",
+//     preferredPositionCategories: [
+//       positionCategories.keeper,
+//     ],
+//   },
+// ];
