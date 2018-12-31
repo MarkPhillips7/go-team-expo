@@ -3,135 +3,21 @@ export const playerAvailability = {
   unavailable: "unavailable",
 };
 
-export const positionCategories = {
-  keeper: {
-    name: "Keeper",
-    color: "red",
-    location: "field",
-  },
-  defense: {
-    name: "Defense",
-    color: "purple",
-    location: "field",
-  },
-  midfield: {
-    name: "Midfield",
-    color: "blue",
-    location: "field",
-  },
-  offense: {
-    name: "Offense",
-    color: "forestgreen",
-    location: "field",
-  },
+export const specialPositions = {
   substitute: {
     name: "Substitute",
-    color: "gray",
-    location: "bench",
+    positionCategory: {
+      id: "cjq76flfl526n0188atjay4rl",
+      name: "Substitute",
+      color: "gray"
+    }
   },
   unavailable: {
     name: "Unavailable",
-    color: "black",
-    description: "Injured or absent",
-    location: "unknown",
-  }
-};
-
-export const positions = {
-  keeper: {
-    name: "Keeper",
-    positionCategory: positionCategories.keeper,
-  },
-  leftBack: {
-    name: "Left Back",
-    positionCategory: positionCategories.defense,
-  },
-  rightBack: {
-    name: "Right Back",
-    positionCategory: positionCategories.defense,
-  },
-  leftMid: {
-    name: "Left Mid",
-    positionCategory: positionCategories.midfield,
-  },
-  rightMid: {
-    name: "Right Mid",
-    positionCategory: positionCategories.midfield,
-  },
-  leftForward: {
-    name: "Left Forward",
-    positionCategory: positionCategories.offense,
-  },
-  rightForward: {
-    name: "Right Forward",
-    positionCategory: positionCategories.offense,
-  },
-  substitute: {
-    name: "Substitute",
-    positionCategory: positionCategories.substitute,
-  },
-  unavailable: {
-    name: "Unavailable",
-    positionCategory: positionCategories.unavailable,
+    positionCategory: {
+      id: "cjq76fxll520t01024i6zkrmg",
+      name: "Unavailable",
+      color: "black"
+    }
   },
 };
-//
-// export const gameRoster = [
-//   {
-//     name: "Willow",
-//     preferredPositionCategories: [
-//       positionCategories.offense,
-//     ],
-//   },{
-//     name: "Katherine",
-//     preferredPositionCategories: [
-//       positionCategories.keeper,
-//       positionCategories.defense,
-//     ],
-//   },{
-//     name: "Parker",
-//     preferredPositionCategories: [
-//       positionCategories.offense,
-//     ],
-//   },{
-//     name: "Lily Z",
-//     preferredPositionCategories: [
-//       positionCategories.offense,
-//     ],
-//   },{
-//     name: "Xiana",
-//     preferredPositionCategories: [
-//       positionCategories.midfield,
-//     ],
-//   },{
-//     name: "Ellie",
-//     preferredPositionCategories: [
-//       positionCategories.midfield,
-//     ],
-//   },{
-//     name: "Abby",
-//     preferredPositionCategories: [
-//       positionCategories.offense,
-//     ],
-//   },{
-//     name: "Taylor",
-//     preferredPositionCategories: [
-//       positionCategories.offense,
-//     ],
-//   },{
-//     name: "Kaylee",
-//     preferredPositionCategories: [
-//       positionCategories.midfield,
-//     ],
-//   },{
-//     name: "Lily B",
-//     preferredPositionCategories: [
-//       positionCategories.defense,
-//     ],
-//   },{
-//     name: "Iona",
-//     preferredPositionCategories: [
-//       positionCategories.keeper,
-//     ],
-//   },
-// ];

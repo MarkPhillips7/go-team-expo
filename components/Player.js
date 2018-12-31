@@ -9,7 +9,7 @@ import {
 import _ from 'lodash';
 import moment from 'moment';
 import {
-  positions,
+  specialPositions,
 } from '../constants/Soccer';
 
 export default class Player extends React.Component {
@@ -36,8 +36,8 @@ export default class Player extends React.Component {
       const totalSeconds = Math.max(this.props.gameDurationSeconds, endSecondsSinceGameStart);
       const startValue = startSecondsSinceGameStart / totalSeconds;
       const endValue = endSecondsSinceGameStart / totalSeconds;
-      if (assignment.position !== positions.unavailable &&
-      assignment.position !== positions.substitute) {
+      if (assignment.position !== specialPositions.unavailable &&
+      assignment.position !== specialPositions.substitute) {
         gameTimeSeconds += endSecondsSinceGameStart - startSecondsSinceGameStart;
       }
       const pendingMoveSeconds = this.props.gamePlan.secondsBetweenSubs - (endSecondsSinceGameStart - startSecondsSinceGameStart);

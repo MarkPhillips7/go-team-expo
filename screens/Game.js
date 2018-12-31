@@ -35,6 +35,23 @@ query {
 }
 `;
 
+const formationQuery = gql`
+query {
+  Formation(id: "cjqcfvx3167k30128b70ieu58") {
+    id
+    name
+    positions {
+      id
+      name
+      positionCategory {
+        id
+        name
+        color
+      }
+    }
+  }
+}`;
+
 export default () => (
   <Query
     query={positionCategoriesQuery}
@@ -43,18 +60,25 @@ export default () => (
       <Query
         query={teamSeasonQuery}
       >
-        {({ loading: loading2, error: error2, data: teamSeasonData }) => {
-          if (loading1 || loading2) return <Text>Loading...</Text>;
-          if (error1 || error2) return <Text>Error</Text>;
+        {({ loading: loading2, error: error2, data: teamSeasonData }) => (
+          <Query
+            query={formationQuery}
+          >
+            {({ loading: loading3, error: error3, data: formationData }) => {
+              if (loading1 || loading2 || loading3) return <Text>Loading...</Text>;
+              if (error1 || error2 || error3) return <Text>Error</Text>;
 
-          console.log(positionCategoriesData && JSON.stringify(positionCategoriesData));
-          return (
-            <SoccerField
-              players={teamSeasonData && teamSeasonData.TeamSeason && teamSeasonData.TeamSeason.players}
-              positionCategories={positionCategoriesData && positionCategoriesData.allPositionCategories}
-            />
-          );
-        }}
+              console.log(positionCategoriesData && JSON.stringify(positionCategoriesData));
+              return (
+                <SoccerField
+                  positions={formationData && formationData.Formation && formationData.Formation.positions}
+                  players={teamSeasonData && teamSeasonData.TeamSeason && teamSeasonData.TeamSeason.players}
+                  positionCategories={positionCategoriesData && positionCategoriesData.allPositionCategories}
+                />
+              );
+            }}
+          </Query>
+        )}
       </Query>
     )}
   </Query>

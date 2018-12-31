@@ -7,7 +7,7 @@ import _ from 'lodash';
 import {
   // gameRoster as theGameRoster,
   playerAvailability,
-  positions as thePositions,
+  specialPositions,
   // positionCategories,
 } from '../constants/Soccer';
 
@@ -53,27 +53,31 @@ export default class SoccerField extends React.Component {
     let positionIndex = 0;
     return gameRoster.map((player) => {
       if (player.availability === playerAvailability.unavailable) {
-        return thePositions.unavailable;
+        return specialPositions.unavailable;
       }
 
-      switch (positionIndex++) {
-        case 0:
-          return thePositions.keeper;
-        case 1:
-          return thePositions.leftBack;
-        case 2:
-          return thePositions.rightBack;
-        case 3:
-          return thePositions.leftMid;
-        case 4:
-          return thePositions.rightMid;
-        case 5:
-          return thePositions.leftForward;
-        case 6:
-          return thePositions.rightForward;
-        default:
-          return thePositions.substitute;
+      if (this.props.positions && this.props.positions.length > positionIndex) {
+        return this.props.positions[positionIndex++];
       }
+      return specialPositions.substitute;
+      // switch (positionIndex++) {
+      //   case 0:
+      //     return specialPositions.keeper;
+      //   case 1:
+      //     return specialPositions.leftBack;
+      //   case 2:
+      //     return specialPositions.rightBack;
+      //   case 3:
+      //     return specialPositions.leftMid;
+      //   case 4:
+      //     return specialPositions.rightMid;
+      //   case 5:
+      //     return specialPositions.leftForward;
+      //   case 6:
+      //     return specialPositions.rightForward;
+      //   default:
+      //     return specialPositions.substitute;
+      // }
     });
   }
 
@@ -86,12 +90,12 @@ export default class SoccerField extends React.Component {
       const availablePosition = _.find(positions,
         (position) => !position.filled &&
         ((player.availability === playerAvailability.unavailable &&
-          position.gamePosition === thePositions.unavailable) ||
+          position.gamePosition.name === specialPositions.unavailable.name) ||
         (player.availability !== playerAvailability.unavailable &&
-          position.gamePosition !== thePositions.unavailable))
+          position.gamePosition.name !== specialPositions.unavailable.name))
       );
       if (!availablePosition) {
-        return thePositions.unavailable;
+        return specialPositions.unavailable;
       }
 
       availablePosition.filled = true;
@@ -245,9 +249,6 @@ export default class SoccerField extends React.Component {
   }
 
   render() {
-    const assignment = _.find(this.state.gamePlan.assignmentsList[this.state.assignmentsIndex].assignments,
-      (assignment) => assignment.position.name === thePositions.rightForward.name);
-    const rightForward = assignment && assignment.player;
     return (
       <View style={styles.screen}>
         {this.state.mode === modes.debug && (
@@ -446,21 +447,21 @@ const modes = {
 // let gamePositions = this.props.players.map((player, index) => {
 //   switch (index) {
 //     case 0:
-//       return thePositions.keeper;
+//       return specialPositions.keeper;
 //     case 1:
-//       return thePositions.leftBack;
+//       return specialPositions.leftBack;
 //     case 2:
-//       return thePositions.rightBack;
+//       return specialPositions.rightBack;
 //     case 3:
-//       return thePositions.leftMid;
+//       return specialPositions.leftMid;
 //     case 4:
-//       return thePositions.rightMid;
+//       return specialPositions.rightMid;
 //     case 5:
-//       return thePositions.leftForward;
+//       return specialPositions.leftForward;
 //     case 6:
-//       return thePositions.rightForward;
+//       return specialPositions.rightForward;
 //     default:
-//       return thePositions.substitute;
+//       return specialPositions.substitute;
 //   }
 // });
 
