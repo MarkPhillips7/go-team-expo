@@ -7,6 +7,7 @@ import HomeScreen from '../screens/HomeScreen';
 import LinksScreen from '../screens/LinksScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import Game from '../screens/Game';
+import Games from '../screens/Games';
 
 const HomeStack = createStackNavigator({
   Home: HomeScreen,
@@ -40,12 +41,16 @@ LinksStack.navigationOptions = {
   ),
 };
 
-const GameStack = createStackNavigator({
-  Game: Game,
-});
+const GamesStack = createStackNavigator({
+    Games: Games,
+    Game: Game,
+  }, {
+    initialRouteName: "Games"
+  }
+);
 
-GameStack.navigationOptions = {
-  tabBarLabel: 'Game',
+GamesStack.navigationOptions = {
+  tabBarLabel: 'Games',
   tabBarIcon: ({ focused }) => (
     <TabBarIcon
       focused={focused}
@@ -72,5 +77,5 @@ export default createBottomTabNavigator({
   HomeStack,
   LinksStack,
   SettingsStack,
-  Game,
+  GamesStack,
 });
