@@ -111,7 +111,7 @@ export default class Games extends React.Component {
 let styles = StyleSheet.create({
   screen: {
     flex: 1,
-    paddingTop: 40,
+    paddingTop: 0,
     backgroundColor: 'white',
     alignItems: 'center',
     justifyContent: 'center',

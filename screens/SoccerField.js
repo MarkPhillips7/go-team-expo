@@ -1,7 +1,10 @@
 import React from 'react';
-import { Button, FlatList, ScrollView, Slider, StyleSheet, Switch, Text, View } from 'react-native';
+import { Button, ScrollView, Slider, StyleSheet, Switch, Text, View } from 'react-native';
+import {withApollo} from 'react-apollo';
+import gql from "graphql-tag";
 import FormationLine from '../components/FormationLine';
 import Player from '../components/Player';
+import Roster from '../components/Roster';
 import moment from 'moment';
 import _ from 'lodash';
 import {
@@ -11,7 +14,9 @@ import {
   // positionCategories,
 } from '../constants/Soccer';
 
-export default class SoccerField extends React.Component {
+export default withApollo(
+// export default
+class SoccerField extends React.Component {
   static navigationOptions = {
     title: 'Game',
   }
@@ -24,7 +29,6 @@ export default class SoccerField extends React.Component {
     this.onPressSubstituteNow = this.onPressSubstituteNow.bind(this);
     this.onPressDebug = this.onPressDebug.bind(this);
     this.onPressManageRoster = this.onPressManageRoster.bind(this);
-    this.onPlayerAvailableChange = this.onPlayerAvailableChange.bind(this);
     this.onPressStartPauseResume = this.onPressStartPauseResume.bind(this);
     this.onPressReset = this.onPressReset.bind(this);
     this.updateGame = this.updateGame.bind(this);
@@ -38,8 +42,8 @@ export default class SoccerField extends React.Component {
       gameDurationSeconds: 50.0*60,
       gameStartTime: undefined,
       gamePlan: undefined,
-      gameRoster: this.props.players || [],
-      gamePositions: this.getGamePositions(this.props.players || []),
+      // gameRoster: this.props.gamePlayers || [],
+      gamePositions: this.getGamePositions(this.props.gamePlayers || []),
       // assignmentsHistory: [],
       isClockRunning: false,
       isGameOver: false,
@@ -49,10 +53,10 @@ export default class SoccerField extends React.Component {
     return state;
   }
 
-  getGamePositions(gameRoster) {
+  getGamePositions() {
     let positionIndex = 0;
-    return gameRoster.map((player) => {
-      if (player.availability === playerAvailability.unavailable) {
+    return this.props.gamePlayers.map((gamePlayer) => {
+      if (gamePlayer.availability === playerAvailability.unavailable) {
         return specialPositions.unavailable;
       }
 
@@ -81,17 +85,17 @@ export default class SoccerField extends React.Component {
     });
   }
 
-  getAssignments({gamePositions, gameRoster}) {
+  getAssignments({gamePositions}) {
     let positions = gamePositions.map((gamePosition) => ({
       filled: false,
       gamePosition: gamePosition,
     }));
-    const getAvailablePosition = (player) => {
+    const getAvailablePosition = (gamePlayer) => {
       const availablePosition = _.find(positions,
         (position) => !position.filled &&
-        ((player.availability === playerAvailability.unavailable &&
+        ((gamePlayer.availability === playerAvailability.unavailable &&
           position.gamePosition.name === specialPositions.unavailable.name) ||
-        (player.availability !== playerAvailability.unavailable &&
+        (gamePlayer.availability !== playerAvailability.unavailable &&
           position.gamePosition.name !== specialPositions.unavailable.name))
       );
       if (!availablePosition) {
@@ -102,12 +106,12 @@ export default class SoccerField extends React.Component {
       return availablePosition.gamePosition;
     };
     return {
-      assignments: _.chain(gameRoster)
+      assignments: _.chain(this.props.gamePlayers)
         .shuffle()
-        .map((player) => {
-          const position = getAvailablePosition(player);
+        .map((gamePlayer) => {
+          const position = getAvailablePosition(gamePlayer);
           return {
-            player,
+            gamePlayer,
             position,
           };
         })
@@ -147,23 +151,23 @@ export default class SoccerField extends React.Component {
       return this.getInitialState();
     });
   }
-
-  onPlayerAvailableChange(rosterPlayer, playerIsAvailable) {
-    console.log(JSON.stringify(rosterPlayer));
-    this.setState((previousState) => {
-      const gameRoster = [...previousState.gameRoster];
-      const player = _.find(gameRoster, (_player) => rosterPlayer.name === _player.name);
-      console.log('player: ' + JSON.stringify(player));
-      player.availability = playerIsAvailable ? playerAvailability.active : playerAvailability.unavailable;
-      const newState = {
-        ...previousState,
-        gameRoster,
-        gamePositions: this.getGamePositions(gameRoster),
-      };
-      newState.gamePlan = this.getGamePlan(newState);
-      return newState;
-    });
-  }
+  //
+  // onPlayerAvailableChange(rosterPlayer, playerIsAvailable) {
+  //   console.log(JSON.stringify(rosterPlayer));
+  //   this.setState((previousState) => {
+  //     const gameRoster = [...previousState.gameRoster];
+  //     const gamePlayer = _.find(gameRoster, (_gamePlayer) => rosterPlayer.player.name === _gamePlayer.player.name);
+  //     console.log('gamePlayer: ' + JSON.stringify(gamePlayer));
+  //     gamePlayer.availability = playerIsAvailable ? playerAvailability.active : playerAvailability.unavailable;
+  //     const newState = {
+  //       ...previousState,
+  //       gameRoster,
+  //       gamePositions: this.getGamePositions(gameRoster),
+  //     };
+  //     newState.gamePlan = this.getGamePlan(newState);
+  //     return newState;
+  //   });
+  // }
 
   onPressDebug() {
     this.setState((previousState) => {
@@ -249,6 +253,7 @@ export default class SoccerField extends React.Component {
   }
 
   render() {
+    // console.log("Rendering SoccerField");
     return (
       <View style={styles.screen}>
         {this.state.mode === modes.debug && (
@@ -295,31 +300,39 @@ export default class SoccerField extends React.Component {
               }}
               title="State"
             />
+            <Button
+              style={styles.button}
+              onPress={() => {
+                const gamePlayers = this.props.client.readQuery({
+  query: gql`
+    query {
+      allGamePlayers(
+        filter: {
+          gameTeamSeason: {
+            id: ${this.props.gameTeamSeasonId}
+          }
+        }
+      ) {
+        id
+        availability
+        player {
+          id
+          name
+        }
+      }
+    }
+  `,
+});
+                console.log("cache: " + JSON.stringify(gamePlayers));
+              }}
+              title="GamePlayers Cache"
+            />
           </ScrollView>
         )}
         {this.state.mode === modes.roster && (
-          <View style={styles.roster}>
-            <FlatList
-              data={this.state.gameRoster}
-              renderItem={({item}) => {
-                // console.log(JSON.stringify(player));
-                return (
-                  <View style={styles.playerAvailability}>
-                    <Switch
-                      style={styles.switch}
-                      value={item.availability !== playerAvailability.unavailable}
-                      onValueChange={(playerIsAvailable) => {
-                        console.log(`hello ${playerIsAvailable}`);
-                        this.onPlayerAvailableChange(item, playerIsAvailable);
-                      }}
-                    />
-                    <Text>{item.name}</Text>
-                  </View>
-                );
-              }}
-              keyExtractor={(item, index) => index.toString()}
-            />
-          </View>
+          <Roster
+            gameRoster={this.props.gamePlayers}
+          />
         )}
         {this.state.mode === modes.default && (
         <View style={styles.park}>
@@ -344,7 +357,7 @@ export default class SoccerField extends React.Component {
                       key={positionAssignmentIndex}
                       style={styles.player}
                       position={positionAssignment.position}
-                      player={positionAssignment.player}
+                      gamePlayer={positionAssignment.gamePlayer}
                       radius={100}
                       gameStartTime={this.state.gameStartTime}
                       gameDurationSeconds={this.state.gameDurationSeconds}
@@ -382,7 +395,7 @@ export default class SoccerField extends React.Component {
                       key={positionAssignmentIndex}
                       style={styles.player}
                       position={positionAssignment.position}
-                      player={positionAssignment.player}
+                      gamePlayer={positionAssignment.gamePlayer}
                       radius={100}
                       gameStartTime={this.state.gameStartTime}
                       gameDurationSeconds={this.state.gameDurationSeconds}
@@ -433,7 +446,7 @@ export default class SoccerField extends React.Component {
       </View>
     );
   }
-}
+});
 
 const numberOfLineups = 8;
 // const totalDemoSeconds = 15;
@@ -469,14 +482,14 @@ let CIRCLE_RADIUS = 30;
 let styles = StyleSheet.create({
   screen: {
     flex: 1,
-    paddingTop: 40,
+    paddingTop: 0,
     backgroundColor: 'white',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  roster: {
-    paddingTop: 15,
-  },
+  // roster: {
+  //   paddingTop: 15,
+  // },
   park: {
     flex: 1,
     backgroundColor: '#ccffcc',//'lightgreen',
@@ -510,14 +523,14 @@ let styles = StyleSheet.create({
   button: {
     margin: 10,
   },
-  switch: {
-    marginRight: 10,
-  },
-  playerAvailability: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    margin: 10,
-  }
+  // switch: {
+  //   marginRight: 10,
+  // },
+  // playerAvailability: {
+  //   alignItems: 'center',
+  //   flexDirection: 'row',
+  //   margin: 10,
+  // }
 });
 // player: {
 //   width: CIRCLE_RADIUS * 2 + 40,

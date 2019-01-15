@@ -3,8 +3,13 @@ import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { AppLoading, Asset, Font, Icon } from 'expo';
 import AppNavigator from './navigation/AppNavigator';
 import ApolloClient from "apollo-boost";
+import { InMemoryCache } from 'apollo-cache-inmemory';
+
+const cache = new InMemoryCache();
+
 
 const client = new ApolloClient({
+  cache,
   uri: "https://api.graph.cool/simple/v1/cjpeel49p81sr0135wsewoo11"
 });
 import gql from "graphql-tag";

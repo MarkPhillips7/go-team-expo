@@ -3,6 +3,7 @@ import CirclePie from '../components/CirclePie'
 import PendingMoveArrow from '../components/PendingMoveArrow'
 // import {ART} from 'react-native'
 import {
+  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -28,7 +29,7 @@ export default class Player extends React.Component {
     _.chain(this.props.gamePlan.assignmentsList)
     .filter((assignments) => assignments.startTime)
     .map((assignments) => {
-      const assignment = _.find(assignments.assignments, (_assignment) => _assignment.player === this.props.player);
+      const assignment = _.find(assignments.assignments, (_assignment) => _assignment.gamePlayer === this.props.gamePlayer);
       const startSecondsSinceGameStart =
         moment(assignments.startTime).diff(this.props.gameStartTime) / 1000.0;
       const endTime = assignments.endTime || this.props.currentGameTime;
@@ -58,13 +59,13 @@ export default class Player extends React.Component {
     this.props.gamePlan.assignmentsList &&
     _.find(this.props.gamePlan.assignmentsList, (assignments) => !assignments.startTime);
     const nextAssignment = nextAssignments &&
-    _.find(nextAssignments.assignments, (_assignment) => _assignment.player === this.props.player);
+    _.find(nextAssignments.assignments, (_assignment) => _assignment.gamePlayer === this.props.gamePlayer);
     const playTime = moment.utc(gameTimeSeconds*1000).format("m:ss") || "0:00";
     const playerNameStyle = {
       ...styles.playerName,
-      backgroundColor: this.props.player.positionCategoryPreferencesAsPlayer &&
-      this.props.player.positionCategoryPreferencesAsPlayer.length &&
-      this.props.player.positionCategoryPreferencesAsPlayer[0].positionCategory.color || "gray",
+      backgroundColor: this.props.gamePlayer.player.positionCategoryPreferencesAsPlayer &&
+      this.props.gamePlayer.player.positionCategoryPreferencesAsPlayer.length &&
+      this.props.gamePlayer.player.positionCategoryPreferencesAsPlayer[0].positionCategory.color || "gray",
     };
     return (
       <View
@@ -77,7 +78,7 @@ export default class Player extends React.Component {
           style={styles.pieAndArrow}
         >
           <CirclePie
-            player={this.props.player}
+            player={this.props.gamePlayer}
             radius={30}
             piePieces={piePieces}
             positionColor={this.props.position.positionCategory.color}
@@ -98,14 +99,14 @@ export default class Player extends React.Component {
           }
         </View>
         <Text style={playerNameStyle}>
-          {this.props.player && this.props.player.name}
+          {this.props.gamePlayer && this.props.gamePlayer.player.name}
         </Text>
       </View>
     );
   }
 };
 
-const styles = {
+const styles = StyleSheet.create({
   playerName: {
     fontSize: 13,
     color: 'white',
@@ -143,4 +144,4 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
   },
-};
+});

@@ -1,6 +1,6 @@
 export const playerAvailability = {
-  active: "active",
-  unavailable: "unavailable",
+  active: "ACTIVE",
+  unavailable: "UNAVAILABLE",
 };
 
 export const specialPositions = {

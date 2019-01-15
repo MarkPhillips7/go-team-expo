@@ -17,26 +17,65 @@ query {
 `;
 
 // TeamSeason "cjpt1epj50ijp0119511ogsg6"
-const gameTeamSeasonQuery = gql`
-query GameTeamSeason($gameTeamSeasonId: ID!) {
-  GameTeamSeason(id: $gameTeamSeasonId) {
-    teamSeason {
+// const gamePlayersQuery = gql`
+// query GameTeamSeason($gameTeamSeasonId: ID!) {
+//   GameTeamSeason(id: $gameTeamSeasonId) {
+//     gamePlayers {
+//       id
+//       availability
+//       player {
+//         id
+//         name
+//         positionCategoryPreferencesAsPlayer {
+//           positionCategory {
+//             name
+//             color
+//           }
+//         }
+//       }
+//     }
+//   }
+// }
+// `;
+const gamePlayersQuery = gql`
+query AllGamePlayers($gameTeamSeasonId: ID!) {
+  allGamePlayers(
+    filter: {
+      gameTeamSeason: {
+        id: $gameTeamSeasonId
+      }
+    }
+  ) {
+    id
+    availability
+    player {
       id
       name
-      players {
-        id
-        name
-        positionCategoryPreferencesAsPlayer {
-          positionCategory {
-            name
-            color
-          }
+      positionCategoryPreferencesAsPlayer {
+        positionCategory {
+          name
+          color
         }
       }
     }
   }
 }
 `;
+
+// teamSeason {
+//   id
+//   name
+//   players {
+//     id
+//     name
+//     positionCategoryPreferencesAsPlayer {
+//       positionCategory {
+//         name
+//         color
+//       }
+//     }
+//   }
+// }
 
 const formationQuery = gql`
 query {
@@ -75,10 +114,10 @@ export default class Game extends React.Component {
       >
         {({ loading: loading1, error: error1, data: positionCategoriesData }) => (
           <Query
-            query={gameTeamSeasonQuery}
+            query={gamePlayersQuery}
             variables={{gameTeamSeasonId}}
           >
-            {({ loading: loading2, error: error2, data: gameTeamSeasonData }) => (
+            {({ loading: loading2, error: error2, data: gamePlayersData }) => (
               <Query
                 query={formationQuery}
               >
@@ -86,12 +125,12 @@ export default class Game extends React.Component {
                   if (loading1 || loading2 || loading3) return <Text>Loading...</Text>;
                   if (error1 || error2 || error3) return <Text>Error</Text>;
 
-                  console.log(positionCategoriesData && JSON.stringify(positionCategoriesData));
+                  console.log(gamePlayersData && JSON.stringify(gamePlayersData));
                   return (
                     <SoccerField
+                      gameTeamSeasonId={gameTeamSeasonId}
                       positions={formationData && formationData.Formation && formationData.Formation.positions}
-                      players={gameTeamSeasonData && gameTeamSeasonData.GameTeamSeason
-                        && gameTeamSeasonData.GameTeamSeason.teamSeason && gameTeamSeasonData.GameTeamSeason.teamSeason.players}
+                      gamePlayers={gamePlayersData && gamePlayersData.allGamePlayers}
                       positionCategories={positionCategoriesData && positionCategoriesData.allPositionCategories}
                     />
                   );
