@@ -10,6 +10,19 @@ const cache = new InMemoryCache();
 
 const client = new ApolloClient({
   cache,
+  clientState: {
+    defaults: {
+      isConnected: true
+    },
+    resolvers: {
+      Mutation: {
+        updateNetworkStatus: (_, { isConnected }, { cache }) => {
+          cache.writeData({ data: { isConnected }});
+          return null;
+        }
+      }
+    }
+  },
   uri: "https://api.graph.cool/simple/v1/cjpeel49p81sr0135wsewoo11"
 });
 import gql from "graphql-tag";
