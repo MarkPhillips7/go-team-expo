@@ -4,6 +4,11 @@ import gql from "graphql-tag";
 import SoccerField from './SoccerField';
 import { Text } from 'react-native';
 
+// getGameState @client {
+//   clockMultiplier
+//   mode
+// },
+
 const query = gql`
 query AllGamePlayers($gameTeamSeasonId: ID!) {
   Formation(id: "cjqcfvx3167k30128b70ieu58") {
@@ -76,6 +81,7 @@ export default class Game extends React.Component {
           return (
             <SoccerField
               gameTeamSeasonId={gameTeamSeasonId}
+              gameState={{clockMultiplier: 5.0}}
               positions={data && data.Formation && data.Formation.positions}
               gamePlayers={data && data.allGamePlayers}
               positionCategories={data && data.allPositionCategories}

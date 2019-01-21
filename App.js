@@ -4,24 +4,16 @@ import { AppLoading, Asset, Font, Icon } from 'expo';
 import AppNavigator from './navigation/AppNavigator';
 import ApolloClient from "apollo-boost";
 import { InMemoryCache } from 'apollo-cache-inmemory';
+import {typedefs, resolvers, defaults} from './clientState';
 
 const cache = new InMemoryCache();
-
 
 const client = new ApolloClient({
   cache,
   clientState: {
-    defaults: {
-      isConnected: true
-    },
-    resolvers: {
-      Mutation: {
-        updateNetworkStatus: (_, { isConnected }, { cache }) => {
-          cache.writeData({ data: { isConnected }});
-          return null;
-        }
-      }
-    }
+    defaults,
+    resolvers,
+    typedefs,
   },
   uri: "https://api.graph.cool/simple/v1/cjpeel49p81sr0135wsewoo11"
 });

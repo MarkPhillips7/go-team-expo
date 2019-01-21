@@ -214,7 +214,7 @@ class SoccerField extends React.Component {
       // const demoTimeMultiplier = previousState.gameDurationSeconds / totalDemoSeconds;
       const actualMillisecondsSinceGameStart = now.diff(previousState.gameStartTime);
       const currentGameTime = moment(previousState.gameStartTime).add(
-        actualMillisecondsSinceGameStart*previousState.clockMultiplier, "milliseconds").toDate();
+        actualMillisecondsSinceGameStart*this.props.gameState.clockMultiplier, "milliseconds").toDate();
       const gamePlan = previousState.gamePlan && {
         ...previousState.gamePlan,
       };
@@ -291,7 +291,7 @@ class SoccerField extends React.Component {
                   }
                 });
               }}
-              value={this.state.clockMultiplier}
+              value={this.props.gameState.clockMultiplier}
             />
             <Button
               style={styles.button}
