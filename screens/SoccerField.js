@@ -13,6 +13,25 @@ import {
   specialPositions,
   // positionCategories,
 } from '../constants/Soccer';
+import {createInitialLineup} from '../graphql/gamePlan';
+
+// const createFormationSubstitution = gql`
+// mutation {
+//   createFormationSubstitution (
+//     name: "Starting Lineup"
+//     gameActivityType: PLAN
+//     gameActivityStatus: PENDING
+//     formationId: "cjqcfvx3167k30128b70ieu58"
+//     gameTeamSeasonId: "cjqu5koz80ipe0165gkxfj2u4"
+//   ) {
+//     id
+//     name
+//     gameActivityType
+//     gameActivityStatus
+//   }
+// }
+// `;
+
 
 export default withApollo(
 // export default
@@ -31,108 +50,124 @@ class SoccerField extends React.Component {
     this.onPressManageRoster = this.onPressManageRoster.bind(this);
     this.onPressStartPauseResume = this.onPressStartPauseResume.bind(this);
     this.onPressReset = this.onPressReset.bind(this);
+    this.onPressLineup = this.onPressLineup.bind(this);
     this.updateGame = this.updateGame.bind(this);
   }
 
   getInitialState() {
+
     const state = {
       assignmentsIndex: 0,
       clockMultiplier: 1.0,
       currentGameTime: undefined,
       gameDurationSeconds: 50.0*60,
       gameStartTime: undefined,
-      gamePlan: undefined,
+      // gamePlan: undefined,
       // gameRoster: this.props.gamePlayers || [],
-      gamePositions: this.getGamePositions(this.props.gamePlayers || []),
+      // gamePositions: this.props.//this.getGamePositions(this.props.gamePlayers || []),
       // assignmentsHistory: [],
       isClockRunning: false,
       isGameOver: false,
       mode: modes.default,
     };
-    state.gamePlan = this.getGamePlan(state);
+    // state.gamePlan = this.getGamePlan(state);
     return state;
   }
+  //
+  // getGamePositions() {
+  //   let positionIndex = 0;
+  //   return this.props.gamePlayers.map((gamePlayer) => {
+  //     if (gamePlayer.availability === playerAvailability.unavailable) {
+  //       return specialPositions.unavailable;
+  //     }
+  //
+  //     if (this.props.positions && this.props.positions.length > positionIndex) {
+  //       return this.props.positions[positionIndex++];
+  //     }
+  //     return specialPositions.substitute;
+  //     // switch (positionIndex++) {
+  //     //   case 0:
+  //     //     return specialPositions.keeper;
+  //     //   case 1:
+  //     //     return specialPositions.leftBack;
+  //     //   case 2:
+  //     //     return specialPositions.rightBack;
+  //     //   case 3:
+  //     //     return specialPositions.leftMid;
+  //     //   case 4:
+  //     //     return specialPositions.rightMid;
+  //     //   case 5:
+  //     //     return specialPositions.leftForward;
+  //     //   case 6:
+  //     //     return specialPositions.rightForward;
+  //     //   default:
+  //     //     return specialPositions.substitute;
+  //     // }
+  //   });
+  // }
 
-  getGamePositions() {
-    let positionIndex = 0;
-    return this.props.gamePlayers.map((gamePlayer) => {
-      if (gamePlayer.availability === playerAvailability.unavailable) {
-        return specialPositions.unavailable;
-      }
+  // getAssignments() {
+  //   const gamePositions = this.props.gameTeamSeason &&
+  //     this.props.gameTeamSeason.formationSubstitutions &&
+  //     this.props.gameTeamSeason.formationSubstitutions.length &&
+  //     this.props.gameTeamSeason.formationSubstitutions[0] &&
+  //     this.props.gameTeamSeason.formationSubstitutions[0].formation &&
+  //     this.props.gameTeamSeason.formationSubstitutions[0].formation.positions || [];
+  //   let positions = gamePositions.map((gamePosition) => ({
+  //     filled: false,
+  //     gamePosition: gamePosition,
+  //   }));
+  //   const getAvailablePosition = (gamePlayer) => {
+  //     const availablePosition = _.find(positions,
+  //       (position) => !position.filled &&
+  //       ((gamePlayer.availability === playerAvailability.unavailable &&
+  //         position.gamePosition.name === specialPositions.unavailable.name) ||
+  //       (gamePlayer.availability !== playerAvailability.unavailable &&
+  //         position.gamePosition.name !== specialPositions.unavailable.name))
+  //     );
+  //     if (!availablePosition) {
+  //       return specialPositions.unavailable;
+  //     }
+  //
+  //     availablePosition.filled = true;
+  //     return availablePosition.gamePosition;
+  //   };
+  //   return {
+  //     assignments: _.chain(this.props.gamePlayers)
+  //       .shuffle()
+  //       .map((gamePlayer) => {
+  //         const position = getAvailablePosition(gamePlayer);
+  //         return {
+  //           gamePlayer,
+  //           position,
+  //         };
+  //       })
+  //       .value(),
+  //     startTime: undefined,
+  //     endTime: undefined
+  //   };
+  // }
 
-      if (this.props.positions && this.props.positions.length > positionIndex) {
-        return this.props.positions[positionIndex++];
-      }
-      return specialPositions.substitute;
-      // switch (positionIndex++) {
-      //   case 0:
-      //     return specialPositions.keeper;
-      //   case 1:
-      //     return specialPositions.leftBack;
-      //   case 2:
-      //     return specialPositions.rightBack;
-      //   case 3:
-      //     return specialPositions.leftMid;
-      //   case 4:
-      //     return specialPositions.rightMid;
-      //   case 5:
-      //     return specialPositions.leftForward;
-      //   case 6:
-      //     return specialPositions.rightForward;
-      //   default:
-      //     return specialPositions.substitute;
-      // }
-    });
-  }
-
-  getAssignments({gamePositions}) {
-    let positions = gamePositions.map((gamePosition) => ({
-      filled: false,
-      gamePosition: gamePosition,
-    }));
-    const getAvailablePosition = (gamePlayer) => {
-      const availablePosition = _.find(positions,
-        (position) => !position.filled &&
-        ((gamePlayer.availability === playerAvailability.unavailable &&
-          position.gamePosition.name === specialPositions.unavailable.name) ||
-        (gamePlayer.availability !== playerAvailability.unavailable &&
-          position.gamePosition.name !== specialPositions.unavailable.name))
-      );
-      if (!availablePosition) {
-        return specialPositions.unavailable;
-      }
-
-      availablePosition.filled = true;
-      return availablePosition.gamePosition;
-    };
-    return {
-      assignments: _.chain(this.props.gamePlayers)
-        .shuffle()
-        .map((gamePlayer) => {
-          const position = getAvailablePosition(gamePlayer);
-          return {
-            gamePlayer,
-            position,
-          };
-        })
-        .value(),
-      startTime: undefined,
-      endTime: undefined
-    };
-  }
-
-  getGamePlan(state) {
-    const secondsBetweenSubs = state.gameDurationSeconds / numberOfLineups;
-    const assignmentsList = [];
-    for (var i = 0; i < numberOfLineups; i++) {
-      assignmentsList.push(this.getAssignments(state));
-    }
-    return {
-      numberOfLineups,
-      secondsBetweenSubs,
-      assignmentsList,
-    };
-  }
+  // getGamePlan() {
+  //   let totalGameSeconds = _.reduce(this.props.gameTeamSeason &&
+  //     this.props.gameTeamSeason.teamSeason &&
+  //     this.props.gameTeamSeason.teamSeason.team &&
+  //     this.props.gameTeamSeason.teamSeason.team.league &&
+  //     this.props.gameTeamSeason.teamSeason.team.league.gameDefinition &&
+  //     this.props.gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods || [],
+  //     (sum, gamePeriod) => sum + gamePeriod.durationSeconds, 0
+  //   );
+  //   const secondsBetweenSubs = this.props.gameDurationSeconds / numberOfLineups;
+  //   const assignmentsList = [];
+  //   for (var i = 0; i < numberOfLineups; i++) {
+  //     assignmentsList.push(this.getAssignments());
+  //   }
+  //   return {
+  //     numberOfLineups,
+  //     secondsBetweenSubs,
+  //     assignmentsList,
+  //   };
+  // }
 
   onPressSubstituteNow() {
   }
@@ -143,6 +178,15 @@ class SoccerField extends React.Component {
         ...previousState,
         mode: previousState.mode === modes.roster ? modes.default : modes.roster,
       };
+    });
+  }
+
+  onPressLineup(){
+    const {client, gameTeamSeason} = this.props;
+    createInitialLineup(client, {
+      gameTeamSeason,
+      gameActivityType: "PLAN",
+      gameActivityStatus: "PENDING",
     });
   }
 
@@ -190,13 +234,13 @@ class SoccerField extends React.Component {
       setTimeout(this.updateGame, 200);
 
       const gameStartTime = previousState.gameStartTime || new Date();
-      const gamePlan = previousState.gamePlan;
+      // const gamePlan = previousState.gamePlan;
       const assignmentsIndex = 0;
-      gamePlan.assignmentsList[assignmentsIndex].startTime = gameStartTime;
+      // gamePlan.assignmentsList[assignmentsIndex].startTime = gameStartTime;
       return {
         ...previousState,
         gameStartTime,
-        gamePlan,
+        // gamePlan,
         assignmentsIndex,
         isClockRunning: true,
         isGameOver: false,
@@ -205,54 +249,63 @@ class SoccerField extends React.Component {
   }
 
   updateGame() {
-    this.setState((previousState) => {
-      if (!this.state.isClockRunning) {
-        return;
-      }
+    // this.setState((previousState) => {
+    //   if (!this.state.isClockRunning) {
+    //     return;
+    //   }
+    //
+    //   const now = moment();
+    //   // const demoTimeMultiplier = previousState.gameDurationSeconds / totalDemoSeconds;
+    //   const actualMillisecondsSinceGameStart = now.diff(previousState.gameStartTime);
+    //   const currentGameTime = moment(previousState.gameStartTime).add(
+    //     actualMillisecondsSinceGameStart*this.props.gameState.clockMultiplier, "milliseconds").toDate();
+    //   const gamePlan = previousState.gamePlan && {
+    //     ...previousState.gamePlan,
+    //   };
+    //   const assignmentsList = gamePlan && gamePlan.assignmentsList;
+    //   let assignmentsIndex = previousState.assignmentsIndex;
+    //   let isGameOver = previousState.isGameOver;
+    //   const currentAssignments = assignmentsList[assignmentsIndex];
+    //
+    //   // check whether current game position assignments have expired and should be substituted
+    //   if (currentAssignments
+    //     && currentAssignments.startTime
+    //     && moment(currentGameTime).diff(currentAssignments.startTime, 'seconds')
+    //     > previousState.gamePlan.secondsBetweenSubs) {
+    //     console.log("substitution time");
+    //     currentAssignments.endTime = currentGameTime;
+    //     if (assignmentsIndex + 1 >= numberOfLineups) {
+    //       isGameOver = true;
+    //     } else {
+    //       assignmentsIndex += 1;
+    //       assignmentsList[assignmentsIndex].startTime = currentGameTime;
+    //     }
+    //   }
+    //
+    //   if (!isGameOver) {
+    //     setTimeout(this.updateGame, 200);
+    //   }
+    //
+    //   return {
+    //     ...previousState,
+    //     currentGameTime,
+    //     gamePlan,
+    //     assignmentsIndex,
+    //     isGameOver,
+    //   };
+    // });
+  }
 
-      const now = moment();
-      // const demoTimeMultiplier = previousState.gameDurationSeconds / totalDemoSeconds;
-      const actualMillisecondsSinceGameStart = now.diff(previousState.gameStartTime);
-      const currentGameTime = moment(previousState.gameStartTime).add(
-        actualMillisecondsSinceGameStart*this.props.gameState.clockMultiplier, "milliseconds").toDate();
-      const gamePlan = previousState.gamePlan && {
-        ...previousState.gamePlan,
-      };
-      const assignmentsList = gamePlan && gamePlan.assignmentsList;
-      let assignmentsIndex = previousState.assignmentsIndex;
-      let isGameOver = previousState.isGameOver;
-      const currentAssignments = assignmentsList[assignmentsIndex];
-
-      // check whether current game position assignments have expired and should be substituted
-      if (currentAssignments
-        && currentAssignments.startTime
-        && moment(currentGameTime).diff(currentAssignments.startTime, 'seconds')
-        > previousState.gamePlan.secondsBetweenSubs) {
-        console.log("substitution time");
-        currentAssignments.endTime = currentGameTime;
-        if (assignmentsIndex + 1 >= numberOfLineups) {
-          isGameOver = true;
-        } else {
-          assignmentsIndex += 1;
-          assignmentsList[assignmentsIndex].startTime = currentGameTime;
-        }
-      }
-
-      if (!isGameOver) {
-        setTimeout(this.updateGame, 200);
-      }
-
-      return {
-        ...previousState,
-        currentGameTime,
-        gamePlan,
-        assignmentsIndex,
-        isGameOver,
-      };
-    });
+  getCurrentLineup() {
+    return this.props.gameTeamSeason &&
+      this.props.gameTeamSeason.substitutions &&
+      this.props.gameTeamSeason.substitutions.length &&
+      this.props.gameTeamSeason.substitutions[0] &&
+      this.props.gameTeamSeason.substitutions[0].playerPositionAssignments || [];
   }
 
   render() {
+    const currentLineup = this.getCurrentLineup();
     // console.log("Rendering SoccerField");
     return (
       <View style={styles.screen}>
@@ -269,12 +322,6 @@ class SoccerField extends React.Component {
             </Text>
             <Text>
               assignmentsIndex {this.state && this.state.assignmentsIndex}
-            </Text>
-            <Text>
-              numberOfLineups {this.state && this.state.gamePlan && this.state.gamePlan.numberOfLineups}
-            </Text>
-            <Text>
-              secondsBetweenSubs {this.state && this.state.gamePlan && this.state.gamePlan.secondsBetweenSubs}
             </Text>
             <Text>
               isGameOver {this.state && this.state.isGameOver}
@@ -349,20 +396,21 @@ class SoccerField extends React.Component {
                 positionCategory={category}
               >
                 {
-                  _.chain(this.state.gamePlan.assignmentsList[this.state.assignmentsIndex].assignments)
+                  _.chain(currentLineup)
                   .filter((positionAssignment) =>
-                  positionAssignment.position.positionCategory.name === category.name)
+                  positionAssignment.playerPosition.position.positionCategory.name === category.name)
                   .map((positionAssignment, positionAssignmentIndex) => (
                     <Player
                       key={positionAssignmentIndex}
                       style={styles.player}
-                      position={positionAssignment.position}
-                      gamePlayer={positionAssignment.gamePlayer}
+                      currentLineup={currentLineup}
+                      position={positionAssignment.playerPosition.position}
+                      player={positionAssignment.playerPosition.player}
                       radius={100}
+                      gamePlan={this.props.gamePlan}
                       gameStartTime={this.state.gameStartTime}
                       gameDurationSeconds={this.state.gameDurationSeconds}
                       currentGameTime={this.state.currentGameTime}
-                      gamePlan={this.state.gamePlan}
                       assignmentsIndex={this.state.assignmentsIndex}
                       isGameOver={this.state.isGameOver}
                     />
@@ -387,20 +435,21 @@ class SoccerField extends React.Component {
                 positionCategory={category}
               >
                 {
-                  _.chain(this.state.gamePlan.assignmentsList[this.state.assignmentsIndex].assignments)
+                  _.chain(currentLineup)
                   .filter((positionAssignment) =>
-                  positionAssignment.position.positionCategory.name === category.name)
+                  positionAssignment.playerPosition.position.positionCategory.name === category.name)
                   .map((positionAssignment, positionAssignmentIndex) => (
                     <Player
                       key={positionAssignmentIndex}
                       style={styles.player}
+                      currentLineup={currentLineup}
                       position={positionAssignment.position}
-                      gamePlayer={positionAssignment.gamePlayer}
+                      player={positionAssignment.player}
                       radius={100}
+                      gamePlan={this.props.gamePlan}
                       gameStartTime={this.state.gameStartTime}
                       gameDurationSeconds={this.state.gameDurationSeconds}
                       currentGameTime={this.state.currentGameTime}
-                      gamePlan={this.state.gamePlan}
                       assignmentsIndex={this.state.assignmentsIndex}
                       isGameOver={this.state.isGameOver}
                     />
@@ -441,6 +490,11 @@ class SoccerField extends React.Component {
             style={styles.button}
             onPress={this.onPressManageRoster}
             title="Roster"
+          />
+          <Button
+            style={styles.button}
+            onPress={this.onPressLineup}
+            title="Lineup"
           />
         </View>
       </View>

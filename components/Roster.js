@@ -73,6 +73,7 @@ export default class Roster extends React.Component {
                         console.log(`hello ${playerIsAvailable}`);
                         const availability = playerIsAvailable ? playerAvailability.active : playerAvailability.unavailable;
                         updateGamePlayer({ variables: { id, availability } });
+                        item.availability = availability;
                         // this.onPlayerAvailableChange(item, playerIsAvailable);
                       }}
                     />

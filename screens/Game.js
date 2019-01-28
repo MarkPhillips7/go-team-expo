@@ -10,20 +10,7 @@ import { Text } from 'react-native';
 // },
 
 const query = gql`
-query AllGamePlayers($gameTeamSeasonId: ID!) {
-  Formation(id: "cjqcfvx3167k30128b70ieu58") {
-    id
-    name
-    positions {
-      id
-      name
-      positionCategory {
-        id
-        name
-        color
-      }
-    }
-  },
+query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
   allPositionCategories {
     id
     name
@@ -31,22 +18,91 @@ query AllGamePlayers($gameTeamSeasonId: ID!) {
     parkLocation
     pitchLocation
   },
-  allGamePlayers(
-    filter: {
-      gameTeamSeason: {
-        id: $gameTeamSeasonId
+  GameTeamSeason(id: $gameTeamSeasonId) {
+    teamSeason {
+      team {
+        league {
+          gameDefinition {
+            gamePeriods {
+              durationSeconds
+            }
+            numberPlayersPerSide
+          }
+        }
       }
     }
-  ) {
-    id
-    availability
-    player {
+    substitutions (
+      filter: {
+        gameActivityType: PLAN
+      }
+    ) {
       id
-      name
-      positionCategoryPreferencesAsPlayer {
-        positionCategory {
+      timestamp
+      totalSeconds
+      gameSeconds
+      playerPositionAssignments {
+        timestamp
+        playerPositionAssignmentType
+        playerPosition {
+          player {
+            id
+            name
+            positionCategoryPreferencesAsPlayer {
+              positionCategory {
+                id
+                name
+                color
+              }
+            }
+          }
+          position {
+            id
+            name
+            positionCategory {
+              id
+              name
+              color
+            }
+          }
+        }
+      }
+    }
+    formationSubstitutions (
+      filter: {
+        gameActivityType: PLAN
+      }
+    ) {
+      gameActivityType
+      gameSeconds
+      formation {
+        id
+        name
+        positions {
+          id
           name
-          color
+          positionCategory {
+            id
+            name
+            color
+          }
+        }
+      },
+    }
+    gamePlan {
+      secondsBetweenSubs
+    }
+    gamePlayers {
+      id
+      availability
+      player {
+        id
+        name
+        positionCategoryPreferencesAsPlayer {
+          positionCategory {
+            id
+            name
+            color
+          }
         }
       }
     }
@@ -80,10 +136,14 @@ export default class Game extends React.Component {
           console.log(data && JSON.stringify(data));
           return (
             <SoccerField
+              gameDefinition={data && data.GameTeamSeason && data.GameTeamSeason.teamSeason &&
+                data.GameTeamSeason.teamSeason && data.GameTeamSeason.teamSeason.team &&
+                data.GameTeamSeason.teamSeason.team.league && data.GameTeamSeason.teamSeason.team.league.gameDefinition}
               gameTeamSeasonId={gameTeamSeasonId}
               gameState={{clockMultiplier: 5.0}}
-              positions={data && data.Formation && data.Formation.positions}
-              gamePlayers={data && data.allGamePlayers}
+              gamePlan={data && data.GameTeamSeason && data.GameTeamSeason.gamePlan}
+              gameTeamSeason={data && data.GameTeamSeason}
+              gamePlayers={data && data.GameTeamSeason && data.GameTeamSeason.gamePlayers}
               positionCategories={data && data.allPositionCategories}
             />
           );

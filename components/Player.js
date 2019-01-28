@@ -21,51 +21,55 @@ export default class Player extends React.Component {
     let gameTimeSeconds = 0;
     let percentToMove;
     let pendingMoveTime = "";
-    const piePieces =
-    this.props.gameDurationSeconds &&
-    this.props.gameStartTime &&
-    this.props.gamePlan &&
-    this.props.gamePlan.assignmentsList &&
-    _.chain(this.props.gamePlan.assignmentsList)
-    .filter((assignments) => assignments.startTime)
-    .map((assignments) => {
-      const assignment = _.find(assignments.assignments, (_assignment) => _assignment.gamePlayer === this.props.gamePlayer);
-      const startSecondsSinceGameStart =
-        moment(assignments.startTime).diff(this.props.gameStartTime) / 1000.0;
-      const endTime = assignments.endTime || this.props.currentGameTime;
-      const endSecondsSinceGameStart = moment(endTime).diff(this.props.gameStartTime) / 1000.0;
-      const totalSeconds = Math.max(this.props.gameDurationSeconds, endSecondsSinceGameStart);
-      const startValue = startSecondsSinceGameStart / totalSeconds;
-      const endValue = endSecondsSinceGameStart / totalSeconds;
-      if (assignment.position !== specialPositions.unavailable &&
-      assignment.position !== specialPositions.substitute) {
-        gameTimeSeconds += endSecondsSinceGameStart - startSecondsSinceGameStart;
+    console.log(`gameDurationSeconds = ${this.props.gameDurationSeconds},gameStartTime=${this.props.gameStartTime}`);
+    // const piePieces =
+    // this.props.gameDurationSeconds &&
+    // this.props.gameStartTime &&
+    // this.props.gamePlan &&
+    // this.props.gamePlan.assignmentsList &&
+    // _.chain(this.props.gamePlan.assignmentsList)
+    // .filter((assignments) => assignments.startTime)
+    // .map((assignments) => {
+      const assignment = this.props.player && _.find(this.props.currentLineup, (_assignment) =>
+        _assignment.playerPosition.player.id === this.props.player.id);
+      // const startSecondsSinceGameStart =
+      //   moment(assignments.startTime).diff(this.props.gameStartTime) / 1000.0;
+      // const endTime = assignments.endTime || this.props.currentGameTime;
+      // const endSecondsSinceGameStart = moment(endTime).diff(this.props.gameStartTime) / 1000.0;
+      // const totalSeconds = Math.max(this.props.gameDurationSeconds, endSecondsSinceGameStart);
+      // const startValue = startSecondsSinceGameStart / totalSeconds;
+      // const endValue = endSecondsSinceGameStart / totalSeconds;
+      // if (assignment.position !== specialPositions.unavailable &&
+      // assignment.position !== specialPositions.substitute) {
+      //   gameTimeSeconds += endSecondsSinceGameStart - startSecondsSinceGameStart;
+      // }
+      // const pendingMoveSeconds = this.props.gamePlan.secondsBetweenSubs - (endSecondsSinceGameStart - startSecondsSinceGameStart);
+      // pendingMoveTime = moment.utc(pendingMoveSeconds*1000).format("m:ss") || "0:00";
+      // percentToMove = (endSecondsSinceGameStart - startSecondsSinceGameStart) / this.props.gamePlan.secondsBetweenSubs * 100;
+    const piePieces = assignment && [ {
+        color: assignment.playerPosition.position.positionCategory.color,
+        startValue: 0,
+        endValue: 0,
       }
-      const pendingMoveSeconds = this.props.gamePlan.secondsBetweenSubs - (endSecondsSinceGameStart - startSecondsSinceGameStart);
-      pendingMoveTime = moment.utc(pendingMoveSeconds*1000).format("m:ss") || "0:00";
-      percentToMove = (endSecondsSinceGameStart - startSecondsSinceGameStart) / this.props.gamePlan.secondsBetweenSubs * 100;
-      return {
-        color: assignment.position.positionCategory.color,
-        startValue,
-        endValue,
-      }
-    })
-    .value()
-    || [];
-    const nextAssignments =
-    this.props.gameDurationSeconds &&
-    this.props.gameStartTime &&
-    this.props.gamePlan &&
-    this.props.gamePlan.assignmentsList &&
-    _.find(this.props.gamePlan.assignmentsList, (assignments) => !assignments.startTime);
-    const nextAssignment = nextAssignments &&
-    _.find(nextAssignments.assignments, (_assignment) => _assignment.gamePlayer === this.props.gamePlayer);
+    ];
+  // )
+  //   .value()
+  //   || [];
+    // const nextAssignments = [];
+    // this.props.gameDurationSeconds &&
+    // this.props.gameStartTime &&
+    // this.props.gamePlan &&
+    // this.props.gamePlan.assignmentsList &&
+    // _.find(this.props.gamePlan.assignmentsList, (assignments) => !assignments.startTime);
+    // const nextAssignment = nextAssignments &&
+    // _.find(nextAssignments.assignments, (_assignment) => _assignment.player === this.props.player);
+    const nextAssignment = undefined;
     const playTime = moment.utc(gameTimeSeconds*1000).format("m:ss") || "0:00";
     const playerNameStyle = {
       ...styles.playerName,
-      backgroundColor: this.props.gamePlayer.player.positionCategoryPreferencesAsPlayer &&
-      this.props.gamePlayer.player.positionCategoryPreferencesAsPlayer.length &&
-      this.props.gamePlayer.player.positionCategoryPreferencesAsPlayer[0].positionCategory.color || "gray",
+      backgroundColor: this.props.player.positionCategoryPreferencesAsPlayer &&
+      this.props.player.positionCategoryPreferencesAsPlayer.length &&
+      this.props.player.positionCategoryPreferencesAsPlayer[0].positionCategory.color || "gray",
     };
     return (
       <View
@@ -78,7 +82,7 @@ export default class Player extends React.Component {
           style={styles.pieAndArrow}
         >
           <CirclePie
-            player={this.props.gamePlayer}
+            player={this.props.player}
             radius={30}
             piePieces={piePieces}
             positionColor={this.props.position.positionCategory.color}
@@ -99,7 +103,7 @@ export default class Player extends React.Component {
           }
         </View>
         <Text style={playerNameStyle}>
-          {this.props.gamePlayer && this.props.gamePlayer.player.name}
+          {this.props.player && this.props.player.name}
         </Text>
       </View>
     );
