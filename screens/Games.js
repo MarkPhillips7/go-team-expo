@@ -3,8 +3,10 @@ import { Mutation, Query } from "react-apollo";
 import gql from "graphql-tag";
 import { Button, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Game from './Game';
+import {createGameEtc} from '../graphql/game';
+import {withApollo} from 'react-apollo';
 
-const teamSeasonQuery = gql`
+const TEAM_SEASON = gql`
 query {
   TeamSeason(id: "cjpt1epj50ijp0119511ogsg6") {
     id
@@ -17,27 +19,33 @@ query {
       }
       name
     }
+    players {
+      id
+      name
+    }
   }
 }
 `;
 
-const createGameMutation = gql`
-mutation CreateGame($name: String!){
-  createGame(
-    name: $name
-    gameStatus: SCHEDULED
-    location: "Meriwether Lewis Elementary School"
-    scheduledStartTime: "2018-11-22T15:00:00.000Z"
-  ) {
-    id
-    name
-    gameStatus
-    scheduledStartTime
-  }
-}
-`;
+// const CREATE_GAME = gql`
+// mutation CreateGame($name: String!){
+//   createGame(
+//     name: $name
+//     gameStatus: SCHEDULED
+//     location: "Meriwether Lewis Elementary School"
+//     scheduledStartTime: "2019-02-22T15:00:00.000Z"
+//   ) {
+//     id
+//     name
+//     gameStatus
+//     scheduledStartTime
+//   }
+// }
+// `;
 
-export default class Games extends React.Component {
+export default withApollo(
+// export default
+class Games extends React.Component {
 
   constructor(props) {
     super(props);
@@ -57,14 +65,19 @@ export default class Games extends React.Component {
   //   });
   // }
 
-  onPressNewGame(){
-    console.log("hello");
+  onPressNewGame(teamSeason) {
+    const {client} = this.props;
+    createGameEtc(client, {
+      name: "Dolphins vs Vikings",
+      teamSeason,
+      secondsBetweenSubs: 500,
+    });
   }
 
   render() {
     return (
       <Query
-        query={teamSeasonQuery}
+        query={TEAM_SEASON}
       >
         {({ loading: loading1, error: error1, data: teamSeasonData }) => {
           if (loading1) return <Text>Loading...</Text>;
@@ -94,7 +107,7 @@ export default class Games extends React.Component {
                     )}
                   />
                   <Button
-                    onPress={this.onPressNewGame}
+                    onPress={() => this.onPressNewGame(teamSeasonData.TeamSeason)}
                     title="New Game"
                     accessibilityLabel="Create new game"
                   />
@@ -106,7 +119,7 @@ export default class Games extends React.Component {
       </Query>
     );
   }
-};
+});
 
 let styles = StyleSheet.create({
   screen: {

@@ -20,6 +20,9 @@ const client = new ApolloClient({
 import gql from "graphql-tag";
 import { ApolloProvider } from "react-apollo";
 
+import { createAppContainer } from 'react-navigation';
+const AppContainer = createAppContainer(AppNavigator);
+
 // client
 //   .query({
 //     query: gql`
@@ -53,7 +56,7 @@ export default class App extends React.Component {
         <ApolloProvider client={client}>
           <View style={styles.container}>
             {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
-            <AppNavigator />
+            <AppContainer />
           </View>
         </ApolloProvider>
       );
