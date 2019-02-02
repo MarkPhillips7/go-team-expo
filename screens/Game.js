@@ -19,6 +19,7 @@ query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
     pitchLocation
   },
   GameTeamSeason(id: $gameTeamSeasonId) {
+    id
     teamSeason {
       team {
         league {

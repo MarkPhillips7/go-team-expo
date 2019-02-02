@@ -405,9 +405,11 @@ class SoccerField extends React.Component {
                       style={styles.player}
                       currentLineup={currentLineup}
                       position={positionAssignment.playerPosition.position}
+                      positionCategory={category}
                       player={positionAssignment.playerPosition.player}
                       radius={100}
                       gamePlan={this.props.gamePlan}
+                      gamePlayers={this.props.gamePlayers}
                       gameStartTime={this.state.gameStartTime}
                       gameDurationSeconds={this.state.gameDurationSeconds}
                       currentGameTime={this.state.currentGameTime}
@@ -435,18 +437,22 @@ class SoccerField extends React.Component {
                 positionCategory={category}
               >
                 {
-                  _.chain(currentLineup)
-                  .filter((positionAssignment) =>
-                  positionAssignment.playerPosition.position.positionCategory.name === category.name)
-                  .map((positionAssignment, positionAssignmentIndex) => (
+                  _.chain(this.props.gamePlayers)
+                  .filter((gamePlayer) =>
+                  gamePlayer.availability === playerAvailability.active && 
+                  !_.find(currentLineup, (positionAssignment) =>
+                  positionAssignment.playerPosition.player.id === gamePlayer.player.id))
+                  .map((gamePlayer, gamePlayerIndex) => (
                     <Player
-                      key={positionAssignmentIndex}
+                      key={gamePlayerIndex}
                       style={styles.player}
                       currentLineup={currentLineup}
-                      position={positionAssignment.position}
-                      player={positionAssignment.player}
+                      position={undefined}
+                      positionCategory={category}
+                      player={gamePlayer.player}
                       radius={100}
                       gamePlan={this.props.gamePlan}
+                      gamePlayers={this.props.gamePlayers}
                       gameStartTime={this.state.gameStartTime}
                       gameDurationSeconds={this.state.gameDurationSeconds}
                       currentGameTime={this.state.currentGameTime}

@@ -51,7 +51,7 @@ const CREATE_GAME_PLAYER = gql`
 mutation CreateGamePlayer (
   $gameTeamSeasonId: ID!
   $playerId: ID!
-  $availability: Availability
+  $availability: Availability!
 ){
   createGamePlayer(
     gameTeamSeasonId: $gameTeamSeasonId

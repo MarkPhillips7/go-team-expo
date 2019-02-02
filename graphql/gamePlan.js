@@ -7,8 +7,8 @@ import {
 const CREATE_FORMATION_SUBSTITUTION = gql`
 mutation CreateFormationSubstitution(
   $formationId: ID!
-  $gameActivityType: GameActivityType
-  $gameActivityStatus: GameActivityStatus
+  $gameActivityType: GameActivityType!
+  $gameActivityStatus: GameActivityStatus!
   $gameTeamSeasonId: ID!
   $totalSeconds: Int
   $gameSeconds:  Int
@@ -18,6 +18,8 @@ mutation CreateFormationSubstitution(
     gameActivityStatus: $gameActivityStatus
     formationId: $formationId
     gameTeamSeasonId: $gameTeamSeasonId
+    totalSeconds: $totalSeconds
+    gameSeconds: $gameSeconds
   ) {
     id
     gameSeconds
@@ -40,8 +42,8 @@ mutation CreateFormationSubstitution(
 
 const CREATE_SUBSTITUTION = gql`
 mutation (
-  $gameActivityType: GameActivityType
-  $gameActivityStatus: GameActivityStatus
+  $gameActivityType: GameActivityType!
+  $gameActivityStatus: GameActivityStatus!
   $gameTeamSeasonId: ID!
   $totalSeconds: Int
   $gameSeconds:  Int
@@ -127,7 +129,9 @@ const getOrCreateFormationSubstitution = (client, {
   formationId,
   gameActivityStatus,
   gameActivityType,
-  gameTeamSeason
+  gameTeamSeason,
+  totalSeconds,
+  gameSeconds,
 }) => {
   if (!gameTeamSeason.formationSubstitutions || gameTeamSeason.formationSubstitutions.length === 0) {
     const gameTeamSeasonId = gameTeamSeason.id;
@@ -138,6 +142,8 @@ const getOrCreateFormationSubstitution = (client, {
         gameActivityType,
         gameActivityStatus,
         gameTeamSeasonId,
+        totalSeconds,
+        gameSeconds,
       }
     })
     .then((result) => result.data.createFormationSubstitution);

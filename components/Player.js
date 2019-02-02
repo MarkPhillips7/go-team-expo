@@ -30,8 +30,10 @@ export default class Player extends React.Component {
     // _.chain(this.props.gamePlan.assignmentsList)
     // .filter((assignments) => assignments.startTime)
     // .map((assignments) => {
-      const assignment = this.props.player && _.find(this.props.currentLineup, (_assignment) =>
-        _assignment.playerPosition.player.id === this.props.player.id);
+
+      // const assignment = this.props.player && _.find(this.props.currentLineup, (_assignment) =>
+      //   _assignment.playerPosition.player.id === this.props.player.id);
+
       // const startSecondsSinceGameStart =
       //   moment(assignments.startTime).diff(this.props.gameStartTime) / 1000.0;
       // const endTime = assignments.endTime || this.props.currentGameTime;
@@ -46,8 +48,8 @@ export default class Player extends React.Component {
       // const pendingMoveSeconds = this.props.gamePlan.secondsBetweenSubs - (endSecondsSinceGameStart - startSecondsSinceGameStart);
       // pendingMoveTime = moment.utc(pendingMoveSeconds*1000).format("m:ss") || "0:00";
       // percentToMove = (endSecondsSinceGameStart - startSecondsSinceGameStart) / this.props.gamePlan.secondsBetweenSubs * 100;
-    const piePieces = assignment && [ {
-        color: assignment.playerPosition.position.positionCategory.color,
+    const piePieces = [ {
+        color: this.props.positionCategory.color,
         startValue: 0,
         endValue: 0,
       }
@@ -85,7 +87,7 @@ export default class Player extends React.Component {
             player={this.props.player}
             radius={30}
             piePieces={piePieces}
-            positionColor={this.props.position.positionCategory.color}
+            positionColor={this.props.positionCategory.color}
           />
           {nextAssignment && nextAssignment.position !== this.props.position &&
             <View
@@ -94,7 +96,7 @@ export default class Player extends React.Component {
               <PendingMoveArrow
                 style={styles.arrow}
                 percent={percentToMove}
-                color={nextAssignment.position.positionCategory.color}
+                color={nextAssignment.positionCategory.color}
               />
               <Text style={styles.pendingMoveTime}>
                 {pendingMoveTime}
