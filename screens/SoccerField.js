@@ -187,7 +187,8 @@ class SoccerField extends React.Component {
       gameTeamSeason,
       gameActivityType: "PLAN",
       gameActivityStatus: "PENDING",
-    });
+    })
+    .then(this.props.onLineupChange);
   }
 
   onPressReset() {
@@ -439,7 +440,7 @@ class SoccerField extends React.Component {
                 {
                   _.chain(this.props.gamePlayers)
                   .filter((gamePlayer) =>
-                  gamePlayer.availability === playerAvailability.active && 
+                  gamePlayer.availability === playerAvailability.active &&
                   !_.find(currentLineup, (positionAssignment) =>
                   positionAssignment.playerPosition.player.id === gamePlayer.player.id))
                   .map((gamePlayer, gamePlayerIndex) => (

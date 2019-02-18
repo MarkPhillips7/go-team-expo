@@ -3,6 +3,110 @@ import _ from 'lodash';
 import {
   playerAvailability,
 } from '../constants/Soccer';
+import {TEAM_SEASON} from '../graphql/games';
+
+export const GAME_TEAM_SEASON_INFO = gql`
+query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
+  allPositionCategories {
+    id
+    name
+    color
+    parkLocation
+    pitchLocation
+  },
+  GameTeamSeason(id: $gameTeamSeasonId) {
+    id
+    teamSeason {
+      team {
+        league {
+          gameDefinition {
+            gamePeriods {
+              durationSeconds
+            }
+            numberPlayersPerSide
+          }
+        }
+      }
+    }
+    substitutions (
+      filter: {
+        gameActivityType: PLAN
+      }
+    ) {
+      id
+      timestamp
+      totalSeconds
+      gameSeconds
+      playerPositionAssignments {
+        timestamp
+        playerPositionAssignmentType
+        playerPosition {
+          player {
+            id
+            name
+            positionCategoryPreferencesAsPlayer {
+              positionCategory {
+                id
+                name
+                color
+              }
+            }
+          }
+          position {
+            id
+            name
+            positionCategory {
+              id
+              name
+              color
+            }
+          }
+        }
+      }
+    }
+    formationSubstitutions (
+      filter: {
+        gameActivityType: PLAN
+      }
+    ) {
+      gameActivityType
+      gameSeconds
+      formation {
+        id
+        name
+        positions {
+          id
+          name
+          positionCategory {
+            id
+            name
+            color
+          }
+        }
+      },
+    }
+    gamePlan {
+      id
+      secondsBetweenSubs
+    }
+    gamePlayers {
+      id
+      availability
+      player {
+        id
+        name
+        positionCategoryPreferencesAsPlayer {
+          positionCategory {
+            id
+            name
+            color
+          }
+        }
+      }
+    }
+  }
+}
+`;
 
 const CREATE_GAME = gql`
 mutation CreateGame(
@@ -94,7 +198,8 @@ const createGameTeamSeason = (client, {
       teamSeasonId,
       gameId,
       secondsBetweenSubs,
-    }
+    },
+    refetchQueries: [{query: TEAM_SEASON}],
   })
   .then((result) => result.data.createGameTeamSeason);
 };

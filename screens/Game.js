@@ -1,117 +1,16 @@
 import React from 'react';
-import { Query } from "react-apollo";
+import { Query , withApollo} from 'react-apollo';
 import gql from "graphql-tag";
 import SoccerField from './SoccerField';
 import { Text } from 'react-native';
-
+import {GAME_TEAM_SEASON_INFO} from '../graphql/game';
 // getGameState @client {
 //   clockMultiplier
 //   mode
 // },
 
-const query = gql`
-query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
-  allPositionCategories {
-    id
-    name
-    color
-    parkLocation
-    pitchLocation
-  },
-  GameTeamSeason(id: $gameTeamSeasonId) {
-    id
-    teamSeason {
-      team {
-        league {
-          gameDefinition {
-            gamePeriods {
-              durationSeconds
-            }
-            numberPlayersPerSide
-          }
-        }
-      }
-    }
-    substitutions (
-      filter: {
-        gameActivityType: PLAN
-      }
-    ) {
-      id
-      timestamp
-      totalSeconds
-      gameSeconds
-      playerPositionAssignments {
-        timestamp
-        playerPositionAssignmentType
-        playerPosition {
-          player {
-            id
-            name
-            positionCategoryPreferencesAsPlayer {
-              positionCategory {
-                id
-                name
-                color
-              }
-            }
-          }
-          position {
-            id
-            name
-            positionCategory {
-              id
-              name
-              color
-            }
-          }
-        }
-      }
-    }
-    formationSubstitutions (
-      filter: {
-        gameActivityType: PLAN
-      }
-    ) {
-      gameActivityType
-      gameSeconds
-      formation {
-        id
-        name
-        positions {
-          id
-          name
-          positionCategory {
-            id
-            name
-            color
-          }
-        }
-      },
-    }
-    gamePlan {
-      secondsBetweenSubs
-    }
-    gamePlayers {
-      id
-      availability
-      player {
-        id
-        name
-        positionCategoryPreferencesAsPlayer {
-          positionCategory {
-            id
-            name
-            color
-          }
-        }
-      }
-    }
-  }
-}
-`;
-
-export default class Game extends React.Component {
+export default  withApollo(
+class Game extends React.Component {
 
   constructor(props) {
     super(props);
@@ -127,14 +26,16 @@ export default class Game extends React.Component {
     console.log(`gameTeamSeasonId: ${gameTeamSeasonId}`);
     return (
       <Query
-        query={query}
+        query={GAME_TEAM_SEASON_INFO}
         variables={{gameTeamSeasonId}}
+        notifyOnNetworkStatusChange
       >
-        {({ loading, error, data }) => {
+        {({ loading, error, data, refetch, networkStatus }) => {
+          if (networkStatus === 4) return <Text>Refetching...</Text>;
           if (loading) return <Text>Loading...</Text>;
-          if (error) return <Text>Error</Text>;
+          if (error) { console.log(JSON.stringify(error)); return <Text>Error</Text>;}
 
-          console.log(data && JSON.stringify(data));
+          console.log(`rendering game`);//data && JSON.stringify(data));
           return (
             <SoccerField
               gameDefinition={data && data.GameTeamSeason && data.GameTeamSeason.teamSeason &&
@@ -146,10 +47,11 @@ export default class Game extends React.Component {
               gameTeamSeason={data && data.GameTeamSeason}
               gamePlayers={data && data.GameTeamSeason && data.GameTeamSeason.gamePlayers}
               positionCategories={data && data.allPositionCategories}
+              onLineupChange={() => refetch()}
             />
           );
         }}
       </Query>
     );
   }
-};
+});

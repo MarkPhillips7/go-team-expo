@@ -3,6 +3,7 @@ import _ from 'lodash';
 import {
   playerAvailability,
 } from '../constants/Soccer';
+import {GAME_TEAM_SEASON_INFO} from '../graphql/game';
 
 const CREATE_FORMATION_SUBSTITUTION = gql`
 mutation CreateFormationSubstitution(
@@ -113,17 +114,34 @@ const createPlayerPositionAssignment = (client, {
   playerPositionAssignmentType,
   playerPositionId,
   substitutionId,
+  // gameTeamSeasonId,
 }) => {
+  // console.log(`gameTeamSeasonId: ${gameTeamSeasonId}`);
   return client.mutate({
     mutation: CREATE_PLAYER_POSITION_ASSIGNMENT,
     variables: {
       playerPositionAssignmentType,
       playerPositionId,
       substitutionId,
-    }
+    },
+    // refetchQueries: ["getGameTeamSeasonInfo"],//[{query: GAME_TEAM_SEASON_INFO, variables: {gameTeamSeasonId}}],
   })
   .then((result) => result.data.createPlayerPositionAssignment);
 };
+
+// const refetchGameTeamSeasonInfo = (client, {
+//   gameTeamSeasonId,
+// }) => {
+//   console.log(`hello gameTeamSeasonId: ${gameTeamSeasonId}`);
+//   return client.query({
+//     query: GAME_TEAM_SEASON_INFO,
+//     variables: {
+//       gameTeamSeasonId,
+//     },
+//     fetchPolicy: "no-cache",
+//   })
+//   .then((result) => result.data);
+// };
 
 const getOrCreateFormationSubstitution = (client, {
   formationId,
@@ -239,6 +257,7 @@ const getOrCreatePlayerPositionsAndPlayerPositionAssignments = (client, {
         playerPositionAssignmentType,
         playerPositionId: playerPosition.id,
         substitutionId: substitution.id,
+        // gameTeamSeasonId: gameTeamSeason.id,
       }));
     } else {
       return Promise.resolve(null);
@@ -257,7 +276,7 @@ export const createInitialLineup = (client, {
   let formationSubstitution;
   let substitution;
 
-  getOrCreateFormationSubstitution(client, {
+  return getOrCreateFormationSubstitution(client, {
     formationId: "cjqcfvx3167k30128b70ieu58",
     gameActivityType,
     gameActivityStatus,
@@ -282,6 +301,9 @@ export const createInitialLineup = (client, {
     gameSeconds: 0,
     playerPositionAssignmentType: "INITIAL"
   })).then(result => {console.log(result)})
+  // .then(() => refetchGameTeamSeasonInfo(client, {
+  //   gameTeamSeasonId: gameTeamSeason.id,
+  // })).then(result => {console.log(result)})
   .then(() => console.log("createInitialLineup succeeded"))
   .catch((error) => console.log(`error: ${error}`));
 };

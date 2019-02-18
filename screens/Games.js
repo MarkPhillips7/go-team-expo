@@ -1,47 +1,10 @@
 import React from 'react';
 import { Mutation, Query } from "react-apollo";
-import gql from "graphql-tag";
-import { Button, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Button, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Game from './Game';
+import {TEAM_SEASON} from '../graphql/games';
 import {createGameEtc} from '../graphql/game';
 import {withApollo} from 'react-apollo';
-
-const TEAM_SEASON = gql`
-query {
-  TeamSeason(id: "cjpt1epj50ijp0119511ogsg6") {
-    id
-    name
-    gameTeamSeasons {
-      id
-      game {
-        scheduledStartTime
-        name
-      }
-      name
-    }
-    players {
-      id
-      name
-    }
-  }
-}
-`;
-
-// const CREATE_GAME = gql`
-// mutation CreateGame($name: String!){
-//   createGame(
-//     name: $name
-//     gameStatus: SCHEDULED
-//     location: "Meriwether Lewis Elementary School"
-//     scheduledStartTime: "2019-02-22T15:00:00.000Z"
-//   ) {
-//     id
-//     name
-//     gameStatus
-//     scheduledStartTime
-//   }
-// }
-// `;
 
 export default withApollo(
 // export default
@@ -68,7 +31,7 @@ class Games extends React.Component {
   onPressNewGame(teamSeason) {
     const {client} = this.props;
     createGameEtc(client, {
-      name: "Dolphins vs Vikings",
+      name: this.state.newGameName,
       teamSeason,
       secondsBetweenSubs: 500,
     });
@@ -105,6 +68,11 @@ class Games extends React.Component {
                         </View>
                       </TouchableOpacity>
                     )}
+                  />
+                  <TextInput
+                    style={{height: 40, borderColor: 'gray', borderWidth: 1}}
+                    onChangeText={(newGameName) => this.setState({newGameName})}
+                    value={this.state.newGameName}
                   />
                   <Button
                     onPress={() => this.onPressNewGame(teamSeasonData.TeamSeason)}
