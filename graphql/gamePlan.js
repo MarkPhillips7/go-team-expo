@@ -96,6 +96,30 @@ mutation CreatePlayerPositionAssignment (
 }
 `;
 
+const DELETE_PLAYER_POSITION_ASSIGNMENT = gql`
+mutation DeletePlayerPositionAssignment (
+  $id: ID!
+){
+  deletePlayerPositionAssignment(
+    id: $id
+  ) {
+    id
+  }
+}
+`;
+
+const DELETE_PLAYER_POSITION = gql`
+mutation DeletePlayerPosition (
+  $id: ID!
+){
+  deletePlayerPosition(
+    id: $id
+  ) {
+    id
+  }
+}
+`;
+
 const createPlayerPosition = (client, {
   playerId,
   positionId,
@@ -127,6 +151,28 @@ const createPlayerPositionAssignment = (client, {
     // refetchQueries: ["getGameTeamSeasonInfo"],//[{query: GAME_TEAM_SEASON_INFO, variables: {gameTeamSeasonId}}],
   })
   .then((result) => result.data.createPlayerPositionAssignment);
+};
+
+const deletePlayerPositionAssignment = (client, {
+  id,
+}) => {
+  return client.mutate({
+    mutation: DELETE_PLAYER_POSITION_ASSIGNMENT,
+    variables: {
+      id,
+    },
+  });
+};
+
+const deletePlayerPosition = (client, {
+  id,
+}) => {
+  return client.mutate({
+    mutation: DELETE_PLAYER_POSITION,
+    variables: {
+      id,
+    },
+  });
 };
 
 // const refetchGameTeamSeasonInfo = (client, {
@@ -210,13 +256,27 @@ const getOrCreatePlayerPositionsAndPlayerPositionAssignments = (client, {
     filled: false,
     position,
   }));
+  const deletionPromises = [];
 
   // Identify the existing player position assignments
   const playerPositionAssignments = substitution.playerPositionAssignments || [];
   _.each(playerPositionAssignments, (playerPositionAssignment) => {
     const positionWithFilledStatus = _.find(positionsWithFilledStatus, (positionWithFilledStatus) =>
     positionWithFilledStatus.position.id === playerPositionAssignment.playerPosition.position.id);
-    positionWithFilledStatus.filled = true;
+    const gamePlayer = _.find(gameTeamSeason.gamePlayers, (gamePlayer) =>
+    gamePlayer.player.id === playerPositionAssignment.playerPosition.player.id);
+    if (gamePlayer.availability === playerAvailability.unavailable) {
+      // delete player position assignment
+      deletionPromises.push(
+        deletePlayerPositionAssignment(client, {
+          id: playerPositionAssignment.id,
+        })
+        .then(() => deletePlayerPosition(client, {
+          id: playerPositionAssignment.playerPosition.id,
+        })));
+    } else {
+      positionWithFilledStatus.filled = true;
+    }
     // positionWithFilledStatus.needInserts = false;
   });
 
@@ -234,7 +294,9 @@ const getOrCreatePlayerPositionsAndPlayerPositionAssignments = (client, {
     return availablePositionWithFilledStatus.position;
   };
 
-  return Promise.all(_.chain(gameTeamSeason.gamePlayers)
+  return Promise.all([
+    ...deletionPromises,
+    ..._.chain(gameTeamSeason.gamePlayers)
   .shuffle()
   // just include players that are not already assigned a position
   .filter((gamePlayer) => !_.find(substitution.playerPositionAssignments || [],
@@ -263,7 +325,8 @@ const getOrCreatePlayerPositionsAndPlayerPositionAssignments = (client, {
       return Promise.resolve(null);
     }
   })
-  .value());
+  .value()
+]);
 };
 
 // gameTeamSeason is expected to have the shape found in getGameTeamSeasonInfo

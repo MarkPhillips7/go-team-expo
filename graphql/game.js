@@ -38,9 +38,11 @@ query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
       totalSeconds
       gameSeconds
       playerPositionAssignments {
+        id
         timestamp
         playerPositionAssignmentType
         playerPosition {
+          id
           player {
             id
             name
