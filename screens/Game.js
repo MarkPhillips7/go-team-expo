@@ -48,6 +48,7 @@ class Game extends React.Component {
               gamePlayers={data && data.GameTeamSeason && data.GameTeamSeason.gamePlayers}
               positionCategories={data && data.allPositionCategories}
               onLineupChange={() => refetch()}
+              onSubsChange={() => refetch()}
             />
           );
         }}

@@ -13,7 +13,11 @@ import {
   specialPositions,
   // positionCategories,
 } from '../constants/Soccer';
-import {createInitialLineup} from '../graphql/gamePlan';
+import {
+  createInitialLineup,
+  createNextSubstitution,
+  getNextSubstitutionInfo,
+} from '../graphql/gamePlan';
 
 // const createFormationSubstitution = gql`
 // mutation {
@@ -45,7 +49,7 @@ class SoccerField extends React.Component {
     // Don't call this.setState() here!
     this.state = this.getInitialState();
 
-    this.onPressSubstituteNow = this.onPressSubstituteNow.bind(this);
+    this.onPressSubs = this.onPressSubs.bind(this);
     this.onPressDebug = this.onPressDebug.bind(this);
     this.onPressManageRoster = this.onPressManageRoster.bind(this);
     this.onPressStartPauseResume = this.onPressStartPauseResume.bind(this);
@@ -169,9 +173,6 @@ class SoccerField extends React.Component {
   //   };
   // }
 
-  onPressSubstituteNow() {
-  }
-
   onPressManageRoster() {
     this.setState((previousState) => {
       return {
@@ -189,6 +190,19 @@ class SoccerField extends React.Component {
       gameActivityStatus: "PENDING",
     })
     .then(this.props.onLineupChange);
+  }
+
+  onPressSubs(){
+    const {client, gameTeamSeason} = this.props;
+    const {totalSeconds, gameSeconds} = getNextSubstitutionInfo(gameTeamSeason);
+    createNextSubstitution(client, {
+      gameTeamSeason,
+      gameActivityType: "PLAN",
+      gameActivityStatus: "PENDING",
+      gameSeconds,
+      totalSeconds,
+    })
+    .then(this.props.onSubsChange);
   }
 
   onPressReset() {
@@ -482,11 +496,11 @@ class SoccerField extends React.Component {
             title="Reset"
           />
           {
-            // <Button
-            //   style={styles.button}
-            //   onPress={this.onPressSubstituteNow}
-            //   title="Sub"
-            // />
+            <Button
+              style={styles.button}
+              onPress={this.onPressSubs}
+              title="Sub"
+            />
           }
           <Button
             style={styles.button}

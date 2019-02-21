@@ -4,6 +4,7 @@ import {
   playerAvailability,
 } from '../constants/Soccer';
 import {GAME_TEAM_SEASON_INFO} from '../graphql/game';
+import {getGameStats} from '../helpers/game';
 
 const CREATE_FORMATION_SUBSTITUTION = gql`
 mutation CreateFormationSubstitution(
@@ -215,6 +216,27 @@ const getOrCreateFormationSubstitution = (client, {
   return Promise.resolve(gameTeamSeason.formationSubstitutions[0]);
 };
 
+const createSubstitution = (client, {
+  gameActivityStatus,
+  gameActivityType,
+  gameTeamSeason,
+  totalSeconds,
+  gameSeconds,
+}) => {
+  const gameTeamSeasonId = gameTeamSeason.id;
+  return client.mutate({
+    mutation: CREATE_SUBSTITUTION,
+    variables: {
+      gameActivityType,
+      gameActivityStatus,
+      gameTeamSeasonId,
+      totalSeconds,
+      gameSeconds,
+    }
+  })
+  .then((result) => result.data.createSubstitution);
+};
+
 const getOrCreateSubstitution = (client, {
   gameActivityStatus,
   gameActivityType,
@@ -223,18 +245,13 @@ const getOrCreateSubstitution = (client, {
   gameSeconds,
 }) => {
   if (!gameTeamSeason.substitutions || gameTeamSeason.substitutions.length === 0) {
-    const gameTeamSeasonId = gameTeamSeason.id;
-    return client.mutate({
-      mutation: CREATE_SUBSTITUTION,
-      variables: {
-        gameActivityType,
-        gameActivityStatus,
-        gameTeamSeasonId,
-        totalSeconds,
-        gameSeconds,
-      }
-    })
-    .then((result) => result.data.createSubstitution);
+    return createSubstitution(client, {
+      gameActivityStatus,
+      gameActivityType,
+      gameTeamSeason,
+      totalSeconds,
+      gameSeconds,
+    });
   }
   return Promise.resolve(gameTeamSeason.substitutions[0]);
 };
@@ -329,6 +346,140 @@ const getOrCreatePlayerPositionsAndPlayerPositionAssignments = (client, {
 ]);
 };
 
+const substituteMaxPlayersFromBench = (client, {
+  formationSubstitution,
+  substitution,
+  gameActivityType,
+  gameActivityStatus,
+  gameTeamSeason,
+  totalSeconds,
+  gameSeconds,
+}) => {
+  const gameStats = getGameStats({
+    gameTeamSeason,
+    gameActivityType,
+    gameActivityStatus,
+    totalSeconds,
+    gameSeconds,
+  });
+  console.log(JSON.stringify(gameStats, {indent: true}));
+  return Promise.resolve(null);
+
+  // const subInCandidates =
+  const gamePositions = formationSubstitution &&
+    formationSubstitution.formation &&
+    formationSubstitution.formation.positions || [];
+  let positionsWithFilledStatus = gamePositions.map((position) => ({
+    filled: false,
+    position,
+  }));
+  const deletionPromises = [];
+  // playerPositionAssignmentType: "INITIAL"
+
+  // Identify the existing player position assignments
+  const playerPositionAssignments = substitution.playerPositionAssignments || [];
+  _.each(playerPositionAssignments, (playerPositionAssignment) => {
+    const positionWithFilledStatus = _.find(positionsWithFilledStatus, (positionWithFilledStatus) =>
+    positionWithFilledStatus.position.id === playerPositionAssignment.playerPosition.position.id);
+    const gamePlayer = _.find(gameTeamSeason.gamePlayers, (gamePlayer) =>
+    gamePlayer.player.id === playerPositionAssignment.playerPosition.player.id);
+    if (gamePlayer.availability === playerAvailability.unavailable) {
+      // delete player position assignment
+      deletionPromises.push(
+        deletePlayerPositionAssignment(client, {
+          id: playerPositionAssignment.id,
+        })
+        .then(() => deletePlayerPosition(client, {
+          id: playerPositionAssignment.playerPosition.id,
+        })));
+    } else {
+      positionWithFilledStatus.filled = true;
+    }
+    // positionWithFilledStatus.needInserts = false;
+  });
+
+  // Determine additional player position assignments that still need to be created
+  const getAvailablePositionWithFilledStatus = (gamePlayer) => {
+    const availablePositionWithFilledStatus = _.find(positionsWithFilledStatus,
+      (positionWithFilledStatus) => !positionWithFilledStatus.filled &&
+      gamePlayer.availability !== playerAvailability.unavailable);
+    if (!availablePositionWithFilledStatus) {
+      return null;
+    }
+
+    availablePositionWithFilledStatus.filled = true;
+    // availablePositionWithFilledStatus.needInserts = true;
+    return availablePositionWithFilledStatus.position;
+  };
+
+  return Promise.all([
+    ...deletionPromises,
+    ..._.chain(gameTeamSeason.gamePlayers)
+  .shuffle()
+  // just include players that are not already assigned a position
+  .filter((gamePlayer) => !_.find(substitution.playerPositionAssignments || [],
+    (playerPositionAssignment) =>
+    playerPositionAssignment.playerPosition.player.id === gamePlayer.player.id)
+  )
+  .map((gamePlayer) => {
+    const position = getAvailablePositionWithFilledStatus(gamePlayer);
+    if (position) {
+      const playerId = gamePlayer.player.id;
+      const positionId = position.id;
+      let playerPosition;
+      console.log(`playerId=${playerId}, positionId=${positionId}`);
+      return createPlayerPosition(client, {
+        playerId,
+        positionId,
+      })
+      .then(result => {playerPosition = result; console.log(result)})
+      .then(() => createPlayerPositionAssignment(client, {
+        playerPositionAssignmentType,
+        playerPositionId: playerPosition.id,
+        substitutionId: substitution.id,
+        // gameTeamSeasonId: gameTeamSeason.id,
+      }));
+    } else {
+      return Promise.resolve(null);
+    }
+  })
+  .value()
+]);
+};
+
+// gameTeamSeason is expected to have the shape found in getGameTeamSeasonInfo
+export const createNextSubstitution = (client, {
+  gameActivityType,
+  gameActivityStatus,
+  gameTeamSeason,
+  gameSeconds,
+  totalSeconds,
+}) => {
+  // .then(result => console.log(result));
+  const formationSubstitution = gameTeamSeason.formationSubstitutions
+  [gameTeamSeason.formationSubstitutions.length - 1];
+  let substitution;
+
+  return createSubstitution(client, {
+    gameActivityType,
+    gameActivityStatus,
+    gameTeamSeason,
+    totalSeconds,
+    gameSeconds,
+  }).then(result => {substitution = result; console.log(result)})
+  .then(() => substituteMaxPlayersFromBench(client, {
+    formationSubstitution,
+    substitution,
+    gameActivityType,
+    gameActivityStatus,
+    gameTeamSeason,
+    totalSeconds,
+    gameSeconds,
+  })).then(result => {console.log(result)})
+  .then(() => console.log("createNextSubstitution succeeded"))
+  .catch((error) => console.log(`error: ${error}`));
+};
+
 // gameTeamSeason is expected to have the shape found in getGameTeamSeasonInfo
 export const createInitialLineup = (client, {
   gameActivityType,
@@ -364,9 +515,35 @@ export const createInitialLineup = (client, {
     gameSeconds: 0,
     playerPositionAssignmentType: "INITIAL"
   })).then(result => {console.log(result)})
-  // .then(() => refetchGameTeamSeasonInfo(client, {
-  //   gameTeamSeasonId: gameTeamSeason.id,
-  // })).then(result => {console.log(result)})
   .then(() => console.log("createInitialLineup succeeded"))
   .catch((error) => console.log(`error: ${error}`));
+};
+
+export const getNextSubstitutionInfo = (gameTeamSeason) => {
+  const lastSubstitution = gameTeamSeason.substitutions[gameTeamSeason.substitutions.length - 1];
+  const maxGameSeconds = lastSubstitution.gameSeconds + gameTeamSeason.gamePlan.secondsBetweenSubs;
+  const {gameSeconds, totalSeconds} = gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods.reduce(
+    (totals, gamePeriod) => {
+      let newTotals = {...totals};
+      if (newTotals.gameSeconds + gamePeriod.durationSeconds < maxGameSeconds) {
+        newTotals.gameSeconds += gamePeriod.durationSeconds;
+        newTotals.totalSeconds += gamePeriod.durationSeconds;
+        if (gamePeriod.postDurationSeconds) {
+          newTotals.totalSeconds += gamePeriod.postDurationSeconds;
+        }
+      } else {
+        const additionalSeconds = maxGameSeconds - newTotals.gameSeconds;
+        newTotals.gameSeconds += additionalSeconds;
+        newTotals.totalSeconds += additionalSeconds;
+      }
+      return newTotals;
+    }, {
+      gameSeconds: 0,
+      totalSeconds: 0,
+    }
+  );
+  return {
+    gameSeconds,
+    totalSeconds,
+  }
 };
