@@ -4,7 +4,7 @@ import {
   playerAvailability,
 } from '../constants/Soccer';
 import {GAME_TEAM_SEASON_INFO} from '../graphql/game';
-import {getGameStats} from '../helpers/game';
+import {getGameStats, getSubOutScore, getSubstitutionScore, playerIsCurrentlyPlaying} from '../helpers/game';
 
 const CREATE_FORMATION_SUBSTITUTION = gql`
 mutation CreateFormationSubstitution(
@@ -68,7 +68,7 @@ mutation (
 const CREATE_PLAYER_POSITION = gql`
 mutation CreatePlayerPosition (
   $playerId: ID!
-  $positionId: ID!
+  $positionId: ID
 ){
   createPlayerPosition(
     playerId: $playerId
@@ -363,88 +363,82 @@ const substituteMaxPlayersFromBench = (client, {
     gameSeconds,
   });
   console.log(JSON.stringify(gameStats, {indent: true}));
-  return Promise.resolve(null);
 
-  // const subInCandidates =
-  const gamePositions = formationSubstitution &&
-    formationSubstitution.formation &&
-    formationSubstitution.formation.positions || [];
-  let positionsWithFilledStatus = gamePositions.map((position) => ({
+  // Identify the players that are on the bench (either no stats yet or currently OUT)
+  const subInCandidates = _.filter(gameTeamSeason.gamePlayers,
+  (gamePlayer) => !gameStats.players[gamePlayer.player.id]
+  || !gameStats.players[gamePlayer.player.id].lastEventType
+  || gameStats.players[gamePlayer.player.id].lastEventType === "OUT");
+
+  console.log(`subInCandidates: ${JSON.stringify(subInCandidates)}`);
+
+  // If three on the bench then pick five candidates to sub out
+  const subOutCandidates = _.chain(gameTeamSeason.gamePlayers)
+  .filter((gamePlayer) => playerIsCurrentlyPlaying(gameStats, gamePlayer))
+  .sortBy((gamePlayer) => -getSubOutScore(gameTeamSeason, gameStats,
+    gameStats.players[gamePlayer.player.id], gameSeconds))
+  .take(subInCandidates.length + 2)
+  .value();
+
+  console.log(`subOutCandidates: ${JSON.stringify(subOutCandidates)}`);
+
+  let subOutCandidatesWithFilledStatus = subOutCandidates.map((subOutCandidate) => ({
     filled: false,
-    position,
+    subOutCandidate,
   }));
-  const deletionPromises = [];
-  // playerPositionAssignmentType: "INITIAL"
 
-  // Identify the existing player position assignments
-  const playerPositionAssignments = substitution.playerPositionAssignments || [];
-  _.each(playerPositionAssignments, (playerPositionAssignment) => {
-    const positionWithFilledStatus = _.find(positionsWithFilledStatus, (positionWithFilledStatus) =>
-    positionWithFilledStatus.position.id === playerPositionAssignment.playerPosition.position.id);
-    const gamePlayer = _.find(gameTeamSeason.gamePlayers, (gamePlayer) =>
-    gamePlayer.player.id === playerPositionAssignment.playerPosition.player.id);
-    if (gamePlayer.availability === playerAvailability.unavailable) {
-      // delete player position assignment
-      deletionPromises.push(
-        deletePlayerPositionAssignment(client, {
-          id: playerPositionAssignment.id,
-        })
-        .then(() => deletePlayerPosition(client, {
-          id: playerPositionAssignment.playerPosition.id,
-        })));
-    } else {
-      positionWithFilledStatus.filled = true;
-    }
-    // positionWithFilledStatus.needInserts = false;
-  });
+  const getAvailableSubOutCandidate = (subInCandidate) => {
+    const availableSubOutCandidateWithFilledStatus =
+    _.chain(subOutCandidatesWithFilledStatus)
+    .filter((subOutCandidateWithFilledStatus) => !subOutCandidateWithFilledStatus.filled)
+    .sortBy((subOutCandidateWithFilledStatus) => -getSubstitutionScore(
+      gameTeamSeason, gameStats, subInCandidate,
+      subOutCandidateWithFilledStatus.subOutCandidate,
+      formationSubstitution.formation,
+      gameSeconds
+    ))
+    .first()
+    .value();
 
-  // Determine additional player position assignments that still need to be created
-  const getAvailablePositionWithFilledStatus = (gamePlayer) => {
-    const availablePositionWithFilledStatus = _.find(positionsWithFilledStatus,
-      (positionWithFilledStatus) => !positionWithFilledStatus.filled &&
-      gamePlayer.availability !== playerAvailability.unavailable);
-    if (!availablePositionWithFilledStatus) {
+    if (!availableSubOutCandidateWithFilledStatus) {
       return null;
     }
 
-    availablePositionWithFilledStatus.filled = true;
-    // availablePositionWithFilledStatus.needInserts = true;
-    return availablePositionWithFilledStatus.position;
+    availableSubOutCandidateWithFilledStatus.filled = true;
+    return availableSubOutCandidateWithFilledStatus.subOutCandidate;
   };
 
-  return Promise.all([
-    ...deletionPromises,
-    ..._.chain(gameTeamSeason.gamePlayers)
+  return Promise.all(_.chain(subInCandidates)
   .shuffle()
-  // just include players that are not already assigned a position
-  .filter((gamePlayer) => !_.find(substitution.playerPositionAssignments || [],
-    (playerPositionAssignment) =>
-    playerPositionAssignment.playerPosition.player.id === gamePlayer.player.id)
-  )
-  .map((gamePlayer) => {
-    const position = getAvailablePositionWithFilledStatus(gamePlayer);
-    if (position) {
-      const playerId = gamePlayer.player.id;
-      const positionId = position.id;
-      let playerPosition;
-      console.log(`playerId=${playerId}, positionId=${positionId}`);
+  .map((subInCandidate) => {
+    const subOutCandidate = getAvailableSubOutCandidate(subInCandidate);
+    if (subOutCandidate) {
       return createPlayerPosition(client, {
-        playerId,
-        positionId,
+        playerId:subInCandidate.player.id,
+        positionId: gameStats.players[subOutCandidate.player.id].currentPositionId,
       })
       .then(result => {playerPosition = result; console.log(result)})
       .then(() => createPlayerPositionAssignment(client, {
-        playerPositionAssignmentType,
+        playerPositionAssignmentType: "IN",
         playerPositionId: playerPosition.id,
         substitutionId: substitution.id,
-        // gameTeamSeasonId: gameTeamSeason.id,
+      }))
+      .then(() => createPlayerPosition(client, {
+        playerId:subOutCandidate.player.id,
+        positionId: null,
+      }))
+      .then(result => {playerPosition = result; console.log(result)})
+      .then(() => createPlayerPositionAssignment(client, {
+        playerPositionAssignmentType: "OUT",
+        playerPositionId: playerPosition.id,
+        substitutionId: substitution.id,
       }));
     } else {
       return Promise.resolve(null);
     }
   })
   .value()
-]);
+  );
 };
 
 // gameTeamSeason is expected to have the shape found in getGameTeamSeasonInfo

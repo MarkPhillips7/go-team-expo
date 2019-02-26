@@ -195,6 +195,7 @@ class SoccerField extends React.Component {
   onPressSubs(){
     const {client, gameTeamSeason} = this.props;
     const {totalSeconds, gameSeconds} = getNextSubstitutionInfo(gameTeamSeason);
+    console.log(`totalSeconds: ${totalSeconds}, gameSeconds: ${gameSeconds}`);
     createNextSubstitution(client, {
       gameTeamSeason,
       gameActivityType: "PLAN",
