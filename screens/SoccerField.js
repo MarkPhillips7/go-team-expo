@@ -18,24 +18,9 @@ import {
   createNextSubstitution,
   getNextSubstitutionInfo,
 } from '../graphql/gamePlan';
-
-// const createFormationSubstitution = gql`
-// mutation {
-//   createFormationSubstitution (
-//     name: "Starting Lineup"
-//     gameActivityType: PLAN
-//     gameActivityStatus: PENDING
-//     formationId: "cjqcfvx3167k30128b70ieu58"
-//     gameTeamSeasonId: "cjqu5koz80ipe0165gkxfj2u4"
-//   ) {
-//     id
-//     name
-//     gameActivityType
-//     gameActivityStatus
-//   }
-// }
-// `;
-
+import {
+  deleteGameEtc,
+} from '../graphql/game';
 
 export default withApollo(
 // export default
@@ -51,6 +36,7 @@ class SoccerField extends React.Component {
 
     this.onPressSubs = this.onPressSubs.bind(this);
     this.onPressDebug = this.onPressDebug.bind(this);
+    this.onPressDelete = this.onPressDelete.bind(this);
     this.onPressManageRoster = this.onPressManageRoster.bind(this);
     this.onPressStartPauseResume = this.onPressStartPauseResume.bind(this);
     this.onPressReset = this.onPressReset.bind(this);
@@ -204,6 +190,13 @@ class SoccerField extends React.Component {
       totalSeconds,
     })
     .then(this.props.onSubsChange);
+  }
+
+  onPressDelete() {
+    const {client, gameTeamSeason} = this.props;
+      deleteGameEtc(client, {
+      gameTeamSeason
+    });
   }
 
   onPressReset() {
@@ -503,6 +496,11 @@ class SoccerField extends React.Component {
               title="Sub"
             />
           }
+          <Button
+            style={styles.button}
+            onPress={this.onPressDelete}
+            title="Delete"
+          />
           <Button
             style={styles.button}
             onPress={this.onPressDebug}

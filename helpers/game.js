@@ -26,6 +26,9 @@ const initializePlayerStats = (gameStats, player) => {
 };
 
 const initializePositionStats = (gameStats, position, playerStats) => {
+  if (!position) {
+    return null;
+  }
   const positionStats = playerStats.positions[position.id] || {
     lastEventType: undefined,
     lastEventTimestamp: undefined,
@@ -161,15 +164,6 @@ export const getGameStats = ({
 
   _.forEach(gameStats.players, (playerStats, playerId) => {
     const positionStats = playerStats.currentPositionId && playerStats.positions[playerStats.currentPositionId];
-    //   if (positionStats.lastEventGameSeconds < gameSeconds) {
-    //     positionStats.cumulativeInGameSeconds += gameSeconds - positionStats.lastEventGameSeconds;
-    //     positionStats.cumulativeInTotalSeconds += totalSeconds - positionStats.lastEventTotalSeconds;
-    //   }
-    // }
-    // if (playerStats.lastEventGameSeconds < gameSeconds) {
-    //   playerStats.cumulativeInGameSeconds += gameSeconds - playerStats.lastEventGameSeconds;
-    //   playerStats.cumulativeInTotalSeconds += totalSeconds - playerStats.lastEventTotalSeconds;
-    // }
     updateCumulativeTimeStatsSinceLastEvent(playerStats, positionStats, {gameSeconds, totalSeconds, timestamp});
   });
 
@@ -189,7 +183,8 @@ export const getSubInScore = (gameTeamSeason, gameStats, playerStats, gameSecond
 export const getPlayerPositionScore = (gameTeamSeason, gameStats, player, position) => {
   if (player.positionCategoryPreferencesAsPlayer) {
     const preferenceIndex = _.findIndex(player.positionCategoryPreferencesAsPlayer,
-    (positionCategory) => positionCategory.id === position.positionCategory.id);
+    (positionCategoryPreference) =>
+    positionCategoryPreference.positionCategory.id === position.positionCategory.id);
     if (preferenceIndex === -1) {
       return -1; // this position category is not a preference
     }

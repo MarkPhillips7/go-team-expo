@@ -279,6 +279,8 @@ const getOrCreatePlayerPositionsAndPlayerPositionAssignments = (client, {
   const playerPositionAssignments = substitution.playerPositionAssignments || [];
   _.each(playerPositionAssignments, (playerPositionAssignment) => {
     const positionWithFilledStatus = _.find(positionsWithFilledStatus, (positionWithFilledStatus) =>
+    positionWithFilledStatus.position &&
+    playerPositionAssignment.playerPosition.position &&
     positionWithFilledStatus.position.id === playerPositionAssignment.playerPosition.position.id);
     const gamePlayer = _.find(gameTeamSeason.gamePlayers, (gamePlayer) =>
     gamePlayer.player.id === playerPositionAssignment.playerPosition.player.id);
@@ -294,7 +296,6 @@ const getOrCreatePlayerPositionsAndPlayerPositionAssignments = (client, {
     } else {
       positionWithFilledStatus.filled = true;
     }
-    // positionWithFilledStatus.needInserts = false;
   });
 
   // Determine additional player position assignments that still need to be created
@@ -307,7 +308,6 @@ const getOrCreatePlayerPositionsAndPlayerPositionAssignments = (client, {
     }
 
     availablePositionWithFilledStatus.filled = true;
-    // availablePositionWithFilledStatus.needInserts = true;
     return availablePositionWithFilledStatus.position;
   };
 
@@ -336,7 +336,6 @@ const getOrCreatePlayerPositionsAndPlayerPositionAssignments = (client, {
         playerPositionAssignmentType,
         playerPositionId: playerPosition.id,
         substitutionId: substitution.id,
-        // gameTeamSeasonId: gameTeamSeason.id,
       }));
     } else {
       return Promise.resolve(null);
@@ -449,7 +448,6 @@ export const createNextSubstitution = (client, {
   gameSeconds,
   totalSeconds,
 }) => {
-  // .then(result => console.log(result));
   const formationSubstitution = gameTeamSeason.formationSubstitutions
   [gameTeamSeason.formationSubstitutions.length - 1];
   let substitution;
@@ -480,7 +478,6 @@ export const createInitialLineup = (client, {
   gameActivityStatus,
   gameTeamSeason
 }) => {
-  // .then(result => console.log(result));
   let formationSubstitution;
   let substitution;
 

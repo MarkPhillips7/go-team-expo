@@ -110,6 +110,30 @@ query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
 }
 `;
 
+const DELETE_GAME_TEAM_SEASON = gql`
+mutation DeleteGameTeamSeason(
+  $id: ID!
+){
+  deleteGameTeamSeason(
+    id: $id
+  ) {
+    id
+  }
+}
+`;
+
+const DELETE_GAME_PLAYER = gql`
+mutation DeleteGamePlayer(
+  $id: ID!
+){
+  deleteGamePlayer(
+    id: $id
+  ) {
+    id
+  }
+}
+`;
+
 const CREATE_GAME = gql`
 mutation CreateGame(
   $name: String!
@@ -168,6 +192,43 @@ mutation CreateGamePlayer (
   }
 }
 `;
+
+const deleteGameTeamSeason = (client, {
+  id,
+}) => {
+  return client.mutate({
+    mutation: DELETE_GAME_TEAM_SEASON,
+    variables: {
+      id,
+    },
+    refetchQueries: [{query: TEAM_SEASON}],
+  })
+  .then((result) => result.data.deleteGameTeamSeason);
+};
+
+const deleteGamePlayer = (client, {
+  id,
+}) => {
+  return client.mutate({
+    mutation: DELETE_GAME_PLAYER,
+    variables: {
+      id,
+    },
+  })
+  .then((result) => result.data.deleteGamePlayer);
+};
+
+// const getGameTeamSeason = (client, {
+//   gameTeamSeasonId,
+// }) => {
+//   return client.query({
+//     query: GAME_TEAM_SEASON_INFO,
+//     variables: {
+//       gameTeamSeasonId,
+//     }
+//   })
+//   .then((result) => result.data.GameTeamSeason);
+// };
 
 const createGamePlayer = (client, {
   gameTeamSeasonId,
@@ -233,6 +294,18 @@ const createGamePlayers = (client, {
   );
 };
 
+const deleteGamePlayers = (client, {
+  gameTeamSeason,
+}) => {
+  return Promise.all(
+    _.map(gameTeamSeason.gamePlayers,
+      (gamePlayer) => deleteGamePlayer(client, {
+        id: gamePlayer.id,
+      })
+    )
+  );
+};
+
 export const createGameEtc = (client, {
   name,
   isHomeTeam,
@@ -257,5 +330,18 @@ export const createGameEtc = (client, {
     teamSeason,
   })).then(result => {console.log(result)})
   .then(() => console.log("createGameEtc succeeded"))
+  .catch((error) => console.log(`error: ${error}`));
+};
+
+export const deleteGameEtc = (client, {
+  gameTeamSeason,
+}) => {
+  // ToDo: delete formation substitutions and substitutions!!!
+  deleteGamePlayers(client, {
+    gameTeamSeason,
+  })
+  .then(() => deleteGameTeamSeason(client, {
+    id: gameTeamSeason.id
+  })).then(result => {console.log(result)})
   .catch((error) => console.log(`error: ${error}`));
 };
