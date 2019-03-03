@@ -15,8 +15,8 @@ export default class CirclePie extends Component {
   render() {
     const getCoordinatesPieSlice = (percent) => {
       const quarterTurnOffset = -1/4*2 * Math.PI;
-      const x = Math.cos(quarterTurnOffset + 2 * Math.PI * percent) * (1 - circleBorderWidth);
-      const y = Math.sin(quarterTurnOffset + 2 * Math.PI * percent) * (1 - circleBorderWidth);
+      const x = Math.cos(quarterTurnOffset + 2 * Math.PI * percent) * (1 - 0.99*circleBorderWidth);
+      const y = Math.sin(quarterTurnOffset + 2 * Math.PI * percent) * (1 - 0.99*circleBorderWidth);
       return [x, y];
     };
 
@@ -44,10 +44,13 @@ export default class CirclePie extends Component {
             // if the slice is more than 50%, take the large arc (the long way around)
             const largeArcFlag = piePiece.endValue - piePiece.startValue > .5 ? 1 : 0;
 
+            // Using a radius less than one causes app to crash on ios
+            const radius = 1 - circleBorderWidth;
+
           	// create an array and join it just for code readability
             const pathData = [
               `M ${startX} ${startY}`, // Move
-              `A 1 1 0 ${largeArcFlag} 1 ${endX} ${endY}`, // Arc
+              `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`, // Arc
               `L 0 0`, // Line
             ].join(' ');
             // console.log(`pathData: ${pathData}, color: ${piePiece.color}`)
@@ -58,7 +61,7 @@ export default class CirclePie extends Component {
                 d={pathData}
                 fill={piePiece.color}
                 stroke={piePiece.color}
-                strokeWidth={circleBorderWidth / 4}
+                strokeWidth={0.00001}
               />
             );
           })
