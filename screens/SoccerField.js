@@ -21,6 +21,10 @@ import {
 import {
   deleteGameEtc,
 } from '../graphql/game';
+import {
+  getGameTimeline,
+  getPiePieces,
+} from '../helpers/game';
 
 export default withApollo(
 // export default
@@ -314,7 +318,31 @@ class SoccerField extends React.Component {
   }
 
   render() {
+    const {gameTeamSeason, positionCategories} = this.props;
+    const gameActivityType = "PLAN";
+    const gameActivityStatus = "PENDING";
+    const gameSeconds = this.state.gameDurationSeconds;
+    const totalSeconds = gameSeconds;
+    const timestamp = undefined;
     const currentLineup = this.getCurrentLineup();
+    const gameTimeline = getGameTimeline({
+      gameTeamSeason,
+      gameActivityType,
+      gameActivityStatus,
+      totalSeconds,
+      gameSeconds,
+      timestamp,
+    });
+    const piePieces = getPiePieces({
+      gameTimeline,
+      positionCategories,
+      gameTeamSeason,
+      gameActivityType,
+      gameActivityStatus,
+      totalSeconds,
+      gameSeconds,
+      timestamp,
+    });
     // console.log("Rendering SoccerField");
     return (
       <View style={styles.screen}>
@@ -424,6 +452,7 @@ class SoccerField extends React.Component {
                       currentGameTime={this.state.currentGameTime}
                       assignmentsIndex={this.state.assignmentsIndex}
                       isGameOver={this.state.isGameOver}
+                      piePieces={piePieces[positionAssignment.playerPosition.player.id]}
                     />
                   ))
                   .value()
@@ -467,6 +496,7 @@ class SoccerField extends React.Component {
                       currentGameTime={this.state.currentGameTime}
                       assignmentsIndex={this.state.assignmentsIndex}
                       isGameOver={this.state.isGameOver}
+                      piePieces={piePieces[gamePlayer.player.id]}
                     />
                   ))
                   .value()

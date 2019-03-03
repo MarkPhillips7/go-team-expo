@@ -48,12 +48,13 @@ export default class Player extends React.Component {
       // const pendingMoveSeconds = this.props.gamePlan.secondsBetweenSubs - (endSecondsSinceGameStart - startSecondsSinceGameStart);
       // pendingMoveTime = moment.utc(pendingMoveSeconds*1000).format("m:ss") || "0:00";
       // percentToMove = (endSecondsSinceGameStart - startSecondsSinceGameStart) / this.props.gamePlan.secondsBetweenSubs * 100;
-    const piePieces = [ {
-        color: this.props.positionCategory.color,
-        startValue: 0,
-        endValue: 0,
-      }
-    ];
+    // const piePieces = [ {
+    //     color: this.props.positionCategory.color,
+    //     startValue: 0,
+    //     endValue: 0,
+    //   }
+    // ];
+    const piePieces = this.props.piePieces;
   // )
   //   .value()
   //   || [];

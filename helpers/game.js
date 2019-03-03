@@ -1,8 +1,41 @@
 import _ from 'lodash';
 
-const initializeGameStats = () => {
+const initializeGameTimeline = ({
+  totalSeconds,
+  gameSeconds,
+  timestamp,
+}) => {
   return {
-    players: {}
+    timeInfo: {
+      totalSeconds,
+      gameSeconds,
+      timestamp,
+    },
+    players: {},
+  };
+};
+
+const initializePlayerTimeline = (gameTimeline, player) => {
+  const playerTimeline = gameTimeline.players[player.id] || {
+    name: player.name,
+    events: [],
+  };
+  gameTimeline.players[player.id] = playerTimeline;
+  return playerTimeline;
+};
+
+const initializeGameStats = ({
+  totalSeconds,
+  gameSeconds,
+  timestamp,
+}) => {
+  return {
+    timeInfo: {
+      totalSeconds,
+      gameSeconds,
+      timestamp,
+    },
+    players: {},
   };
 };
 
@@ -134,7 +167,11 @@ export const getGameStats = ({
   gameSeconds,
   timestamp,
 }) => {
-  const gameStats = initializeGameStats();
+  const gameStats = initializeGameStats({
+    totalSeconds,
+    gameSeconds,
+    timestamp,
+  });
 
   _.chain(gameTeamSeason.gamePlayers)
   .filter((gamePlayer) => gamePlayer.availability === "UNAVAILABLE")
@@ -168,6 +205,157 @@ export const getGameStats = ({
   });
 
   return gameStats;
+};
+
+export const getGameTimeline = ({
+  gameTeamSeason,
+  gameActivityType,
+  gameActivityStatus,
+  totalSeconds,
+  gameSeconds,
+  timestamp,
+}) => {
+  const gameTimeline = initializeGameTimeline({
+    totalSeconds,
+    gameSeconds,
+    timestamp,
+  });
+
+  // Set initial events for players that are unavailable at the start of the game
+  _.chain(gameTeamSeason.gamePlayers)
+  .filter((gamePlayer) => gamePlayer.availability === "UNAVAILABLE")
+  .forEach((gamePlayer) => {
+    const playerTimeline = initializePlayerTimeline(gameTimeline, gamePlayer.player);
+    // const playerStats = initializePlayerStats(gameStats, gamePlayer.player);
+    const timeInfo = getTimeInfo(gameTeamSeason.substitutions[0]);
+    // playerStats.lastEventGameSeconds = timeInfo.gameSeconds;
+    // playerStats.lastEventTotalSeconds = timeInfo.totalSeconds;
+    // playerStats.lastEventTimestamp = timeInfo.timestamp;
+    // playerStats.lastEventType = "UNAVAILABLE";
+    playerTimeline.events.push({
+      eventType: "UNAVAILABLE",
+      position: null,
+      timeInfo,
+    });
+  });
+
+  _.forEach(gameTeamSeason.substitutions, (substitution) => {
+    _.forEach(substitution.playerPositionAssignments, (playerPositionAssignment) => {
+      const timeInfo = getTimeInfo(substitution, playerPositionAssignment, {gameSeconds, totalSeconds, timestamp});
+      const playerTimeline = initializePlayerTimeline(gameTimeline, playerPositionAssignment.playerPosition.player);
+      // const playerStats = initializePlayerStats(gameStats, playerPositionAssignment.playerPosition.player);
+      // const positionStats = initializePositionStats(gameStats, playerPositionAssignment.playerPosition.position, playerStats);
+
+      // updateCumulativeTimeStatsSinceLastEvent(playerStats, positionStats, timeInfo);
+      playerTimeline.events.push({
+        eventType: playerPositionAssignment.playerPositionAssignmentType,
+        position: playerPositionAssignment.playerPosition.position,
+        timeInfo,
+      });
+      // updateStatsForPlayerAssignment({
+      //   playerStats, positionStats, timeInfo,
+      //   eventType: playerPositionAssignment.playerPositionAssignmentType,
+      //   newPosition: playerPositionAssignment.playerPosition.position,
+      // });
+    });
+  });
+  //
+  // _.forEach(gameStats.players, (playerStats, playerId) => {
+  //   const positionStats = playerStats.currentPositionId && playerStats.positions[playerStats.currentPositionId];
+  //   updateCumulativeTimeStatsSinceLastEvent(playerStats, positionStats, {gameSeconds, totalSeconds, timestamp});
+  // });
+
+  console.log(gameTimeline);
+  return gameTimeline;
+};
+
+const getPositionCategory = (position, positionCategories) => {
+  if (!position || !position.positionCategory) {
+    return null;
+  }
+  return position.positionCategory;//positionCategories[position.positionCategory.id];
+};
+
+const getColor = ({
+  event,
+  positionCategories,
+}) => {
+  if (!event) {
+    // no event means started as a substitute
+    return "gray";
+  }
+
+  switch (event.eventType) {
+    case "OUT":
+      return "gray";
+    case "UNAVAILABLE":
+      return "black";
+    // case "INITIAL":
+    // case "IN":
+    // case "CHANGE":
+    default:
+      const positionCategory = getPositionCategory(event.position, positionCategories);
+      return positionCategory && positionCategory.color || "white";
+  }
+};
+
+export const getPiePieces = ({
+  gameTimeline,
+  positionCategories,
+  gameTeamSeason,
+  gameActivityType,
+  gameActivityStatus,
+  totalSeconds,
+  gameSeconds,
+  timestamp,
+}) => {
+  const maxSeconds = gameSeconds;
+  const minSeconds = 0.0;
+  const allPiePieces = _.mapValues(gameTimeline.players, (playerTimeline) => {
+    let secondsCounter = minSeconds;
+    let previousEvent = undefined;
+    const piePieces = [];
+    _.forEach(playerTimeline.events, (event, index) => {
+      const startSecondsSinceGameStart = secondsCounter;
+        // moment(assignments.startTime).diff(this.props.gameStartTime) / 1000.0;
+      const endSecondsSinceGameStart = Math.min(event.timeInfo.gameSeconds, gameSeconds);
+      // const endSecondsSinceGameStart = moment(endTime).diff(this.props.gameStartTime) / 1000.0;
+      // const totalSeconds = Math.max(this.props.gameDurationSeconds, endSecondsSinceGameStart);
+      const startValue = startSecondsSinceGameStart / maxSeconds;
+      const endValue = endSecondsSinceGameStart / maxSeconds;
+      const color = getColor({
+        event: previousEvent,
+        positionCategories,
+      });
+      const piePiece =  {
+        color,
+        startValue,
+        endValue,
+      };
+      secondsCounter += (endSecondsSinceGameStart - startSecondsSinceGameStart);
+      previousEvent = event;
+
+      if (startValue !== endValue) {
+        piePieces.push(piePiece);
+      }
+
+      if (index === playerTimeline.events.length - 1 &&
+        endSecondsSinceGameStart < gameSeconds
+      ) {
+        piePieces.push({
+          color: getColor({
+            event: previousEvent,
+            positionCategories,
+          }),
+          startValue: endValue,
+          endValue: gameSeconds / maxSeconds,
+        });
+      }
+    });
+    return piePieces;
+  });
+  console.log(allPiePieces);
+  return allPiePieces;
 };
 
 // Return a numerical score (highest score most likely to get subbed out)
