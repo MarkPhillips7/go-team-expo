@@ -394,8 +394,9 @@ export const getSubstitutionScore = (
   const subOutPlayerStats = initializePlayerStats(gameStats, subOutCandidate.player);
   const positionId = subOutPlayerStats.currentPositionId;
   const position = _.find(formation.positions, (position) => position.id === positionId);
-  const score = getSubOutScore(gameTeamSeason, gameStats, subOutPlayerStats, gameSeconds)
-  + getSubInScore(gameTeamSeason, gameStats, subInPlayerStats, gameSeconds)
+  const score = 2*getSubOutScore(gameTeamSeason, gameStats, subOutPlayerStats, gameSeconds)
+  + 2*getSubInScore(gameTeamSeason, gameStats, subInPlayerStats, gameSeconds)
   + getPlayerPositionScore(gameTeamSeason, gameStats, subInCandidate.player, position);
   console.log(`${subInCandidate.player.name} => ${position.name} (for ${subOutCandidate.player.name}), score = ${score}`);
+  return score;
 };

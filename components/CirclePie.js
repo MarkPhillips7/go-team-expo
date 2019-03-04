@@ -38,6 +38,19 @@ export default class CirclePie extends Component {
           _.chain(this.props.piePieces)
           .filter((piePiece) => typeof piePiece.startValue === 'number')
           .map((piePiece, index) => {
+            const radius = 1 - circleBorderWidth;
+            // special case of full circle does not render properly as an arc
+            if (piePiece.endValue - piePiece.startValue > 0.999) {
+              return (
+                <Circle
+                  key={index}
+                  r={radius}
+                  fill={piePiece.color}
+                  stroke={piePiece.color}
+                  strokeWidth={0.00001}
+                />
+              );
+            }
             const [startX, startY] = getCoordinatesPieSlice(piePiece.startValue);
             const [endX, endY] = getCoordinatesPieSlice(piePiece.endValue);
 
@@ -45,7 +58,6 @@ export default class CirclePie extends Component {
             const largeArcFlag = piePiece.endValue - piePiece.startValue > .5 ? 1 : 0;
 
             // Using a radius less than one causes app to crash on ios
-            const radius = 1 - circleBorderWidth;
 
           	// create an array and join it just for code readability
             const pathData = [
