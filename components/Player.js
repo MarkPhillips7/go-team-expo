@@ -90,17 +90,17 @@ export default class Player extends React.Component {
             piePieces={piePieces}
             positionColor={this.props.positionCategory.color}
           />
-          {nextAssignment && nextAssignment.position !== this.props.position &&
+          {this.props.pendingMove &&
             <View
               style={styles.arrowAndCountdown}
             >
               <PendingMoveArrow
                 style={styles.arrow}
-                percent={percentToMove}
-                color={nextAssignment.positionCategory.color}
+                percent={this.props.pendingMove.percentToMove}
+                color={this.props.pendingMove.color}
               />
               <Text style={styles.pendingMoveTime}>
-                {pendingMoveTime}
+                {this.props.pendingMove.pendingMoveTime}
               </Text>
             </View>
           }

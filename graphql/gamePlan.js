@@ -390,13 +390,13 @@ const substituteMaxPlayersFromBench = (client, {
     const availableSubOutCandidateWithFilledStatus =
     _.chain(subOutCandidatesWithFilledStatus)
     .filter((subOutCandidateWithFilledStatus) => !subOutCandidateWithFilledStatus.filled)
-    .sortBy((subOutCandidateWithFilledStatus) => -getSubstitutionScore(
+    .sortBy((subOutCandidateWithFilledStatus) => getSubstitutionScore(
       gameTeamSeason, gameStats, subInCandidate,
       subOutCandidateWithFilledStatus.subOutCandidate,
       formationSubstitution.formation,
       gameSeconds
     ))
-    .first()
+    .last()
     .value();
 
     if (!availableSubOutCandidateWithFilledStatus) {

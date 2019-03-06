@@ -23,7 +23,7 @@ import {
 } from '../graphql/game';
 import {
   getGameTimeline,
-  getPiePieces,
+  getGameSnapshot,
 } from '../helpers/game';
 
 export default withApollo(
@@ -319,9 +319,10 @@ class SoccerField extends React.Component {
 
   render() {
     const {gameTeamSeason, positionCategories} = this.props;
+    const {gameDurationSeconds} = this.state;
     const gameActivityType = "PLAN";
     const gameActivityStatus = "PENDING";
-    const gameSeconds = this.state.gameDurationSeconds;
+    const gameSeconds = 1111;//this.state.gameDurationSeconds;
     const totalSeconds = gameSeconds;
     const timestamp = undefined;
     const currentLineup = this.getCurrentLineup();
@@ -332,8 +333,9 @@ class SoccerField extends React.Component {
       totalSeconds,
       gameSeconds,
       timestamp,
+      gameDurationSeconds,
     });
-    const piePieces = getPiePieces({
+    const gameSnapshot = getGameSnapshot({
       gameTimeline,
       positionCategories,
       gameTeamSeason,
@@ -342,6 +344,7 @@ class SoccerField extends React.Component {
       totalSeconds,
       gameSeconds,
       timestamp,
+      gameDurationSeconds,
     });
     // console.log("Rendering SoccerField");
     return (
@@ -452,7 +455,8 @@ class SoccerField extends React.Component {
                       currentGameTime={this.state.currentGameTime}
                       assignmentsIndex={this.state.assignmentsIndex}
                       isGameOver={this.state.isGameOver}
-                      piePieces={piePieces[positionAssignment.playerPosition.player.id]}
+                      pendingMove={gameSnapshot[positionAssignment.playerPosition.player.id].pendingMove}
+                      piePieces={gameSnapshot[positionAssignment.playerPosition.player.id].piePieces}
                     />
                   ))
                   .value()
@@ -496,7 +500,8 @@ class SoccerField extends React.Component {
                       currentGameTime={this.state.currentGameTime}
                       assignmentsIndex={this.state.assignmentsIndex}
                       isGameOver={this.state.isGameOver}
-                      piePieces={piePieces[gamePlayer.player.id]}
+                      pendingMove={gameSnapshot[gamePlayer.player.id].pendingMove}
+                      piePieces={gameSnapshot[gamePlayer.player.id].piePieces}
                     />
                   ))
                   .value()

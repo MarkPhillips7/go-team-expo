@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import moment from 'moment';
 
 const initializeGameTimeline = ({
   totalSeconds,
@@ -214,6 +215,7 @@ export const getGameTimeline = ({
   totalSeconds,
   gameSeconds,
   timestamp,
+  gameDurationSeconds,
 }) => {
   const gameTimeline = initializeGameTimeline({
     totalSeconds,
@@ -226,12 +228,7 @@ export const getGameTimeline = ({
   .filter((gamePlayer) => gamePlayer.availability === "UNAVAILABLE")
   .forEach((gamePlayer) => {
     const playerTimeline = initializePlayerTimeline(gameTimeline, gamePlayer.player);
-    // const playerStats = initializePlayerStats(gameStats, gamePlayer.player);
     const timeInfo = getTimeInfo(gameTeamSeason.substitutions[0]);
-    // playerStats.lastEventGameSeconds = timeInfo.gameSeconds;
-    // playerStats.lastEventTotalSeconds = timeInfo.totalSeconds;
-    // playerStats.lastEventTimestamp = timeInfo.timestamp;
-    // playerStats.lastEventType = "UNAVAILABLE";
     playerTimeline.events.push({
       eventType: "UNAVAILABLE",
       position: null,
@@ -241,29 +238,16 @@ export const getGameTimeline = ({
 
   _.forEach(gameTeamSeason.substitutions, (substitution) => {
     _.forEach(substitution.playerPositionAssignments, (playerPositionAssignment) => {
-      const timeInfo = getTimeInfo(substitution, playerPositionAssignment, {gameSeconds, totalSeconds, timestamp});
+      const timeInfo = getTimeInfo(substitution, playerPositionAssignment, {});//gameSeconds, totalSeconds, timestamp});
       const playerTimeline = initializePlayerTimeline(gameTimeline, playerPositionAssignment.playerPosition.player);
-      // const playerStats = initializePlayerStats(gameStats, playerPositionAssignment.playerPosition.player);
-      // const positionStats = initializePositionStats(gameStats, playerPositionAssignment.playerPosition.position, playerStats);
 
-      // updateCumulativeTimeStatsSinceLastEvent(playerStats, positionStats, timeInfo);
       playerTimeline.events.push({
         eventType: playerPositionAssignment.playerPositionAssignmentType,
         position: playerPositionAssignment.playerPosition.position,
         timeInfo,
       });
-      // updateStatsForPlayerAssignment({
-      //   playerStats, positionStats, timeInfo,
-      //   eventType: playerPositionAssignment.playerPositionAssignmentType,
-      //   newPosition: playerPositionAssignment.playerPosition.position,
-      // });
     });
   });
-  //
-  // _.forEach(gameStats.players, (playerStats, playerId) => {
-  //   const positionStats = playerStats.currentPositionId && playerStats.positions[playerStats.currentPositionId];
-  //   updateCumulativeTimeStatsSinceLastEvent(playerStats, positionStats, {gameSeconds, totalSeconds, timestamp});
-  // });
 
   console.log(gameTimeline);
   return gameTimeline;
@@ -299,7 +283,7 @@ const getColor = ({
   }
 };
 
-export const getPiePieces = ({
+export const getGameSnapshot = ({
   gameTimeline,
   positionCategories,
   gameTeamSeason,
@@ -308,12 +292,14 @@ export const getPiePieces = ({
   totalSeconds,
   gameSeconds,
   timestamp,
+  gameDurationSeconds,
 }) => {
-  const maxSeconds = gameSeconds;
+  const maxSeconds = gameDurationSeconds;
   const minSeconds = 0.0;
-  const allPiePieces = _.mapValues(gameTimeline.players, (playerTimeline) => {
+  const gameSnapshot = _.mapValues(gameTimeline.players, (playerTimeline) => {
     let secondsCounter = minSeconds;
     let previousEvent = undefined;
+    let pendingMove = undefined;
     const piePieces = [];
     _.forEach(playerTimeline.events, (event, index) => {
       const startSecondsSinceGameStart = secondsCounter;
@@ -321,6 +307,26 @@ export const getPiePieces = ({
       const endSecondsSinceGameStart = Math.min(event.timeInfo.gameSeconds, gameSeconds);
       // const endSecondsSinceGameStart = moment(endTime).diff(this.props.gameStartTime) / 1000.0;
       // const totalSeconds = Math.max(this.props.gameDurationSeconds, endSecondsSinceGameStart);
+      if (event.timeInfo.gameSeconds > gameSeconds) {
+        if (event.timeInfo.gameSeconds - endSecondsSinceGameStart < gameTeamSeason.gamePlan.secondsBetweenSubs) {
+          // console.log(`should have a pending move`);
+          const pendingMoveSeconds = gameTeamSeason.gamePlan.secondsBetweenSubs
+           - (event.timeInfo.gameSeconds - endSecondsSinceGameStart);
+          const pendingMoveTime = moment.utc(pendingMoveSeconds*1000).format("m:ss") || "0:00";
+          const percentToMove = (event.timeInfo.gameSeconds - endSecondsSinceGameStart) / gameTeamSeason.gamePlan.secondsBetweenSubs * 100;
+          const color = getColor({
+            event,
+            positionCategories,
+          });
+          pendingMove = {
+            color,
+            pendingMoveTime,
+            percentToMove,
+          };
+        }
+        // Exit forEach early
+        return false;
+      }
       const startValue = startSecondsSinceGameStart / maxSeconds;
       const endValue = endSecondsSinceGameStart / maxSeconds;
       const color = getColor({
@@ -352,10 +358,13 @@ export const getPiePieces = ({
         });
       }
     });
-    return piePieces;
+    return {
+      piePieces,
+      pendingMove,
+    };
   });
-  console.log(allPiePieces);
-  return allPiePieces;
+  console.log(gameSnapshot);
+  return gameSnapshot;
 };
 
 // Return a numerical score (highest score most likely to get subbed out)
