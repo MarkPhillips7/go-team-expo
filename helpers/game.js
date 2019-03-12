@@ -283,6 +283,21 @@ const getColor = ({
   }
 };
 
+const isEventBefore = (eventA, eventB) => {
+  return eventA.timeInfo.gameSeconds < eventB.timeInfo.gameSeconds;
+};
+
+const updatePositionsSnapshot = (positionsSnapshot, event, playerId) => {
+  if (event.position &&
+  (!positionsSnapshot[event.position.id] ||
+  isEventBefore(positionsSnapshot[event.position.id].event, event))) {
+    positionsSnapshot[event.position.id] = {
+      event,
+      playerId,
+    };
+  }
+};
+
 export const getGameSnapshot = ({
   gameTimeline,
   positionCategories,
@@ -296,10 +311,13 @@ export const getGameSnapshot = ({
 }) => {
   const maxSeconds = gameDurationSeconds;
   const minSeconds = 0.0;
-  const gameSnapshot = _.mapValues(gameTimeline.players, (playerTimeline) => {
+  const positionsSnapshot = {};
+  const playersSnapshot = _.mapValues(gameTimeline.players, (playerTimeline, playerId) => {
     let secondsCounter = minSeconds;
     let previousEvent = undefined;
     let pendingMove = undefined;
+    let activeEvent = undefined;
+    let exitForEach = false;
     const piePieces = [];
     _.forEach(playerTimeline.events, (event, index) => {
       const startSecondsSinceGameStart = secondsCounter;
@@ -307,26 +325,7 @@ export const getGameSnapshot = ({
       const endSecondsSinceGameStart = Math.min(event.timeInfo.gameSeconds, gameSeconds);
       // const endSecondsSinceGameStart = moment(endTime).diff(this.props.gameStartTime) / 1000.0;
       // const totalSeconds = Math.max(this.props.gameDurationSeconds, endSecondsSinceGameStart);
-      if (event.timeInfo.gameSeconds > gameSeconds) {
-        if (event.timeInfo.gameSeconds - endSecondsSinceGameStart < gameTeamSeason.gamePlan.secondsBetweenSubs) {
-          // console.log(`should have a pending move`);
-          const pendingMoveSeconds = gameTeamSeason.gamePlan.secondsBetweenSubs
-           - (event.timeInfo.gameSeconds - endSecondsSinceGameStart);
-          const pendingMoveTime = moment.utc(pendingMoveSeconds*1000).format("m:ss") || "0:00";
-          const percentToMove = (event.timeInfo.gameSeconds - endSecondsSinceGameStart) / gameTeamSeason.gamePlan.secondsBetweenSubs * 100;
-          const color = getColor({
-            event,
-            positionCategories,
-          });
-          pendingMove = {
-            color,
-            pendingMoveTime,
-            percentToMove,
-          };
-        }
-        // Exit forEach early
-        return false;
-      }
+
       const startValue = startSecondsSinceGameStart / maxSeconds;
       const endValue = endSecondsSinceGameStart / maxSeconds;
       const color = getColor({
@@ -338,12 +337,37 @@ export const getGameSnapshot = ({
         startValue,
         endValue,
       };
-      secondsCounter += (endSecondsSinceGameStart - startSecondsSinceGameStart);
-      previousEvent = event;
-
       if (startValue !== endValue) {
         piePieces.push(piePiece);
       }
+
+      if (event.timeInfo.gameSeconds > gameSeconds) {
+        if (event.timeInfo.gameSeconds - endSecondsSinceGameStart < gameTeamSeason.gamePlan.secondsBetweenSubs) {
+          // console.log(`should have a pending move`);
+          const pendingMoveSeconds = event.timeInfo.gameSeconds - endSecondsSinceGameStart;
+          const pendingMoveTime = moment.utc(pendingMoveSeconds*1000).format("m:ss") || "0:00";
+          const percentToMove = (gameTeamSeason.gamePlan.secondsBetweenSubs -
+            (event.timeInfo.gameSeconds - endSecondsSinceGameStart)) /
+            gameTeamSeason.gamePlan.secondsBetweenSubs * 100;
+          const color = getColor({
+            event,
+            positionCategories,
+          });
+          pendingMove = {
+            color,
+            pendingMoveTime,
+            percentToMove,
+          };
+        }
+        // Exit forEach early
+        // exitForEach = true;
+        return false;
+      }
+      activeEvent = event;
+      updatePositionsSnapshot(positionsSnapshot, event, playerId);
+
+      secondsCounter += (endSecondsSinceGameStart - startSecondsSinceGameStart);
+      previousEvent = event;
 
       if (index === playerTimeline.events.length - 1 &&
         endSecondsSinceGameStart < gameSeconds
@@ -357,12 +381,26 @@ export const getGameSnapshot = ({
           endValue: gameSeconds / maxSeconds,
         });
       }
+
+      // if (exitForEach) {
+      //   return false;
+      // }
     });
     return {
+      activeEvent,
       piePieces,
       pendingMove,
     };
   });
+  // const benchSnapshot = _.chain(playersSnapshot)
+  // .keys()
+  // .filter((playerId) => !playersSnapshot[playerId].activeEvent.position)
+  // .map((playerId))
+  const gameSnapshot = {
+    // bench: benchSnapshot,
+    players: playersSnapshot,
+    positions: positionsSnapshot,
+  }
   console.log(gameSnapshot);
   return gameSnapshot;
 };

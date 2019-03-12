@@ -18,7 +18,7 @@ export default class Player extends React.Component {
     // const playTime = this.props.currentGameTime &&
     // this.props.gameStartTime &&
     // moment.utc(moment(this.props.currentGameTime).diff(this.props.gameStartTime)).format("mm:ss") || "";
-    let gameTimeSeconds = 0;
+    let gameTimeSeconds = this.props.gameSeconds;
     let percentToMove;
     let pendingMoveTime = "";
     console.log(`gameDurationSeconds = ${this.props.gameDurationSeconds},gameStartTime=${this.props.gameStartTime}`);
@@ -55,18 +55,6 @@ export default class Player extends React.Component {
     //   }
     // ];
     const piePieces = this.props.piePieces;
-  // )
-  //   .value()
-  //   || [];
-    // const nextAssignments = [];
-    // this.props.gameDurationSeconds &&
-    // this.props.gameStartTime &&
-    // this.props.gamePlan &&
-    // this.props.gamePlan.assignmentsList &&
-    // _.find(this.props.gamePlan.assignmentsList, (assignments) => !assignments.startTime);
-    // const nextAssignment = nextAssignments &&
-    // _.find(nextAssignments.assignments, (_assignment) => _assignment.player === this.props.player);
-    const nextAssignment = undefined;
     const playTime = moment.utc(gameTimeSeconds*1000).format("m:ss") || "0:00";
     const playerNameStyle = {
       ...styles.playerName,

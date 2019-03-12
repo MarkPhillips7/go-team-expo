@@ -325,7 +325,7 @@ class SoccerField extends React.Component {
     const gameSeconds = 1111;//this.state.gameDurationSeconds;
     const totalSeconds = gameSeconds;
     const timestamp = undefined;
-    const currentLineup = this.getCurrentLineup();
+    // const currentLineup = this.getCurrentLineup();
     const gameTimeline = getGameTimeline({
       gameTeamSeason,
       gameActivityType,
@@ -436,27 +436,27 @@ class SoccerField extends React.Component {
                 positionCategory={category}
               >
                 {
-                  _.chain(currentLineup)
-                  .filter((positionAssignment) =>
-                  positionAssignment.playerPosition.position.positionCategory.name === category.name)
-                  .map((positionAssignment, positionAssignmentIndex) => (
+                  _.chain(gameSnapshot.positions)
+                  .filter((positionSnapshot) =>
+                  positionSnapshot.event.position.positionCategory.name === category.name)
+                  .map((positionSnapshot, positionSnapshotIndex) => (
                     <Player
-                      key={positionAssignmentIndex}
+                      key={positionSnapshotIndex}
                       style={styles.player}
-                      currentLineup={currentLineup}
-                      position={positionAssignment.playerPosition.position}
+                      position={positionSnapshot.event.position}
                       positionCategory={category}
-                      player={positionAssignment.playerPosition.player}
+                      player={_.find(this.props.gamePlayers, (gamePlayer) => gamePlayer.player.id === positionSnapshot.playerId).player}
                       radius={100}
                       gamePlan={this.props.gamePlan}
                       gamePlayers={this.props.gamePlayers}
                       gameStartTime={this.state.gameStartTime}
+                      gameSeconds={gameSeconds}
                       gameDurationSeconds={this.state.gameDurationSeconds}
                       currentGameTime={this.state.currentGameTime}
                       assignmentsIndex={this.state.assignmentsIndex}
                       isGameOver={this.state.isGameOver}
-                      pendingMove={gameSnapshot[positionAssignment.playerPosition.player.id].pendingMove}
-                      piePieces={gameSnapshot[positionAssignment.playerPosition.player.id].piePieces}
+                      pendingMove={gameSnapshot.players[positionSnapshot.playerId].pendingMove}
+                      piePieces={gameSnapshot.players[positionSnapshot.playerId].piePieces}
                     />
                   ))
                   .value()
@@ -482,13 +482,12 @@ class SoccerField extends React.Component {
                   _.chain(this.props.gamePlayers)
                   .filter((gamePlayer) =>
                   gamePlayer.availability === playerAvailability.active &&
-                  !_.find(currentLineup, (positionAssignment) =>
-                  positionAssignment.playerPosition.player.id === gamePlayer.player.id))
+                  gameSnapshot.players[gamePlayer.player.id] &&
+                  !gameSnapshot.players[gamePlayer.player.id].activeEvent.position)
                   .map((gamePlayer, gamePlayerIndex) => (
                     <Player
                       key={gamePlayerIndex}
                       style={styles.player}
-                      currentLineup={currentLineup}
                       position={undefined}
                       positionCategory={category}
                       player={gamePlayer.player}
@@ -500,8 +499,8 @@ class SoccerField extends React.Component {
                       currentGameTime={this.state.currentGameTime}
                       assignmentsIndex={this.state.assignmentsIndex}
                       isGameOver={this.state.isGameOver}
-                      pendingMove={gameSnapshot[gamePlayer.player.id].pendingMove}
-                      piePieces={gameSnapshot[gamePlayer.player.id].piePieces}
+                      pendingMove={gameSnapshot.players[gamePlayer.player.id].pendingMove}
+                      piePieces={gameSnapshot.players[gamePlayer.player.id].piePieces}
                     />
                   ))
                   .value()
