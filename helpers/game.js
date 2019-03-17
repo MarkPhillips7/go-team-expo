@@ -104,6 +104,16 @@ const getTimeInfo = (substitution, playerPositionAssignment, maxTimeInfo) => {
   return timeInfo;
 };
 
+const getInGameSecondsSincePreviousEvent = (previousEvent, event, gameSeconds) => {
+  switch (previousEvent.eventType) {
+    case "INITIAL":
+    case "IN":
+    case "CHANGE":
+      return Math.min(event.timeInfo.gameSeconds, gameSeconds) - previousEvent.timeInfo.gameSeconds;
+  }
+  return 0;
+};
+
 const updateCumulativeTimeStatsSinceLastEvent = (playerStats, positionStats, timeInfo) => {
   switch (playerStats.lastEventType) {
     case "INITIAL":
@@ -116,11 +126,6 @@ const updateCumulativeTimeStatsSinceLastEvent = (playerStats, positionStats, tim
       playerStats.cumulativeInGameSeconds += timeInfo.gameSeconds - playerStats.lastEventGameSeconds;
       playerStats.cumulativeInTotalSeconds += timeInfo.totalSeconds - playerStats.lastEventTotalSeconds;
       break;
-    // case "OUT":
-    // case "UNAVAILABLE":
-    //   // positionStats.cumulativeOutGameSeconds += timeInfo.gameSeconds - positionStats.lastEventGameSeconds;
-    //   // positionStats.cumulativeOutTotalSeconds += timeInfo.totalSeconds - positionStats.lastEventTotalSeconds;
-    //   break;
   }
 };
 
@@ -317,14 +322,11 @@ export const getGameSnapshot = ({
     let previousEvent = undefined;
     let pendingMove = undefined;
     let activeEvent = undefined;
-    let exitForEach = false;
+    let cumulativeInGameSeconds = 0;
     const piePieces = [];
     _.forEach(playerTimeline.events, (event, index) => {
       const startSecondsSinceGameStart = secondsCounter;
-        // moment(assignments.startTime).diff(this.props.gameStartTime) / 1000.0;
       const endSecondsSinceGameStart = Math.min(event.timeInfo.gameSeconds, gameSeconds);
-      // const endSecondsSinceGameStart = moment(endTime).diff(this.props.gameStartTime) / 1000.0;
-      // const totalSeconds = Math.max(this.props.gameDurationSeconds, endSecondsSinceGameStart);
 
       const startValue = startSecondsSinceGameStart / maxSeconds;
       const endValue = endSecondsSinceGameStart / maxSeconds;
@@ -339,6 +341,9 @@ export const getGameSnapshot = ({
       };
       if (startValue !== endValue) {
         piePieces.push(piePiece);
+        if (previousEvent) {
+          cumulativeInGameSeconds += getInGameSecondsSincePreviousEvent(previousEvent, event, gameSeconds);
+        }
       }
 
       if (event.timeInfo.gameSeconds > gameSeconds) {
@@ -359,8 +364,6 @@ export const getGameSnapshot = ({
             percentToMove,
           };
         }
-        // Exit forEach early
-        // exitForEach = true;
         return false;
       }
       activeEvent = event;
@@ -380,22 +383,24 @@ export const getGameSnapshot = ({
           startValue: endValue,
           endValue: gameSeconds / maxSeconds,
         });
+        cumulativeInGameSeconds += getInGameSecondsSincePreviousEvent(
+          previousEvent,
+          {
+            ...previousEvent,
+            timeInfo: {
+              ...previousEvent.timeInfo,
+              gameSeconds
+            }
+          }, gameSeconds);
       }
-
-      // if (exitForEach) {
-      //   return false;
-      // }
     });
     return {
       activeEvent,
+      cumulativeInGameSeconds,
       piePieces,
       pendingMove,
     };
   });
-  // const benchSnapshot = _.chain(playersSnapshot)
-  // .keys()
-  // .filter((playerId) => !playersSnapshot[playerId].activeEvent.position)
-  // .map((playerId))
   const gameSnapshot = {
     // bench: benchSnapshot,
     players: playersSnapshot,

@@ -455,6 +455,7 @@ class SoccerField extends React.Component {
                       currentGameTime={this.state.currentGameTime}
                       assignmentsIndex={this.state.assignmentsIndex}
                       isGameOver={this.state.isGameOver}
+                      playerStats={gameSnapshot.players[positionSnapshot.playerId]}
                       pendingMove={gameSnapshot.players[positionSnapshot.playerId].pendingMove}
                       piePieces={gameSnapshot.players[positionSnapshot.playerId].piePieces}
                     />
@@ -499,6 +500,7 @@ class SoccerField extends React.Component {
                       currentGameTime={this.state.currentGameTime}
                       assignmentsIndex={this.state.assignmentsIndex}
                       isGameOver={this.state.isGameOver}
+                      playerStats={gameSnapshot.players[gamePlayer.player.id]}
                       pendingMove={gameSnapshot.players[gamePlayer.player.id].pendingMove}
                       piePieces={gameSnapshot.players[gamePlayer.player.id].piePieces}
                     />

@@ -1,7 +1,6 @@
 import React from 'react'
 import CirclePie from '../components/CirclePie'
 import PendingMoveArrow from '../components/PendingMoveArrow'
-// import {ART} from 'react-native'
 import {
   StyleSheet,
   Text,
@@ -15,47 +14,8 @@ import {
 
 export default class Player extends React.Component {
   render() {
-    // const playTime = this.props.currentGameTime &&
-    // this.props.gameStartTime &&
-    // moment.utc(moment(this.props.currentGameTime).diff(this.props.gameStartTime)).format("mm:ss") || "";
-    let gameTimeSeconds = this.props.gameSeconds;
-    let percentToMove;
-    let pendingMoveTime = "";
-    console.log(`gameDurationSeconds = ${this.props.gameDurationSeconds},gameStartTime=${this.props.gameStartTime}`);
-    // const piePieces =
-    // this.props.gameDurationSeconds &&
-    // this.props.gameStartTime &&
-    // this.props.gamePlan &&
-    // this.props.gamePlan.assignmentsList &&
-    // _.chain(this.props.gamePlan.assignmentsList)
-    // .filter((assignments) => assignments.startTime)
-    // .map((assignments) => {
-
-      // const assignment = this.props.player && _.find(this.props.currentLineup, (_assignment) =>
-      //   _assignment.playerPosition.player.id === this.props.player.id);
-
-      // const startSecondsSinceGameStart =
-      //   moment(assignments.startTime).diff(this.props.gameStartTime) / 1000.0;
-      // const endTime = assignments.endTime || this.props.currentGameTime;
-      // const endSecondsSinceGameStart = moment(endTime).diff(this.props.gameStartTime) / 1000.0;
-      // const totalSeconds = Math.max(this.props.gameDurationSeconds, endSecondsSinceGameStart);
-      // const startValue = startSecondsSinceGameStart / totalSeconds;
-      // const endValue = endSecondsSinceGameStart / totalSeconds;
-      // if (assignment.position !== specialPositions.unavailable &&
-      // assignment.position !== specialPositions.substitute) {
-      //   gameTimeSeconds += endSecondsSinceGameStart - startSecondsSinceGameStart;
-      // }
-      // const pendingMoveSeconds = this.props.gamePlan.secondsBetweenSubs - (endSecondsSinceGameStart - startSecondsSinceGameStart);
-      // pendingMoveTime = moment.utc(pendingMoveSeconds*1000).format("m:ss") || "0:00";
-      // percentToMove = (endSecondsSinceGameStart - startSecondsSinceGameStart) / this.props.gamePlan.secondsBetweenSubs * 100;
-    // const piePieces = [ {
-    //     color: this.props.positionCategory.color,
-    //     startValue: 0,
-    //     endValue: 0,
-    //   }
-    // ];
-    const piePieces = this.props.piePieces;
-    const playTime = moment.utc(gameTimeSeconds*1000).format("m:ss") || "0:00";
+    const {cumulativeInGameSeconds, pendingMove, piePieces} = this.props.playerStats;
+    const playTime = moment.utc(cumulativeInGameSeconds*1000).format("m:ss") || "0:00";
     const playerNameStyle = {
       ...styles.playerName,
       backgroundColor: this.props.player.positionCategoryPreferencesAsPlayer &&
@@ -78,17 +38,17 @@ export default class Player extends React.Component {
             piePieces={piePieces}
             positionColor={this.props.positionCategory.color}
           />
-          {this.props.pendingMove &&
+          {pendingMove &&
             <View
               style={styles.arrowAndCountdown}
             >
               <PendingMoveArrow
                 style={styles.arrow}
-                percent={this.props.pendingMove.percentToMove}
-                color={this.props.pendingMove.color}
+                percent={pendingMove.percentToMove}
+                color={pendingMove.color}
               />
               <Text style={styles.pendingMoveTime}>
-                {this.props.pendingMove.pendingMoveTime}
+                {pendingMove.pendingMoveTime}
               </Text>
             </View>
           }
