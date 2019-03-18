@@ -254,7 +254,7 @@ export const getGameTimeline = ({
     });
   });
 
-  console.log(gameTimeline);
+  // console.log(gameTimeline);
   return gameTimeline;
 };
 
@@ -406,7 +406,7 @@ export const getGameSnapshot = ({
     players: playersSnapshot,
     positions: positionsSnapshot,
   }
-  console.log(gameSnapshot);
+  // console.log(gameSnapshot);
   return gameSnapshot;
 };
 

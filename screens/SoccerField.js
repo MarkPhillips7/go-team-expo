@@ -26,6 +26,8 @@ import {
   getGameSnapshot,
 } from '../helpers/game';
 
+const millisecondsBeforeSliderAction = 500;
+
 export default withApollo(
 // export default
 class SoccerField extends React.Component {
@@ -56,6 +58,7 @@ class SoccerField extends React.Component {
       currentGameTime: undefined,
       gameDurationSeconds: 50.0*60,
       gameStartTime: undefined,
+      gameSeconds: 0,
       // gamePlan: undefined,
       // gameRoster: this.props.gamePlayers || [],
       // gamePositions: this.props.//this.getGamePositions(this.props.gamePlayers || []),
@@ -261,6 +264,18 @@ class SoccerField extends React.Component {
     });
   }
 
+  onSliderMove(gameSeconds) {
+    if (moment().diff(this.state.lastSliderMoveTime) < millisecondsBeforeSliderAction) {
+      return;
+    }
+    this.setState((previousState) => {
+      return {
+        ...previousState,
+        gameSeconds
+      };
+    });
+  }
+
   updateGame() {
     // this.setState((previousState) => {
     //   if (!this.state.isClockRunning) {
@@ -322,7 +337,7 @@ class SoccerField extends React.Component {
     const {gameDurationSeconds} = this.state;
     const gameActivityType = "PLAN";
     const gameActivityStatus = "PENDING";
-    const gameSeconds = 1111;//this.state.gameDurationSeconds;
+    const {gameSeconds} = this.state;// = 1111;//this.state.gameDurationSeconds;
     const totalSeconds = gameSeconds;
     const timestamp = undefined;
     // const currentLineup = this.getCurrentLineup();
@@ -484,7 +499,8 @@ class SoccerField extends React.Component {
                   .filter((gamePlayer) =>
                   gamePlayer.availability === playerAvailability.active &&
                   gameSnapshot.players[gamePlayer.player.id] &&
-                  !gameSnapshot.players[gamePlayer.player.id].activeEvent.position)
+                  (!gameSnapshot.players[gamePlayer.player.id].activeEvent ||
+                  !gameSnapshot.players[gamePlayer.player.id].activeEvent.position))
                   .map((gamePlayer, gamePlayerIndex) => (
                     <Player
                       key={gamePlayerIndex}
@@ -512,6 +528,26 @@ class SoccerField extends React.Component {
             .value()
           }
           </View>
+        </View>
+        )}
+        {this.state.mode === modes.default && (
+        <View style={styles.slider}>
+          <Slider
+            minimumValue={0}
+            maximumValue={this.state.gameDurationSeconds}
+            onValueChange={(gameSeconds) => {
+              console.log(`hello ${gameSeconds}`);
+              // only update gameSeconds after so much time since last slider move
+              this.setState((previousState) => {
+                return {
+                  ...previousState,
+                  lastSliderMoveTime: moment(),
+                }
+              });
+              setTimeout(() => this.onSliderMove(gameSeconds), millisecondsBeforeSliderAction);
+            }}
+            value={this.state.gameSeconds}
+          />
         </View>
         )}
         <View style={styles.buttons}>
@@ -606,6 +642,7 @@ let styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
+    height: '100%',
   },
   field: {
     flex: 2,
@@ -622,6 +659,10 @@ let styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     margin: 10,
+  },
+  slider: {
+    height: 30,
+    width: '100%',
   },
   buttons: {
     flexDirection: 'row',
