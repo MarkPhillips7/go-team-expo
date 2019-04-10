@@ -1,5 +1,6 @@
 import React from 'react'
 import CirclePie from '../components/CirclePie'
+import ColoredTextBox from '../components/ColoredTextBox'
 import PendingMoveArrow from '../components/PendingMoveArrow'
 import {
   StyleSheet,
@@ -16,12 +17,11 @@ export default class Player extends React.Component {
   render() {
     const {cumulativeInGameSeconds, pendingMove, piePieces} = this.props.playerStats;
     const playTime = moment.utc(cumulativeInGameSeconds*1000).format("m:ss") || "0:00";
-    const playerNameStyle = {
-      ...styles.playerName,
-      backgroundColor: this.props.player.positionCategoryPreferencesAsPlayer &&
-      this.props.player.positionCategoryPreferencesAsPlayer.length &&
-      this.props.player.positionCategoryPreferencesAsPlayer[0].positionCategory.color || "gray",
-    };
+    const colors = this.props.player.positionCategoryPreferencesAsPlayer &&
+    this.props.player.positionCategoryPreferencesAsPlayer.length &&
+    _.map(this.props.player.positionCategoryPreferencesAsPlayer, (positionCategoryPreference) =>
+      positionCategoryPreference.positionCategory.color)
+    || ["gray"];
     return (
       <View
         style={this.props.style}
@@ -53,9 +53,11 @@ export default class Player extends React.Component {
             </View>
           }
         </View>
-        <Text style={playerNameStyle}>
-          {this.props.player && this.props.player.name}
-        </Text>
+        <ColoredTextBox
+          style={styles.playerName}
+          colors={colors}
+          text={this.props.player && this.props.player.name}
+        />
       </View>
     );
   }
@@ -67,8 +69,6 @@ const styles = StyleSheet.create({
     color: 'white',
     lineHeight: 16,
     textAlign: 'center',
-    margin: 3,
-    padding: 3,
   },
   playTime: {
     fontSize: 14,
