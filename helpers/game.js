@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import moment from 'moment';
+import {playerDisplayModes} from '../constants/Player';
 
 const initializeGameTimeline = ({
   totalSeconds,
@@ -451,4 +452,56 @@ export const getSubstitutionScore = (
   + getPlayerPositionScore(gameTeamSeason, gameStats, subInCandidate.player, position);
   console.log(`${subInCandidate.player.name} => ${position.name} (for ${subOutCandidate.player.name}), score = ${score}`);
   return score;
+};
+
+export const getPlayerDisplayMode = (playerId, state) => {
+  const {selectionInfo} = state;
+  if (!selectionInfo || selectionInfo.selections.length === 0) {
+    return playerDisplayModes.normal;
+  }
+
+  if (selectionInfo.selections[0].playerId === playerId) {
+    return playerDisplayModes.primarySelection;
+  }
+
+  if (_.find(selectionInfo.selections, (selection) => selection.playerId === playerId)) {
+    return playerDisplayModes.secondarySelection;
+  }
+
+  return playerDisplayModes.unselected;
+};
+
+export const getPlayerPressedSelectionInfo = (
+  previousState,
+  playerId
+) => {
+  const {selectionInfo: previousSelectionInfo} = previousState;
+
+  // ToDo: Add concept of automatic selection (when you press one player
+  // the corresponding sub is automatically selected). Clicking automatic
+  // selection turns it into a non-automatic selection rather than unselecting it.
+
+  // If no selection info then just return this single selection
+  if (!previousSelectionInfo) {
+    return {
+      selections: [{playerId}]
+    };
+  }
+
+  // If most recent selection matches this selection then unselect
+  if (previousSelectionInfo &&
+    previousSelectionInfo.selections &&
+    previousSelectionInfo.selections.length &&
+    previousSelectionInfo.selections[previousSelectionInfo.selections.length - 1].playerId === playerId) {
+    return {
+      ...previousSelectionInfo,
+      selections: previousSelectionInfo.selections.slice(0, previousSelectionInfo.selections.length - 1),
+    };
+  }
+
+  // Append this selection
+  return {
+    ...previousSelectionInfo,
+    selections: [...previousSelectionInfo.selections, {playerId}]
+  };
 };

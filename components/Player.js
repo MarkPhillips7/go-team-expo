@@ -5,6 +5,7 @@ import PendingMoveArrow from '../components/PendingMoveArrow'
 import {
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import _ from 'lodash';
@@ -23,8 +24,9 @@ export default class Player extends React.Component {
       positionCategoryPreference.positionCategory.color)
     || ["gray"];
     return (
-      <View
+      <TouchableOpacity
         style={this.props.style}
+        onPress={this.props.onPress}
       >
         <Text style={styles.playTime}>
           {playTime}
@@ -34,7 +36,7 @@ export default class Player extends React.Component {
         >
           <CirclePie
             player={this.props.player}
-            radius={30}
+            circleDisplayMode={this.props.playerDisplayMode}
             piePieces={piePieces}
             positionColor={this.props.positionCategory.color}
           />
@@ -58,7 +60,7 @@ export default class Player extends React.Component {
           colors={colors}
           text={this.props.player && this.props.player.name}
         />
-      </View>
+      </TouchableOpacity>
     );
   }
 };

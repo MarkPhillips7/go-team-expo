@@ -24,6 +24,8 @@ import {
 import {
   getGameTimeline,
   getGameSnapshot,
+  getPlayerDisplayMode,
+  getPlayerPressedSelectionInfo,
 } from '../helpers/game';
 
 const millisecondsBeforeSliderAction = 500;
@@ -171,6 +173,16 @@ class SoccerField extends React.Component {
       return {
         ...previousState,
         mode: previousState.mode === modes.roster ? modes.default : modes.roster,
+      };
+    });
+  }
+
+  onPressPlayer(gamePlayer) {
+    this.setState((previousState) => {
+      const selectionInfo = getPlayerPressedSelectionInfo(previousState, gamePlayer);
+      return {
+        ...previousState,
+        selectionInfo,
       };
     });
   }
@@ -473,6 +485,8 @@ class SoccerField extends React.Component {
                       playerStats={gameSnapshot.players[positionSnapshot.playerId]}
                       pendingMove={gameSnapshot.players[positionSnapshot.playerId].pendingMove}
                       piePieces={gameSnapshot.players[positionSnapshot.playerId].piePieces}
+                      playerDisplayMode={getPlayerDisplayMode(positionSnapshot.playerId, this.state)}
+                      onPress={() => this.onPressPlayer(positionSnapshot.playerId)}
                     />
                   ))
                   .value()
@@ -519,6 +533,8 @@ class SoccerField extends React.Component {
                       playerStats={gameSnapshot.players[gamePlayer.player.id]}
                       pendingMove={gameSnapshot.players[gamePlayer.player.id].pendingMove}
                       piePieces={gameSnapshot.players[gamePlayer.player.id].piePieces}
+                      playerDisplayMode={getPlayerDisplayMode(gamePlayer.player.id, this.state)}
+                      onPress={() => this.onPressPlayer(gamePlayer.player.id)}
                     />
                   ))
                   .value()

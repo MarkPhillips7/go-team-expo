@@ -22,10 +22,11 @@ export default class CirclePie extends Component {
 
     return (
       <Svg
-        height={this.props.radius*2}
-        width={this.props.radius*2}
+        height={this.props.circleDisplayMode.radius*2}
+        width={this.props.circleDisplayMode.radius*2}
         style={this.props.style}
         viewBox="-1 -1 2 2"
+        opacity={this.props.circleDisplayMode.opacity}
       >
         <Circle
             r={1 - (circleBorderWidth / 2)}
