@@ -473,7 +473,6 @@ class SoccerField extends React.Component {
                       position={positionSnapshot.event.position}
                       positionCategory={category}
                       player={_.find(this.props.gamePlayers, (gamePlayer) => gamePlayer.player.id === positionSnapshot.playerId).player}
-                      radius={100}
                       gamePlan={this.props.gamePlan}
                       gamePlayers={this.props.gamePlayers}
                       gameStartTime={this.state.gameStartTime}
@@ -522,7 +521,6 @@ class SoccerField extends React.Component {
                       position={undefined}
                       positionCategory={category}
                       player={gamePlayer.player}
-                      radius={100}
                       gamePlan={this.props.gamePlan}
                       gamePlayers={this.props.gamePlayers}
                       gameStartTime={this.state.gameStartTime}

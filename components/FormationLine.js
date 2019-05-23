@@ -14,7 +14,6 @@ export default class FormationLine extends React.Component {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      width: "100%",
       flexDirection,
     }
     return (
@@ -22,7 +21,7 @@ export default class FormationLine extends React.Component {
         <View style={{
           backgroundColor: formationColor,
           width: 10,
-          height: "100%",
+          height: "97%",
         }}/>
         <View
           style={formationLineStyle}
@@ -38,19 +37,7 @@ let styles = StyleSheet.create({
   formationContainer: {
     flex: 1,
     flexDirection: 'row',
-    padding: 5,
     alignItems: 'center',
     justifyContent: 'flex-start',
-  },
-  formationColorColumn: {
-    backgroundColor: 'white',
-    width: 10,
-  },
-  formationLine: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    width: "100%",
   },
 });

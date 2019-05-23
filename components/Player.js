@@ -16,6 +16,15 @@ import {
 
 export default class Player extends React.Component {
   render() {
+    const applyMultiplier = (styleObject, multiplier) => {
+      const newStyleObject = {...styleObject};
+      _.each(["fontSize","lineHeight", "height", "width"], (style) => {
+        if (newStyleObject[style]) {
+          newStyleObject[style]  = newStyleObject[style] * multiplier;
+        }
+      });
+      return newStyleObject;
+    };
     const {cumulativeInGameSeconds, pendingMove, piePieces} = this.props.playerStats;
     const playTime = moment.utc(cumulativeInGameSeconds*1000).format("m:ss") || "0:00";
     const colors = this.props.player.positionCategoryPreferencesAsPlayer &&
@@ -28,11 +37,11 @@ export default class Player extends React.Component {
         style={this.props.style}
         onPress={this.props.onPress}
       >
-        <Text style={styles.playTime}>
+        <Text style={applyMultiplier(styles.playTime, this.props.playerDisplayMode.multiplier)}>
           {playTime}
         </Text>
         <View
-          style={styles.pieAndArrow}
+          style={applyMultiplier(styles.pieAndArrow, this.props.playerDisplayMode.multiplier)}
         >
           <CirclePie
             player={this.props.player}
@@ -42,21 +51,21 @@ export default class Player extends React.Component {
           />
           {pendingMove &&
             <View
-              style={styles.arrowAndCountdown}
+              style={applyMultiplier(styles.arrowAndCountdown, this.props.playerDisplayMode.multiplier)}
             >
               <PendingMoveArrow
-                style={styles.arrow}
+                style={applyMultiplier(styles.arrow, this.props.playerDisplayMode.multiplier)}
                 percent={pendingMove.percentToMove}
                 color={pendingMove.color}
               />
-              <Text style={styles.pendingMoveTime}>
+              <Text style={applyMultiplier(styles.pendingMoveTime, this.props.playerDisplayMode.multiplier)}>
                 {pendingMove.pendingMoveTime}
               </Text>
             </View>
           }
         </View>
         <ColoredTextBox
-          style={styles.playerName}
+          style={applyMultiplier(styles.arrow, this.props.playerDisplayMode.playerName)}
           colors={colors}
           text={this.props.player && this.props.player.name}
         />
@@ -82,16 +91,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'black',
     lineHeight: 16,
-    textAlign: 'center',
-    width: 30,
+    textAlign: 'left',
+    width: 28,
   },
   arrow: {
-    height: 20,
-    width: 20,
-    margin: 3,
+    height: 18,
+    width: 18,
+    marginBottom: 3,
   },
   pieAndArrow: {
-    height: 60,
+    height: 65,
     flexDirection: "row",
     alignItems: 'center',
     justifyContent: 'center',
