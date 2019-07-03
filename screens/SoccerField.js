@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {Fragment} from 'react';
 import { Button, ScrollView, Slider, StyleSheet, Switch, Text, View } from 'react-native';
 import {withApollo} from 'react-apollo';
 import gql from "graphql-tag";
@@ -22,6 +22,7 @@ import {
   deleteGameEtc,
 } from '../graphql/game';
 import {
+  getCancelPressedSelectionInfo,
   getGameTimeline,
   getGameSnapshot,
   getPlayerDisplayMode,
@@ -50,6 +51,8 @@ class SoccerField extends React.Component {
     this.onPressReset = this.onPressReset.bind(this);
     this.onPressLineup = this.onPressLineup.bind(this);
     this.updateGame = this.updateGame.bind(this);
+    this.onPressPlayer = this.onPressPlayer.bind(this);
+    this.onPressCancel = this.onPressCancel.bind(this);
   }
 
   getInitialState() {
@@ -180,6 +183,16 @@ class SoccerField extends React.Component {
   onPressPlayer(gamePlayer) {
     this.setState((previousState) => {
       const selectionInfo = getPlayerPressedSelectionInfo(previousState, gamePlayer);
+      return {
+        ...previousState,
+        selectionInfo,
+      };
+    });
+  }
+
+  onPressCancel() {
+    this.setState((previousState) => {
+      const selectionInfo = getCancelPressedSelectionInfo(previousState);
       return {
         ...previousState,
         selectionInfo,
@@ -373,6 +386,9 @@ class SoccerField extends React.Component {
       timestamp,
       gameDurationSeconds,
     });
+    const playersSelected = this.state.selectionInfo &&
+      this.state.selectionInfo.selections &&
+      this.state.selectionInfo.selections.length || 0;
     // console.log("Rendering SoccerField");
     return (
       <View style={styles.screen}>
@@ -544,64 +560,103 @@ class SoccerField extends React.Component {
           </View>
         </View>
         )}
-        {this.state.mode === modes.default && (
-        <View style={styles.slider}>
-          <Slider
-            minimumValue={0}
-            maximumValue={this.state.gameDurationSeconds}
-            onValueChange={(gameSeconds) => {
-              console.log(`hello ${gameSeconds}`);
-              // only update gameSeconds after so much time since last slider move
-              this.setState((previousState) => {
-                return {
-                  ...previousState,
-                  lastSliderMoveTime: moment(),
-                }
-              });
-              setTimeout(() => this.onSliderMove(gameSeconds), millisecondsBeforeSliderAction);
-            }}
-            value={this.state.gameSeconds}
-          />
-        </View>
-        )}
-        <View style={styles.buttons}>
-          <Button
-            style={styles.button}
-            onPress={this.onPressStartPauseResume}
-            title={this.state.gameStartTime ? (this.state.isClockRunning ? "Pause" : "Resume") : "Start"}
-          />
-          <Button
-            style={styles.button}
-            onPress={this.onPressReset}
-            title="Reset"
-          />
-          {
-            <Button
-              style={styles.button}
-              onPress={this.onPressSubs}
-              title="Sub"
+        <View style={styles.inputArea}>
+          <View style={styles.instructions}>
+            {playersSelected === 1 && (
+              <Text>
+                Select another player for substitution
+              </Text>
+            )}
+          </View>
+          <View style={styles.buttons}>
+            {this.state.mode === modes.default &&
+              playersSelected === 0 && (
+            <Slider
+              style={styles.slider}
+              minimumValue={0}
+              maximumValue={this.state.gameDurationSeconds}
+              onValueChange={(gameSeconds) => {
+                console.log(`hello ${gameSeconds}`);
+                // only update gameSeconds after so much time since last slider move
+                this.setState((previousState) => {
+                  return {
+                    ...previousState,
+                    lastSliderMoveTime: moment(),
+                  }
+                });
+                setTimeout(() => this.onSliderMove(gameSeconds), millisecondsBeforeSliderAction);
+              }}
+              value={this.state.gameSeconds}
             />
-          }
-          <Button
-            style={styles.button}
-            onPress={this.onPressDelete}
-            title="Delete"
-          />
-          <Button
-            style={styles.button}
-            onPress={this.onPressDebug}
-            title="Debug"
-          />
-          <Button
-            style={styles.button}
-            onPress={this.onPressManageRoster}
-            title="Roster"
-          />
-          <Button
-            style={styles.button}
-            onPress={this.onPressLineup}
-            title="Lineup"
-          />
+            )}
+            {playersSelected === 0 && (
+              <Fragment>
+                <Button
+                  style={styles.button}
+                  onPress={this.onPressStartPauseResume}
+                  title={this.state.gameStartTime ? (this.state.isClockRunning ? "Pause" : "Resume") : "Start"}
+                />
+                <Button
+                  style={styles.button}
+                  onPress={this.onPressReset}
+                  title="Reset"
+                />
+                <Button
+                  style={styles.button}
+                  onPress={this.onPressSubs}
+                  title="Auto Subs"
+                />
+                <Button
+                  style={styles.button}
+                  onPress={this.onPressDelete}
+                  title="Delete"
+                />
+                <Button
+                  style={styles.button}
+                  onPress={this.onPressDebug}
+                  title="Debug"
+                />
+                <Button
+                  style={styles.button}
+                  onPress={this.onPressManageRoster}
+                  title="Roster"
+                />
+                <Button
+                  style={styles.button}
+                  onPress={this.onPressLineup}
+                  title="Lineup"
+                />
+              </Fragment>
+            )}
+            {playersSelected > 0 && (
+              <Fragment>
+                <Button
+                  style={styles.button}
+                  onPress={this.onPressDelete}
+                  title="Delete"
+                />
+                <Button
+                  style={styles.button}
+                  onPress={this.onPressCancel}
+                  title="Cancel"
+                />
+              </Fragment>
+            )}
+            {playersSelected > 1 && (
+              <Fragment>
+                <Button
+                  style={styles.button}
+                  onPress={this.onPressSubs}
+                  title="Sub Now"
+                />
+                <Button
+                  style={styles.button}
+                  onPress={this.onPressSubs}
+                  title="Sub Next Time"
+                />
+              </Fragment>
+            )}
+          </View>
         </View>
       </View>
     );
@@ -651,7 +706,7 @@ let styles = StyleSheet.create({
   //   paddingTop: 15,
   // },
   park: {
-    flex: 1,
+    flex: 2.5,
     backgroundColor: '#ccffcc',//'lightgreen',
     alignItems: 'center',
     justifyContent: 'center',
@@ -675,18 +730,35 @@ let styles = StyleSheet.create({
     margin: 10,
   },
   slider: {
-    height: 30,
+    width: 100,
+  },
+  inputArea: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    height: '100%',
     width: '100%',
   },
   buttons: {
+    display: 'flex',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'space-around',
-    height: 40,
+    height: '100%',
     width: '100%',
   },
   button: {
     margin: 10,
+  },
+  instructions: {
+    display: 'flex',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    width: '100%',
   },
   // switch: {
   //   marginRight: 10,

@@ -505,3 +505,5 @@ export const getPlayerPressedSelectionInfo = (
     selections: [...previousSelectionInfo.selections, {playerId}]
   };
 };
+
+export const getCancelPressedSelectionInfo = (previousState) => {};
