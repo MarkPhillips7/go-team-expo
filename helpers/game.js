@@ -229,6 +229,11 @@ export const getGameTimeline = ({
     timestamp,
   });
 
+  // Initialize all players
+  _.forEach(gameTeamSeason.gamePlayers, (gamePlayer) => {
+    initializePlayerTimeline(gameTimeline, gamePlayer.player);
+  });
+
   // Set initial events for players that are unavailable at the start of the game
   _.chain(gameTeamSeason.gamePlayers)
   .filter((gamePlayer) => gamePlayer.availability === "UNAVAILABLE")
@@ -240,7 +245,8 @@ export const getGameTimeline = ({
       position: null,
       timeInfo,
     });
-  });
+  })
+  .value();
 
   _.forEach(gameTeamSeason.substitutions, (substitution) => {
     _.forEach(substitution.playerPositionAssignments, (playerPositionAssignment) => {
