@@ -3,6 +3,7 @@ import _ from 'lodash';
 import {
   playerAvailability,
 } from '../constants/Soccer';
+import {getOrCreateFormationSubstitution} from './gamePlan';
 import {TEAM_SEASON} from '../graphql/games';
 
 export const GAME_TEAM_SEASON_INFO = gql`
@@ -329,6 +330,14 @@ export const createGameEtc = (client, {
     gameTeamSeason,
     teamSeason,
   })).then(result => {console.log(result)})
+  .then(() => getOrCreateFormationSubstitution(client, {
+    formationId: "cjqcfvx3167k30128b70ieu58",
+    gameActivityType: "PLAN",
+    gameActivityStatus: "PENDING",
+    gameTeamSeason,
+    totalSeconds: 0,
+    gameSeconds: 0,
+  }))
   .then(() => console.log("createGameEtc succeeded"))
   .catch((error) => console.log(`error: ${error}`));
 };

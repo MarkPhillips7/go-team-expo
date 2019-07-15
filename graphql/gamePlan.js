@@ -190,7 +190,7 @@ const deletePlayerPosition = (client, {
 //   .then((result) => result.data);
 // };
 
-const getOrCreateFormationSubstitution = (client, {
+export const getOrCreateFormationSubstitution = (client, {
   formationId,
   gameActivityStatus,
   gameActivityType,

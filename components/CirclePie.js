@@ -33,6 +33,8 @@ export default class CirclePie extends Component {
             fill="#fff"
             stroke={this.props.positionColor}
             strokeWidth={circleBorderWidth}
+            strokeDasharray={this.props.circleDisplayMode.strokeDasharray}
+            strokeLinecap="round"
         />
         {
           this.props.piePieces &&

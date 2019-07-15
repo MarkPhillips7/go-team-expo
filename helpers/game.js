@@ -302,6 +302,7 @@ const isEventBefore = (eventA, eventB) => {
 const updatePositionsSnapshot = (positionsSnapshot, event, playerId) => {
   if (event.position &&
   (!positionsSnapshot[event.position.id] ||
+  !positionsSnapshot[event.position.id].playerId ||
   isEventBefore(positionsSnapshot[event.position.id].event, event))) {
     positionsSnapshot[event.position.id] = {
       event,
@@ -401,6 +402,25 @@ export const getGameSnapshot = ({
           }, gameSeconds);
       }
     });
+    // Make sure each position got included in the positionsSnapshot
+    if (gameTeamSeason.formationSubstitutions && gameTeamSeason.formationSubstitutions.length) {
+      _.forEach(gameTeamSeason.formationSubstitutions[0].formation.positions, (position) => {
+        if (!positionsSnapshot[position.id]) {
+          const timeInfo = {//getTimeInfo(substitution, playerPositionAssignment, {});//gameSeconds, totalSeconds, timestamp});
+            gameSeconds,
+            totalSeconds,
+            timestamp,
+          };
+          positionsSnapshot[position.id] = {
+            event:{
+              eventType: "INITIAL",
+              position,
+              timeInfo,
+            }
+          };
+        }
+      });
+    }
     return {
       activeEvent,
       cumulativeInGameSeconds,
@@ -460,17 +480,41 @@ export const getSubstitutionScore = (
   return score;
 };
 
-export const getPlayerDisplayMode = (playerId, state) => {
+const positionSnapshotsMatch = (positionSnapshot1, positionSnapshot2) => {
+  if (positionSnapshot1.playerId && 
+    positionSnapshot1.playerId === positionSnapshot2.playerId) {
+    return true;
+  }
+  if (positionSnapshot1.event && 
+    positionSnapshot1.event.position && 
+    positionSnapshot2.event && 
+    positionSnapshot2.event.position && 
+    positionSnapshot1.event.position.id === positionSnapshot2.event.position.id) {
+    return true;
+  }
+  return false;
+};
+
+export const getPlayerDisplayMode = (positionSnapshot, state) => {
   const {selectionInfo} = state;
+ 
+  if (!positionSnapshot.playerId) {
+    if (selectionInfo && 
+      _.find(selectionInfo.selections, (selection) => positionSnapshotsMatch(selection, positionSnapshot))) {
+      return playerDisplayModes.unassignedSelected;
+    }
+    return playerDisplayModes.unassigned;
+  }
+
   if (!selectionInfo || selectionInfo.selections.length === 0) {
     return playerDisplayModes.normal;
   }
 
-  if (selectionInfo.selections[0].playerId === playerId) {
+  if (selectionInfo.selections[0].playerId === positionSnapshot.playerId) {
     return playerDisplayModes.primarySelection;
   }
 
-  if (_.find(selectionInfo.selections, (selection) => selection.playerId === playerId)) {
+  if (_.find(selectionInfo.selections, (selection) => positionSnapshotsMatch(selection, positionSnapshot))) {
     return playerDisplayModes.secondarySelection;
   }
 
@@ -479,7 +523,7 @@ export const getPlayerDisplayMode = (playerId, state) => {
 
 export const getPlayerPressedSelectionInfo = (
   previousState,
-  playerId
+  positionSnapshot
 ) => {
   const {selectionInfo: previousSelectionInfo} = previousState;
 
@@ -490,7 +534,7 @@ export const getPlayerPressedSelectionInfo = (
   // If no selection info then just return this single selection
   if (!previousSelectionInfo) {
     return {
-      selections: [{playerId}]
+      selections: [positionSnapshot]
     };
   }
 
@@ -498,7 +542,7 @@ export const getPlayerPressedSelectionInfo = (
   if (previousSelectionInfo &&
     previousSelectionInfo.selections &&
     previousSelectionInfo.selections.length &&
-    previousSelectionInfo.selections[previousSelectionInfo.selections.length - 1].playerId === playerId) {
+    positionSnapshotsMatch(previousSelectionInfo.selections[previousSelectionInfo.selections.length - 1], positionSnapshot)) {
     return {
       ...previousSelectionInfo,
       selections: previousSelectionInfo.selections.slice(0, previousSelectionInfo.selections.length - 1),
@@ -508,7 +552,7 @@ export const getPlayerPressedSelectionInfo = (
   // Append this selection
   return {
     ...previousSelectionInfo,
-    selections: [...previousSelectionInfo.selections, {playerId}]
+    selections: [...previousSelectionInfo.selections, positionSnapshot]
   };
 };
 

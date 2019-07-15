@@ -180,9 +180,9 @@ class SoccerField extends React.Component {
     });
   }
 
-  onPressPlayer(gamePlayer) {
+  onPressPlayer(positionSnapshot) {
     this.setState((previousState) => {
-      const selectionInfo = getPlayerPressedSelectionInfo(previousState, gamePlayer);
+      const selectionInfo = getPlayerPressedSelectionInfo(previousState, positionSnapshot);
       return {
         ...previousState,
         selectionInfo,
@@ -390,6 +390,8 @@ class SoccerField extends React.Component {
       this.state.selectionInfo.selections &&
       this.state.selectionInfo.selections.length || 0;
     // console.log("Rendering SoccerField");
+    console.log(gameTimeline);
+    console.log(gameSnapshot);
     return (
       <View style={styles.screen}>
         {this.state.mode === modes.debug && (
@@ -488,7 +490,8 @@ class SoccerField extends React.Component {
                       style={styles.player}
                       position={positionSnapshot.event.position}
                       positionCategory={category}
-                      player={_.find(this.props.gamePlayers, (gamePlayer) => gamePlayer.player.id === positionSnapshot.playerId).player}
+                      player={_.find(this.props.gamePlayers, (gamePlayer) => gamePlayer.player.id === positionSnapshot.playerId) && 
+                        _.find(this.props.gamePlayers, (gamePlayer) => gamePlayer.player.id === positionSnapshot.playerId).player}
                       gamePlan={this.props.gamePlan}
                       gamePlayers={this.props.gamePlayers}
                       gameStartTime={this.state.gameStartTime}
@@ -498,10 +501,10 @@ class SoccerField extends React.Component {
                       assignmentsIndex={this.state.assignmentsIndex}
                       isGameOver={this.state.isGameOver}
                       playerStats={gameSnapshot.players[positionSnapshot.playerId]}
-                      pendingMove={gameSnapshot.players[positionSnapshot.playerId].pendingMove}
-                      piePieces={gameSnapshot.players[positionSnapshot.playerId].piePieces}
-                      playerDisplayMode={getPlayerDisplayMode(positionSnapshot.playerId, this.state)}
-                      onPress={() => this.onPressPlayer(positionSnapshot.playerId)}
+                      pendingMove={gameSnapshot.players[positionSnapshot.playerId] && gameSnapshot.players[positionSnapshot.playerId].pendingMove}
+                      piePieces={gameSnapshot.players[positionSnapshot.playerId] && gameSnapshot.players[positionSnapshot.playerId].piePieces}
+                      playerDisplayMode={getPlayerDisplayMode(positionSnapshot, this.state)}
+                      onPress={() => this.onPressPlayer(positionSnapshot)}
                     />
                   ))
                   .value()
@@ -547,8 +550,8 @@ class SoccerField extends React.Component {
                       playerStats={gameSnapshot.players[gamePlayer.player.id]}
                       pendingMove={gameSnapshot.players[gamePlayer.player.id].pendingMove}
                       piePieces={gameSnapshot.players[gamePlayer.player.id].piePieces}
-                      playerDisplayMode={getPlayerDisplayMode(gamePlayer.player.id, this.state)}
-                      onPress={() => this.onPressPlayer(gamePlayer.player.id)}
+                      playerDisplayMode={getPlayerDisplayMode({playerId:gamePlayer.player.id}, this.state)}
+                      onPress={() => this.onPressPlayer({playerId:gamePlayer.player.id})}
                     />
                   ))
                   .value()
