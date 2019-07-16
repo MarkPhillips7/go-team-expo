@@ -481,14 +481,14 @@ export const getSubstitutionScore = (
 };
 
 const positionSnapshotsMatch = (positionSnapshot1, positionSnapshot2) => {
-  if (positionSnapshot1.playerId && 
+  if (positionSnapshot1.playerId &&
     positionSnapshot1.playerId === positionSnapshot2.playerId) {
     return true;
   }
-  if (positionSnapshot1.event && 
-    positionSnapshot1.event.position && 
-    positionSnapshot2.event && 
-    positionSnapshot2.event.position && 
+  if (positionSnapshot1.event &&
+    positionSnapshot1.event.position &&
+    positionSnapshot2.event &&
+    positionSnapshot2.event.position &&
     positionSnapshot1.event.position.id === positionSnapshot2.event.position.id) {
     return true;
   }
@@ -497,9 +497,9 @@ const positionSnapshotsMatch = (positionSnapshot1, positionSnapshot2) => {
 
 export const getPlayerDisplayMode = (positionSnapshot, state) => {
   const {selectionInfo} = state;
- 
+
   if (!positionSnapshot.playerId) {
-    if (selectionInfo && 
+    if (selectionInfo &&
       _.find(selectionInfo.selections, (selection) => positionSnapshotsMatch(selection, positionSnapshot))) {
       return playerDisplayModes.unassignedSelected;
     }
@@ -519,6 +519,41 @@ export const getPlayerDisplayMode = (positionSnapshot, state) => {
   }
 
   return playerDisplayModes.unselected;
+};
+
+// if selectionInfo.selections has 3 position snapshots then
+// returns true if can substitute from
+//   [position snapshot 1] to [position snapshot 2]
+//   [position snapshot 2] to [position snapshot 3]
+//   [position snapshot 3] to [position snapshot 1]
+export const canSubstitute = (selectionInfo) => {
+  const {selections} = selectionInfo;
+  if (!selections || selections.length < 2) {
+    return false;
+  }
+  let returnValue = true;
+  for (let index = 0;index<selections.length;index++) {
+    returnValue = returnValue &&
+    canSubstituteFromTo(selections[index], selections[(index + 1) % selections.length]);
+  }
+  return returnValue;
+};
+
+export const canSubstituteFromTo = (positionSnapshotFrom, positionSnapshotTo) => {
+  return positionSnapshotFrom &&
+    positionSnapshotFrom.playerId &&
+    positionSnapshotTo &&
+    positionSnapshotTo.playerId &&
+    positionSnapshotFrom.playerId !== positionSnapshotTo.playerId;
+};
+
+// Returns true when there are exactly two selections and one
+// has a player in one does not.
+export const canSetLineup = (selectionInfo) => {
+  const {selections} = selectionInfo;
+  return selections &&
+    selections.length === 2 &&
+    !selections[0].playerId === !!selections[1].playerId;
 };
 
 export const getPlayerPressedSelectionInfo = (

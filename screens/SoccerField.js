@@ -22,6 +22,8 @@ import {
   deleteGameEtc,
 } from '../graphql/game';
 import {
+  canSetLineup,
+  canSubstitute,
   getCancelPressedSelectionInfo,
   getGameTimeline,
   getGameSnapshot,
@@ -490,7 +492,7 @@ class SoccerField extends React.Component {
                       style={styles.player}
                       position={positionSnapshot.event.position}
                       positionCategory={category}
-                      player={_.find(this.props.gamePlayers, (gamePlayer) => gamePlayer.player.id === positionSnapshot.playerId) && 
+                      player={_.find(this.props.gamePlayers, (gamePlayer) => gamePlayer.player.id === positionSnapshot.playerId) &&
                         _.find(this.props.gamePlayers, (gamePlayer) => gamePlayer.player.id === positionSnapshot.playerId).player}
                       gamePlan={this.props.gamePlan}
                       gamePlayers={this.props.gamePlayers}
@@ -647,16 +649,27 @@ class SoccerField extends React.Component {
             )}
             {playersSelected > 1 && (
               <Fragment>
-                <Button
-                  style={styles.button}
-                  onPress={this.onPressSubs}
-                  title="Sub Now"
-                />
-                <Button
-                  style={styles.button}
-                  onPress={this.onPressSubs}
-                  title="Sub Next Time"
-                />
+                {canSubstitute(this.state.selectionInfo) && (
+                  <Button
+                    style={styles.button}
+                    onPress={this.onPressSubs}
+                    title="Sub Now"
+                  />
+                )}
+                {canSubstitute(this.state.selectionInfo) && (
+                  <Button
+                    style={styles.button}
+                    onPress={this.onPressSubs}
+                    title="Sub Next Time"
+                  />
+                )}
+                {canSetLineup(this.state.selectionInfo) && (
+                  <Button
+                    style={styles.button}
+                    onPress={this.onPressSubs}
+                    title="Add to Lineup"
+                  />
+                )}
               </Fragment>
             )}
           </View>
