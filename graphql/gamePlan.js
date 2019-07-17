@@ -473,6 +473,50 @@ export const createNextSubstitution = (client, {
 };
 
 // gameTeamSeason is expected to have the shape found in getGameTeamSeasonInfo
+export const addToLineup = (client, {
+  gameActivityType,
+  gameActivityStatus,
+  gameTeamSeason,
+  gameSeconds,
+  totalSeconds,
+  positionSnapshotFrom,
+  positionSnapshotTo,
+  playerPositionAssignmentType,
+}) => {
+  let formationSubstitution;
+  let substitution;
+
+  return getOrCreateFormationSubstitution(client, {
+    formationId: "cjqcfvx3167k30128b70ieu58",
+    gameActivityType,
+    gameActivityStatus,
+    gameTeamSeason,
+    totalSeconds,
+    gameSeconds,
+  }).then(result => {formationSubstitution = result; console.log(result)})
+  .then(() => getOrCreateSubstitution(client, {
+    gameActivityType,
+    gameActivityStatus,
+    gameTeamSeason,
+    totalSeconds,
+    gameSeconds,
+  })).then(result => {substitution = result; console.log(result)})
+  .then(() => createPlayerPosition(client, {
+    playerId: positionSnapshotFrom.playerId,
+    positionId: positionSnapshotTo.event.position.id,
+  }))
+  .then(result => {playerPosition = result; console.log(result)})
+  .then(() => createPlayerPositionAssignment(client, {
+    playerPositionAssignmentType,
+    playerPositionId: playerPosition.id,
+    substitutionId: substitution.id,
+  }))
+  .then(result => {console.log(result)})
+  .then(() => console.log("addToLineup succeeded"))
+  .catch((error) => console.log(`error: ${error}`));
+};
+
+// gameTeamSeason is expected to have the shape found in getGameTeamSeasonInfo
 export const createInitialLineup = (client, {
   gameActivityType,
   gameActivityStatus,

@@ -14,6 +14,7 @@ import {
   // positionCategories,
 } from '../constants/Soccer';
 import {
+  addToLineup,
   createInitialLineup,
   createNextSubstitution,
   getNextSubstitutionInfo,
@@ -46,6 +47,7 @@ class SoccerField extends React.Component {
     this.state = this.getInitialState();
 
     this.onPressSubs = this.onPressSubs.bind(this);
+    this.onPressAddToLineup = this.onPressAddToLineup.bind(this);
     this.onPressDebug = this.onPressDebug.bind(this);
     this.onPressDelete = this.onPressDelete.bind(this);
     this.onPressManageRoster = this.onPressManageRoster.bind(this);
@@ -222,6 +224,33 @@ class SoccerField extends React.Component {
       gameActivityStatus: "PENDING",
       gameSeconds,
       totalSeconds,
+    })
+    .then(this.props.onSubsChange);
+  }
+
+  onPressAddToLineup() {
+    const {client, gameTeamSeason} = this.props;
+    const gameSeconds = 0;
+    const totalSeconds = 0;
+    const {selectionInfo} = this.state;
+    if (!selectionInfo.selections || selectionInfo.selections.length !== 2) {
+      console.error(`Must have two selections in onPressAddToLineup`);
+      return;
+    }
+    const positionSnapshotFrom = _.find(selectionInfo.selections, (selection) => selection.playerId);
+    const positionSnapshotTo = _.find(selectionInfo.selections, (selection) => !selection.playerId);
+    const playerPositionAssignmentType = "INITIAL";
+    // const {totalSeconds, gameSeconds} = getNextSubstitutionInfo(gameTeamSeason);
+    // console.log(`totalSeconds: ${totalSeconds}, gameSeconds: ${gameSeconds}`);
+    addToLineup(client, {
+      gameTeamSeason,
+      gameActivityType: "PLAN",
+      gameActivityStatus: "PENDING",
+      gameSeconds,
+      totalSeconds,
+      positionSnapshotFrom,
+      positionSnapshotTo,
+      playerPositionAssignmentType,
     })
     .then(this.props.onSubsChange);
   }
@@ -666,7 +695,7 @@ class SoccerField extends React.Component {
                 {canSetLineup(this.state.selectionInfo) && (
                   <Button
                     style={styles.button}
-                    onPress={this.onPressSubs}
+                    onPress={this.onPressAddToLineup}
                     title="Add to Lineup"
                   />
                 )}
