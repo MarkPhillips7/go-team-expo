@@ -16,7 +16,8 @@ import {
 import {
   addToLineup,
   createInitialLineup,
-  createNextSubstitution,
+  createNextMassSubstitution,
+  createSubstitutionForSelections,
   getNextSubstitutionInfo,
 } from '../graphql/gamePlan';
 import {
@@ -46,8 +47,10 @@ class SoccerField extends React.Component {
     // Don't call this.setState() here!
     this.state = this.getInitialState();
 
-    this.onPressSubs = this.onPressSubs.bind(this);
+    this.onPressAutoSubs = this.onPressAutoSubs.bind(this);
     this.onPressAddToLineup = this.onPressAddToLineup.bind(this);
+    this.onPressSubNow = this.onPressSubNow.bind(this);
+    this.onPressSubNextTime = this.onPressSubNextTime.bind(this);
     this.onPressDebug = this.onPressDebug.bind(this);
     this.onPressDelete = this.onPressDelete.bind(this);
     this.onPressManageRoster = this.onPressManageRoster.bind(this);
@@ -60,7 +63,6 @@ class SoccerField extends React.Component {
   }
 
   getInitialState() {
-
     const state = {
       assignmentsIndex: 0,
       clockMultiplier: 1.0,
@@ -214,11 +216,43 @@ class SoccerField extends React.Component {
     .then(this.props.onLineupChange);
   }
 
-  onPressSubs(){
+  onPressSubNow(){
+    const {client, gameTeamSeason} = this.props;
+    const {gameSeconds, selectionInfo} = this.state;
+    const totalSeconds = gameSeconds;
+    // console.log(`totalSeconds: ${totalSeconds}, gameSeconds: ${gameSeconds}`);
+    createSubstitutionForSelections(client, {
+      selectionInfo,
+      gameTeamSeason,
+      gameActivityType: "PLAN",
+      gameActivityStatus: "PENDING",
+      gameSeconds,
+      totalSeconds,
+    })
+    .then(this.props.onSubsChange);
+  }
+
+  onPressSubNextTime() {
+    const {client, gameTeamSeason} = this.props;
+    const {selectionInfo} = this.state;
+    // ToDo: Fix this; currently not right because getNeckSubstitutionInfo does not consider current time
+    const {totalSeconds, gameSeconds} = getNextSubstitutionInfo(gameTeamSeason);
+    createSubstitutionForSelections(client, {
+      selectionInfo,
+      gameTeamSeason,
+      gameActivityType: "PLAN",
+      gameActivityStatus: "PENDING",
+      gameSeconds,
+      totalSeconds,
+    })
+    .then(this.props.onSubsChange);
+  }
+
+  onPressAutoSubs(){
     const {client, gameTeamSeason} = this.props;
     const {totalSeconds, gameSeconds} = getNextSubstitutionInfo(gameTeamSeason);
     console.log(`totalSeconds: ${totalSeconds}, gameSeconds: ${gameSeconds}`);
-    createNextSubstitution(client, {
+    createNextMassSubstitution(client, {
       gameTeamSeason,
       gameActivityType: "PLAN",
       gameActivityStatus: "PENDING",
@@ -230,7 +264,7 @@ class SoccerField extends React.Component {
 
   onPressAddToLineup() {
     const {client, gameTeamSeason} = this.props;
-    const gameSeconds = 0;
+    const {gameSeconds} = this.state;
     const totalSeconds = 0;
     const {selectionInfo} = this.state;
     if (!selectionInfo.selections || selectionInfo.selections.length !== 2) {
@@ -637,7 +671,7 @@ class SoccerField extends React.Component {
                 />
                 <Button
                   style={styles.button}
-                  onPress={this.onPressSubs}
+                  onPress={this.onPressAutoSubs}
                   title="Auto Subs"
                 />
                 <Button
@@ -681,14 +715,14 @@ class SoccerField extends React.Component {
                 {canSubstitute(this.state.selectionInfo) && (
                   <Button
                     style={styles.button}
-                    onPress={this.onPressSubs}
+                    onPress={this.onPressSubNow}
                     title="Sub Now"
                   />
                 )}
                 {canSubstitute(this.state.selectionInfo) && (
                   <Button
                     style={styles.button}
-                    onPress={this.onPressSubs}
+                    onPress={this.onPressSubNextTime}
                     title="Sub Next Time"
                   />
                 )}

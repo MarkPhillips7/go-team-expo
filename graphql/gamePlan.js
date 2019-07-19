@@ -237,6 +237,27 @@ const createSubstitution = (client, {
   .then((result) => result.data.createSubstitution);
 };
 
+const getOrCreateSubstitutionAtSpecificTime = (client, {
+  gameActivityStatus,
+  gameActivityType,
+  gameTeamSeason,
+  totalSeconds,
+  gameSeconds,
+}) => {
+  const substitution = gameTeamSeason.substitutions &&
+    _.find(gameTeamSeason.substitutions, (sub) => sub.gameSeconds === gameSeconds);
+  if (!substitution) {
+    return createSubstitution(client, {
+      gameActivityStatus,
+      gameActivityType,
+      gameTeamSeason,
+      totalSeconds,
+      gameSeconds,
+    });
+  }
+  return Promise.resolve(substitution);
+};
+
 const getOrCreateSubstitution = (client, {
   gameActivityStatus,
   gameActivityType,
@@ -345,6 +366,54 @@ const getOrCreatePlayerPositionsAndPlayerPositionAssignments = (client, {
 ]);
 };
 
+const positionSnapshotRepresentsBench = (positionSnapshot) => {
+  // Currently the bench is represented by there not being a position
+  return !positionSnapshot.event ||
+    !positionSnapshot.event.position;
+    //  ||
+    // positionSnapshot.event.position.positionCategory.parkLocation === "BENCH"
+};
+
+const substituteSelectedPlayers = (client, {
+  formationSubstitution,
+  selectionInfo,
+  substitution,
+  gameActivityType,
+  gameActivityStatus,
+  gameTeamSeason,
+  totalSeconds,
+  gameSeconds,
+}) => {
+  let playerPosition;
+
+  return Promise.all(_.map(selectionInfo.selections, (positionSnapshotFrom, index) => {
+    const positionSnapshotTo = selectionInfo.selections[(index + 1) % selectionInfo.selections.length];
+    let playerPositionAssignmentType;
+    if (positionSnapshotRepresentsBench(positionSnapshotFrom)) {
+      playerPositionAssignmentType = "IN";
+    } else if (positionSnapshotRepresentsBench(positionSnapshotTo)) {
+      playerPositionAssignmentType = "OUT";
+    } else {
+      playerPositionAssignmentType = "CHANGE";
+    }
+    const playerId = positionSnapshotFrom.playerId;
+    const positionId = positionSnapshotTo &&
+      positionSnapshotTo.event &&
+      positionSnapshotTo.event.position &&
+      positionSnapshotTo.event.position.id;
+    return createPlayerPosition(client, {
+      playerId,
+      positionId,
+    })
+    .then(result => {playerPosition = result; console.log(result)})
+    .then(() => createPlayerPositionAssignment(client, {
+      playerPositionAssignmentType,
+      playerPositionId: playerPosition.id,
+      substitutionId: substitution.id,
+    }));
+  }));
+};
+
 const substituteMaxPlayersFromBench = (client, {
   formationSubstitution,
   substitution,
@@ -440,8 +509,42 @@ const substituteMaxPlayersFromBench = (client, {
   );
 };
 
+export const createSubstitutionForSelections = (client, {
+  selectionInfo,
+  gameActivityType,
+  gameActivityStatus,
+  gameTeamSeason,
+  gameSeconds,
+  totalSeconds,
+}) => {
+  // ToDo: Get formation substitution based on the gameSeconds
+  const formationSubstitution = gameTeamSeason.formationSubstitutions
+  [gameTeamSeason.formationSubstitutions.length - 1];
+  let substitution;
+
+  return getOrCreateSubstitutionAtSpecificTime(client, {
+    gameActivityType,
+    gameActivityStatus,
+    gameTeamSeason,
+    totalSeconds,
+    gameSeconds,
+  }).then(result => {substitution = result; console.log(result)})
+  .then(() => substituteSelectedPlayers(client, {
+    formationSubstitution,
+    selectionInfo,
+    substitution,
+    gameActivityType,
+    gameActivityStatus,
+    gameTeamSeason,
+    totalSeconds,
+    gameSeconds,
+  })).then(result => {console.log(result)})
+  .then(() => console.log("createSubstitutionForSelections succeeded"))
+  .catch((error) => console.log(`error: ${error}`));
+};
+
 // gameTeamSeason is expected to have the shape found in getGameTeamSeasonInfo
-export const createNextSubstitution = (client, {
+export const createNextMassSubstitution = (client, {
   gameActivityType,
   gameActivityStatus,
   gameTeamSeason,
@@ -468,7 +571,7 @@ export const createNextSubstitution = (client, {
     totalSeconds,
     gameSeconds,
   })).then(result => {console.log(result)})
-  .then(() => console.log("createNextSubstitution succeeded"))
+  .then(() => console.log("createNextMassSubstitution succeeded"))
   .catch((error) => console.log(`error: ${error}`));
 };
 
@@ -485,6 +588,7 @@ export const addToLineup = (client, {
 }) => {
   let formationSubstitution;
   let substitution;
+  let playerPosition;
 
   return getOrCreateFormationSubstitution(client, {
     formationId: "cjqcfvx3167k30128b70ieu58",
