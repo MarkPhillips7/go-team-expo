@@ -456,7 +456,7 @@ class SoccerField extends React.Component {
       this.state.selectionInfo.selections.length || 0;
     // console.log("Rendering SoccerField");
     console.log(gameTimeline);
-    console.log(gameSnapshot);
+    //console.log(gameSnapshot);
     return (
       <View style={styles.screen}>
         {this.state.mode === modes.debug && (
@@ -549,6 +549,7 @@ class SoccerField extends React.Component {
                   _.chain(gameSnapshot.positions)
                   .filter((positionSnapshot) =>
                   positionSnapshot.event.position.positionCategory.name === category.name)
+                  .sortBy((positionSnapshot) => positionSnapshot.event.position.leftToRightPercent)
                   .map((positionSnapshot, positionSnapshotIndex) => (
                     <Player
                       key={positionSnapshotIndex}
@@ -598,6 +599,7 @@ class SoccerField extends React.Component {
                   gameSnapshot.players[gamePlayer.player.id] &&
                   (!gameSnapshot.players[gamePlayer.player.id].activeEvent ||
                   !gameSnapshot.players[gamePlayer.player.id].activeEvent.position))
+                  .sortBy((gamePlayer) => gameSnapshot.players[gamePlayer.player.id].cumulativeInGameSeconds)
                   .map((gamePlayer, gamePlayerIndex) => (
                     <Player
                       key={gamePlayerIndex}

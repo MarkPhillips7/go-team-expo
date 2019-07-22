@@ -63,6 +63,7 @@ query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
               name
               color
             }
+            leftToRightPercent
           }
         }
       }
@@ -85,6 +86,7 @@ query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
             name
             color
           }
+          leftToRightPercent
         }
       },
     }
