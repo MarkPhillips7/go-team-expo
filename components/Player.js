@@ -27,7 +27,7 @@ export default class Player extends React.Component {
     };
     const {cumulativeInGameSeconds, pendingMove, piePieces} = this.props.playerStats || {cumulativeInGameSeconds:0};
     const playTime = moment.utc(cumulativeInGameSeconds*1000).format("m:ss") || "0:00";
-    const colors = this.props.player && 
+    const colors = this.props.player &&
     this.props.player.positionCategoryPreferencesAsPlayer &&
     this.props.player.positionCategoryPreferencesAsPlayer.length &&
     _.map(this.props.player.positionCategoryPreferencesAsPlayer, (positionCategoryPreference) =>
@@ -38,12 +38,16 @@ export default class Player extends React.Component {
         style={this.props.style}
         onPress={this.props.onPress}
       >
-        {this.props.player && this.props.player.name && 
+        {this.props.player && this.props.player.name &&
           <Text style={applyMultiplier(styles.playTime, this.props.playerDisplayMode.multiplier)}>
             {playTime}
           </Text>
         }
+        {
+          // why pointerEvents: https://github.com/react-native-community/react-native-svg/issues/794
+        }
         <View
+          pointerEvents="none"
           style={applyMultiplier(styles.pieAndArrow, this.props.playerDisplayMode.multiplier)}
         >
           <CirclePie
@@ -67,7 +71,7 @@ export default class Player extends React.Component {
             </View>
           }
         </View>
-        {this.props.player && this.props.player.name && 
+        {this.props.player && this.props.player.name &&
           <ColoredTextBox
             style={applyMultiplier(styles.playerName, this.props.playerDisplayMode.multiplier)}
             colors={colors}

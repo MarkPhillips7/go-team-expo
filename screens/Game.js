@@ -23,7 +23,7 @@ class Game extends React.Component {
   render() {
     // console.log(`Game render`);
     const gameTeamSeasonId = this.props.navigation.getParam('gameTeamSeasonId');
-    console.log(`gameTeamSeasonId: ${gameTeamSeasonId}`);
+    // console.log(`gameTeamSeasonId: ${gameTeamSeasonId}`);
     return (
       <Query
         query={GAME_TEAM_SEASON_INFO}
@@ -35,7 +35,7 @@ class Game extends React.Component {
           if (loading) return <Text>Loading...</Text>;
           if (error) { console.log(JSON.stringify(error)); return <Text>Error</Text>;}
 
-          console.log(`rendering game`);//data && JSON.stringify(data));
+          // console.log(`rendering game`);//data && JSON.stringify(data));
           return (
             <SoccerField
               gameDefinition={data && data.GameTeamSeason && data.GameTeamSeason.teamSeason &&

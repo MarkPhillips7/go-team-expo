@@ -220,7 +220,7 @@ class SoccerField extends React.Component {
     const {client, gameTeamSeason} = this.props;
     const {gameSeconds, selectionInfo} = this.state;
     const totalSeconds = gameSeconds;
-    // console.log(`totalSeconds: ${totalSeconds}, gameSeconds: ${gameSeconds}`);
+    console.log(`totalSeconds: ${totalSeconds}, gameSeconds: ${gameSeconds}`,selectionInfo);
     createSubstitutionForSelections(client, {
       selectionInfo,
       gameTeamSeason,
@@ -251,7 +251,7 @@ class SoccerField extends React.Component {
   onPressAutoSubs(){
     const {client, gameTeamSeason} = this.props;
     const {totalSeconds, gameSeconds} = getNextSubstitutionInfo(gameTeamSeason);
-    console.log(`totalSeconds: ${totalSeconds}, gameSeconds: ${gameSeconds}`);
+    // console.log(`totalSeconds: ${totalSeconds}, gameSeconds: ${gameSeconds}`);
     createNextMassSubstitution(client, {
       gameTeamSeason,
       gameActivityType: "PLAN",
@@ -455,7 +455,7 @@ class SoccerField extends React.Component {
       this.state.selectionInfo.selections &&
       this.state.selectionInfo.selections.length || 0;
     // console.log("Rendering SoccerField");
-    console.log(gameTimeline);
+    // console.log(gameTimeline);
     //console.log(gameSnapshot);
     return (
       <View style={styles.screen}>
@@ -480,7 +480,7 @@ class SoccerField extends React.Component {
               minimumValue={1}
               maximumValue={200}
               onValueChange={(clockMultiplier) => {
-                console.log(`hello ${clockMultiplier}`);
+                // console.log(`hello ${clockMultiplier}`);
                 this.setState((previousState) => {
                   return {
                     ...previousState,
