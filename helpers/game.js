@@ -214,6 +214,117 @@ export const getGameStats = ({
   return gameStats;
 };
 
+const getGamePeriodAfter = (gamePeriods, gamePeriodId) => {
+  if (!gamePeriods) {
+    return null;
+  }
+  const index = gamePeriods.indexOf(gamePeriodId);
+  if (index === -1) {
+    return null;
+  }
+  return gamePeriods.length > index ? gamePeriods[index + 1] : null;
+};
+
+const getGamePeriod = (mostRecentGameActivity, gameTeamSeason, gameStatus) => {
+  if (gameStatus === "SCHEDULED") {
+    return gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods[0];
+  }
+
+  if (gameStatus === "IN_PROGRESS" && mostRecentGameActivity) {
+    if (mostRecentGameActivity.gameActivityStatus === "PENDING" ||
+      mostRecentGameActivity.gameActivityStatus === "IN_PROGRESS") {
+        return _.find(gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods,
+          (gamePeriod) => gamePeriod.id === mostRecentGameActivity.gamePeriod.id);
+    }
+
+    // gameActivityStatus is COMPLETED or STOPPED
+    return getGamePeriodAfter(
+      gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods,
+      mostRecentGameActivity.gamePeriod.id);
+  }
+
+  // if (gameStatus === "COMPLETED") {
+  return null;
+};
+
+export const getCurrentTimeInfo = (gameTeamSeason) => {
+  const gameStatus = gameTeamSeason &&
+  gameTeamSeason.game &&
+  gameTeamSeason.game.gameStatus;
+  const mostRecentGameActivity = gameTeamSeason &&
+  gameTeamSeason.game &&
+  _.last(gameTeamSeason.game.gameActivities);
+  let timestamp = undefined;
+  let totalSeconds = 0;
+  let gameSeconds = 0;
+  let isGameOver = gameStatus === "COMPLETED";
+
+  if (gameStatus === "IN_PROGRESS" || gameStatus === "COMPLETED") {
+    if (mostRecentGameActivity) {
+      timestamp = mostRecentGameActivity.timestamp;
+      totalSeconds = mostRecentGameActivity.totalSeconds;
+      gameSeconds = mostRecentGameActivity.gameSeconds;
+    }
+
+    if (gameStatus === "IN_PROGRESS") {
+      const now = moment();
+      timestamp = now.toDate();
+      if (mostRecentGameActivity) {
+        const secondsSinceMostRecentActivity = Math.round(now.diff(mostRecentGameActivity.timestamp) / 1000);
+
+        if (mostRecentGameActivity.gameActivityStatus === "IN_PROGRESS") {
+          gameSeconds += secondsSinceMostRecentActivity;
+        }
+        if (mostRecentGameActivity.gameActivityStatus === "STOPPED" ||
+        mostRecentGameActivity.gameActivityStatus === "COMPLETED" ||
+        mostRecentGameActivity.gameActivityStatus === "IN_PROGRESS") {
+          totalSeconds += secondsSinceMostRecentActivity;
+        }
+      }
+    }
+  }
+
+  return {
+    timestamp,
+    totalSeconds,
+    gameSeconds,
+    isGameOver,
+  };
+};
+
+export const getGameStatusInfo = ({
+  gameTeamSeason,
+  timestamp,
+  totalSeconds,
+  gameSeconds,
+}) => {
+  const gameStatus = gameTeamSeason &&
+  gameTeamSeason.game &&
+  gameTeamSeason.game.gameStatus;
+  const mostRecentGameActivity = gameTeamSeason &&
+  gameTeamSeason.game &&
+  _.last(gameTeamSeason.game.gameActivities);
+  const gamePeriod = getGamePeriod(mostRecentGameActivity, gameTeamSeason, gameStatus);
+  const gameDurationSeconds = _.reduce(gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods,
+  (sum, gamePeriod) => sum + gamePeriod.durationSeconds, 0);
+  const gameActivityType =
+  gameStatus === "IN_PROGRESS" || gameStatus === "COMPLETED"
+  ? "OFFICIAL"
+  : "PLAN";
+  const gameActivityStatus = mostRecentGameActivity
+  ? mostRecentGameActivity.gameActivityStatus
+  : "PENDING";
+
+  return {
+    gameStatus,
+    gamePeriod,
+    mostRecentGameActivity,
+    gameActivityType,
+    gameActivityStatus,
+    gameDurationSeconds
+  };
+};
+
 export const getGameTimeline = ({
   gameTeamSeason,
   gameActivityType,
@@ -221,7 +332,6 @@ export const getGameTimeline = ({
   totalSeconds,
   gameSeconds,
   timestamp,
-  gameDurationSeconds,
 }) => {
   const gameTimeline = initializeGameTimeline({
     totalSeconds,

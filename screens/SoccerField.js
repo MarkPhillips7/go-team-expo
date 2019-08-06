@@ -22,13 +22,16 @@ import {
 } from '../graphql/gamePlan';
 import {
   deleteGameEtc,
+  startGame,
 } from '../graphql/game';
 import {
   canSetLineup,
   canSubstitute,
+  getCurrentTimeInfo,
   getCancelPressedSelectionInfo,
   getGameTimeline,
   getGameSnapshot,
+  getGameStatusInfo,
   getPlayerDisplayMode,
   getPlayerPressedSelectionInfo,
 } from '../helpers/game';
@@ -54,128 +57,56 @@ class SoccerField extends React.Component {
     this.onPressDebug = this.onPressDebug.bind(this);
     this.onPressDelete = this.onPressDelete.bind(this);
     this.onPressManageRoster = this.onPressManageRoster.bind(this);
-    this.onPressStartPauseResume = this.onPressStartPauseResume.bind(this);
+    this.onPressStart = this.onPressStart.bind(this);
+    this.onPressStop = this.onPressStop.bind(this);
     this.onPressReset = this.onPressReset.bind(this);
     this.onPressLineup = this.onPressLineup.bind(this);
     this.updateGame = this.updateGame.bind(this);
     this.onPressPlayer = this.onPressPlayer.bind(this);
     this.onPressCancel = this.onPressCancel.bind(this);
+    this.startOrStopGameTimer = this.startOrStopGameTimer.bind(this);
   }
 
   getInitialState() {
     const state = {
-      assignmentsIndex: 0,
       clockMultiplier: 1.0,
       currentGameTime: undefined,
-      gameDurationSeconds: 50.0*60,
       gameStartTime: undefined,
-      gameSeconds: 0,
-      // gamePlan: undefined,
-      // gameRoster: this.props.gamePlayers || [],
-      // gamePositions: this.props.//this.getGamePositions(this.props.gamePlayers || []),
-      // assignmentsHistory: [],
-      isClockRunning: false,
+      isClockRunning: true,
       isGameOver: false,
       mode: modes.default,
+      totalSeconds: 0,
+      gameSeconds: 0,
+      timestamp: undefined,
     };
-    // state.gamePlan = this.getGamePlan(state);
     return state;
   }
-  //
-  // getGamePositions() {
-  //   let positionIndex = 0;
-  //   return this.props.gamePlayers.map((gamePlayer) => {
-  //     if (gamePlayer.availability === playerAvailability.unavailable) {
-  //       return specialPositions.unavailable;
-  //     }
-  //
-  //     if (this.props.positions && this.props.positions.length > positionIndex) {
-  //       return this.props.positions[positionIndex++];
-  //     }
-  //     return specialPositions.substitute;
-  //     // switch (positionIndex++) {
-  //     //   case 0:
-  //     //     return specialPositions.keeper;
-  //     //   case 1:
-  //     //     return specialPositions.leftBack;
-  //     //   case 2:
-  //     //     return specialPositions.rightBack;
-  //     //   case 3:
-  //     //     return specialPositions.leftMid;
-  //     //   case 4:
-  //     //     return specialPositions.rightMid;
-  //     //   case 5:
-  //     //     return specialPositions.leftForward;
-  //     //   case 6:
-  //     //     return specialPositions.rightForward;
-  //     //   default:
-  //     //     return specialPositions.substitute;
-  //     // }
-  //   });
-  // }
 
-  // getAssignments() {
-  //   const gamePositions = this.props.gameTeamSeason &&
-  //     this.props.gameTeamSeason.formationSubstitutions &&
-  //     this.props.gameTeamSeason.formationSubstitutions.length &&
-  //     this.props.gameTeamSeason.formationSubstitutions[0] &&
-  //     this.props.gameTeamSeason.formationSubstitutions[0].formation &&
-  //     this.props.gameTeamSeason.formationSubstitutions[0].formation.positions || [];
-  //   let positions = gamePositions.map((gamePosition) => ({
-  //     filled: false,
-  //     gamePosition: gamePosition,
-  //   }));
-  //   const getAvailablePosition = (gamePlayer) => {
-  //     const availablePosition = _.find(positions,
-  //       (position) => !position.filled &&
-  //       ((gamePlayer.availability === playerAvailability.unavailable &&
-  //         position.gamePosition.name === specialPositions.unavailable.name) ||
-  //       (gamePlayer.availability !== playerAvailability.unavailable &&
-  //         position.gamePosition.name !== specialPositions.unavailable.name))
-  //     );
-  //     if (!availablePosition) {
-  //       return specialPositions.unavailable;
-  //     }
-  //
-  //     availablePosition.filled = true;
-  //     return availablePosition.gamePosition;
-  //   };
-  //   return {
-  //     assignments: _.chain(this.props.gamePlayers)
-  //       .shuffle()
-  //       .map((gamePlayer) => {
-  //         const position = getAvailablePosition(gamePlayer);
-  //         return {
-  //           gamePlayer,
-  //           position,
-  //         };
-  //       })
-  //       .value(),
-  //     startTime: undefined,
-  //     endTime: undefined
-  //   };
-  // }
+  componentDidMount() {
+    this.startOrStopGameTimer();
+  }
 
-  // getGamePlan() {
-  //   let totalGameSeconds = _.reduce(this.props.gameTeamSeason &&
-  //     this.props.gameTeamSeason.teamSeason &&
-  //     this.props.gameTeamSeason.teamSeason.team &&
-  //     this.props.gameTeamSeason.teamSeason.team.league &&
-  //     this.props.gameTeamSeason.teamSeason.team.league.gameDefinition &&
-  //     this.props.gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods || [],
-  //     (sum, gamePeriod) => sum + gamePeriod.durationSeconds, 0
-  //   );
-  //   const secondsBetweenSubs = this.props.gameDurationSeconds / numberOfLineups;
-  //   const assignmentsList = [];
-  //   for (var i = 0; i < numberOfLineups; i++) {
-  //     assignmentsList.push(this.getAssignments());
-  //   }
-  //   return {
-  //     numberOfLineups,
-  //     secondsBetweenSubs,
-  //     assignmentsList,
-  //   };
-  // }
+  startOrStopGameTimer() {
+    const {gameTeamSeason} = this.props;
+    const gameStatusInfo = getGameStatusInfo({
+      gameTeamSeason,
+    });
+
+    // If the game is in progress we need to update clocks every second
+    if (gameStatusInfo.gameStatus === "IN_PROGRESS") {
+      const updateGameTimer = setTimeout(this.updateGame, 0);
+      this.setState({
+        isClockRunning: true,
+        updateGameTimer,
+      });
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.state.updateGameTimer) {
+      clearTimeout(this.state.updateGameTimer);
+    }
+  }
 
   onPressManageRoster() {
     this.setState((previousState) => {
@@ -218,8 +149,7 @@ class SoccerField extends React.Component {
 
   onPressSubNow(){
     const {client, gameTeamSeason} = this.props;
-    const {gameSeconds, selectionInfo} = this.state;
-    const totalSeconds = gameSeconds;
+    const {gameSeconds, selectionInfo, totalSeconds} = this.state;
     console.log(`totalSeconds: ${totalSeconds}, gameSeconds: ${gameSeconds}`,selectionInfo);
     createSubstitutionForSelections(client, {
       selectionInfo,
@@ -291,9 +221,10 @@ class SoccerField extends React.Component {
 
   onPressDelete() {
     const {client, gameTeamSeason} = this.props;
-      deleteGameEtc(client, {
+    deleteGameEtc(client, {
       gameTeamSeason
-    });
+    })
+    .then(this.props.onSubsChange);
   }
 
   onPressReset() {
@@ -301,23 +232,6 @@ class SoccerField extends React.Component {
       return this.getInitialState();
     });
   }
-  //
-  // onPlayerAvailableChange(rosterPlayer, playerIsAvailable) {
-  //   console.log(JSON.stringify(rosterPlayer));
-  //   this.setState((previousState) => {
-  //     const gameRoster = [...previousState.gameRoster];
-  //     const gamePlayer = _.find(gameRoster, (_gamePlayer) => rosterPlayer.player.name === _gamePlayer.player.name);
-  //     console.log('gamePlayer: ' + JSON.stringify(gamePlayer));
-  //     gamePlayer.availability = playerIsAvailable ? playerAvailability.active : playerAvailability.unavailable;
-  //     const newState = {
-  //       ...previousState,
-  //       gameRoster,
-  //       gamePositions: this.getGamePositions(gameRoster),
-  //     };
-  //     newState.gamePlan = this.getGamePlan(newState);
-  //     return newState;
-  //   });
-  // }
 
   onPressDebug() {
     this.setState((previousState) => {
@@ -328,31 +242,47 @@ class SoccerField extends React.Component {
     })
   }
 
-  onPressStartPauseResume() {
-    this.setState((previousState) => {
-      if (previousState.isClockRunning) {
-        return {
-          ...previousState,
-          isClockRunning: false,
-        };
-      }
-
-      setTimeout(this.updateGame, 200);
-
-      const gameStartTime = previousState.gameStartTime || new Date();
-      // const gamePlan = previousState.gamePlan;
-      const assignmentsIndex = 0;
-      // gamePlan.assignmentsList[assignmentsIndex].startTime = gameStartTime;
-      return {
-        ...previousState,
-        gameStartTime,
-        // gamePlan,
-        assignmentsIndex,
-        isClockRunning: true,
-        isGameOver: false,
-      };
+  onPressStart() {
+    const {client, gameTeamSeason} = this.props;
+    const {game} = gameTeamSeason;
+    const {gamePeriod: {id: gamePeriodId}} = getGameStatusInfo({
+      gameTeamSeason,
     });
+    startGame(client, {
+      game,
+      gamePeriodId,
+      timestamp: new Date(),
+    })
+    .then(this.startOrStopGameTimer);
+    // this.setState((previousState) => {
+    //   if (previousState.isClockRunning) {
+    //     return {
+    //       ...previousState,
+    //       isClockRunning: false,
+    //     };
+    //   }
+    //
+    //   setTimeout(this.updateGame, 200);
+    //
+    //   const gameStartTime = previousState.gameStartTime || new Date();
+    //   return {
+    //     ...previousState,
+    //     gameStartTime,
+    //     isClockRunning: true,
+    //     isGameOver: false,
+    //   };
+    // });
   }
+
+  onPressStop() {
+    const {client, gameTeamSeason} = this.props;
+    startGame(client, {
+      game,
+      gamePeriodId,
+      timestamp,
+    })
+    .then(this.startOrStopGameTimer);
+  };
 
   onSliderMove(gameSeconds) {
     if (moment().diff(this.state.lastSliderMoveTime) < millisecondsBeforeSliderAction) {
@@ -367,51 +297,76 @@ class SoccerField extends React.Component {
   }
 
   updateGame() {
-    // this.setState((previousState) => {
-    //   if (!this.state.isClockRunning) {
-    //     return;
-    //   }
-    //
-    //   const now = moment();
-    //   // const demoTimeMultiplier = previousState.gameDurationSeconds / totalDemoSeconds;
-    //   const actualMillisecondsSinceGameStart = now.diff(previousState.gameStartTime);
-    //   const currentGameTime = moment(previousState.gameStartTime).add(
-    //     actualMillisecondsSinceGameStart*this.props.gameState.clockMultiplier, "milliseconds").toDate();
-    //   const gamePlan = previousState.gamePlan && {
-    //     ...previousState.gamePlan,
-    //   };
-    //   const assignmentsList = gamePlan && gamePlan.assignmentsList;
-    //   let assignmentsIndex = previousState.assignmentsIndex;
-    //   let isGameOver = previousState.isGameOver;
-    //   const currentAssignments = assignmentsList[assignmentsIndex];
-    //
-    //   // check whether current game position assignments have expired and should be substituted
-    //   if (currentAssignments
-    //     && currentAssignments.startTime
-    //     && moment(currentGameTime).diff(currentAssignments.startTime, 'seconds')
-    //     > previousState.gamePlan.secondsBetweenSubs) {
-    //     console.log("substitution time");
-    //     currentAssignments.endTime = currentGameTime;
-    //     if (assignmentsIndex + 1 >= numberOfLineups) {
-    //       isGameOver = true;
-    //     } else {
-    //       assignmentsIndex += 1;
-    //       assignmentsList[assignmentsIndex].startTime = currentGameTime;
-    //     }
-    //   }
-    //
-    //   if (!isGameOver) {
-    //     setTimeout(this.updateGame, 200);
-    //   }
-    //
-    //   return {
-    //     ...previousState,
-    //     currentGameTime,
-    //     gamePlan,
-    //     assignmentsIndex,
-    //     isGameOver,
-    //   };
-    // });
+    this.setState((previousState) => {
+      let {isClockRunning, updateGameTimer} = this.state;
+
+      if (!isClockRunning) {
+        return previousState;
+      }
+
+      const {gameTeamSeason} = this.props;
+      const {
+        timestamp,
+        totalSeconds,
+        gameSeconds,
+        isGameOver,
+      } = getCurrentTimeInfo(gameTeamSeason);
+
+      isClockRunning = !isGameOver;
+
+      if (!isGameOver) {
+        updateGameTimer = setTimeout(this.updateGame, 1000);
+      }
+
+      return {
+        ...previousState,
+        timestamp,
+        totalSeconds,
+        gameSeconds,
+        isClockRunning,
+        updateGameTimer,
+      };
+
+      // const now = moment();
+      // // const demoTimeMultiplier = previousState.gameDurationSeconds / totalDemoSeconds;
+      // const actualMillisecondsSinceGameStart = now.diff(previousState.gameStartTime);
+      // const currentGameTime = moment(previousState.gameStartTime).add(
+      //   actualMillisecondsSinceGameStart*this.props.gameState.clockMultiplier, "milliseconds").toDate();
+      // const gamePlan = previousState.gamePlan && {
+      //   ...previousState.gamePlan,
+      // };
+      // const assignmentsList = gamePlan && gamePlan.assignmentsList;
+      // let assignmentsIndex = previousState.assignmentsIndex;
+      // let isGameOver = previousState.isGameOver;
+      // const currentAssignments = assignmentsList[assignmentsIndex];
+      //
+      // // check whether current game position assignments have expired and should be substituted
+      // if (currentAssignments
+      //   && currentAssignments.startTime
+      //   && moment(currentGameTime).diff(currentAssignments.startTime, 'seconds')
+      //   > previousState.gamePlan.secondsBetweenSubs) {
+      //   console.log("substitution time");
+      //   currentAssignments.endTime = currentGameTime;
+      //   if (assignmentsIndex + 1 >= numberOfLineups) {
+      //     isGameOver = true;
+      //   } else {
+      //     assignmentsIndex += 1;
+      //     assignmentsList[assignmentsIndex].startTime = currentGameTime;
+      //   }
+      // }
+      //
+      // if (!isGameOver) {
+      //   setTimeout(this.updateGame, 200);
+      // }
+      //
+      // return {
+      //   ...previousState,
+      //   currentGameTime,
+      //   gamePlan,
+      //   assignmentsIndex,
+      //   isGameOver,
+      // };
+    });
   }
 
   getCurrentLineup() {
@@ -424,13 +379,23 @@ class SoccerField extends React.Component {
 
   render() {
     const {gameTeamSeason, positionCategories} = this.props;
-    const {gameDurationSeconds} = this.state;
-    const gameActivityType = "PLAN";
-    const gameActivityStatus = "PENDING";
-    const {gameSeconds} = this.state;// = 1111;//this.state.gameDurationSeconds;
-    const totalSeconds = gameSeconds;
-    const timestamp = undefined;
-    // const currentLineup = this.getCurrentLineup();
+
+    const {
+      timestamp,
+      totalSeconds,
+      gameSeconds
+    } = this.state;
+    const gameStatusInfo = getGameStatusInfo({
+      gameTeamSeason,
+    });
+    const {
+      gameStatus,
+      gamePeriod,
+      mostRecentGameActivity,
+      gameActivityType,
+      gameActivityStatus,
+      gameDurationSeconds
+    } = gameStatusInfo;
     const gameTimeline = getGameTimeline({
       gameTeamSeason,
       gameActivityType,
@@ -438,7 +403,6 @@ class SoccerField extends React.Component {
       totalSeconds,
       gameSeconds,
       timestamp,
-      gameDurationSeconds,
     });
     const gameSnapshot = getGameSnapshot({
       gameTimeline,
@@ -454,9 +418,7 @@ class SoccerField extends React.Component {
     const playersSelected = this.state.selectionInfo &&
       this.state.selectionInfo.selections &&
       this.state.selectionInfo.selections.length || 0;
-    // console.log("Rendering SoccerField");
-    // console.log(gameTimeline);
-    //console.log(gameSnapshot);
+    // console.log(`gameStatusInfo:`, gameStatusInfo);
     return (
       <View style={styles.screen}>
         {this.state.mode === modes.debug && (
@@ -469,9 +431,6 @@ class SoccerField extends React.Component {
             </Text>
             <Text>
               gameDurationSeconds {this.state && this.state.gameDurationSeconds}
-            </Text>
-            <Text>
-              assignmentsIndex {this.state && this.state.assignmentsIndex}
             </Text>
             <Text>
               isGameOver {this.state && this.state.isGameOver}
@@ -562,9 +521,7 @@ class SoccerField extends React.Component {
                       gamePlayers={this.props.gamePlayers}
                       gameStartTime={this.state.gameStartTime}
                       gameSeconds={gameSeconds}
-                      gameDurationSeconds={this.state.gameDurationSeconds}
                       currentGameTime={this.state.currentGameTime}
-                      assignmentsIndex={this.state.assignmentsIndex}
                       isGameOver={this.state.isGameOver}
                       playerStats={gameSnapshot.players[positionSnapshot.playerId]}
                       pendingMove={gameSnapshot.players[positionSnapshot.playerId] && gameSnapshot.players[positionSnapshot.playerId].pendingMove}
@@ -610,9 +567,7 @@ class SoccerField extends React.Component {
                       gamePlan={this.props.gamePlan}
                       gamePlayers={this.props.gamePlayers}
                       gameStartTime={this.state.gameStartTime}
-                      gameDurationSeconds={this.state.gameDurationSeconds}
                       currentGameTime={this.state.currentGameTime}
-                      assignmentsIndex={this.state.assignmentsIndex}
                       isGameOver={this.state.isGameOver}
                       playerStats={gameSnapshot.players[gamePlayer.player.id]}
                       pendingMove={gameSnapshot.players[gamePlayer.player.id].pendingMove}
@@ -644,9 +599,9 @@ class SoccerField extends React.Component {
             <Slider
               style={styles.slider}
               minimumValue={0}
-              maximumValue={this.state.gameDurationSeconds}
+              maximumValue={gameDurationSeconds}
               onValueChange={(gameSeconds) => {
-                console.log(`hello ${gameSeconds}`);
+                // console.log(`hello ${gameSeconds}`);
                 // only update gameSeconds after so much time since last slider move
                 this.setState((previousState) => {
                   return {
@@ -661,11 +616,26 @@ class SoccerField extends React.Component {
             )}
             {playersSelected === 0 && (
               <Fragment>
-                <Button
-                  style={styles.button}
-                  onPress={this.onPressStartPauseResume}
-                  title={this.state.gameStartTime ? (this.state.isClockRunning ? "Pause" : "Resume") : "Start"}
-                />
+                {gamePeriod &&
+                  ((gameStatus === "SCHEDULED" && gameActivityType === "PLAN") ||
+                  (gameStatus === "IN_PROGRESS" && gameActivityType === "OFFICIAL" &&
+                  gameActivityStatus === "COMPLETED")) &&
+                  <Button
+                    style={styles.button}
+                    onPress={this.onPressStart}
+                    title={`Start ${gamePeriod.name}`}
+                  />
+                }
+                {gamePeriod &&
+                  (gameStatus === "IN_PROGRESS" &&
+                  gameActivityType === "OFFICIAL" &&
+                  gameActivityStatus === "IN_PROGRESS") &&
+                  <Button
+                    style={styles.button}
+                    onPress={this.onPressStop}
+                    title={`End ${gamePeriod.name}`}
+                  />
+                }
                 <Button
                   style={styles.button}
                   onPress={this.onPressReset}

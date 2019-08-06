@@ -22,6 +22,8 @@ query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
         league {
           gameDefinition {
             gamePeriods {
+              id
+              name
               durationSeconds
             }
             numberPlayersPerSide
@@ -63,7 +65,6 @@ query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
               name
               color
             }
-            leftToRightPercent
           }
         }
       }
@@ -86,9 +87,24 @@ query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
             name
             color
           }
-          leftToRightPercent
         }
       },
+    }
+    game {
+      id
+      gameActivities {
+        gameActivityStatus
+        timestamp
+        totalSeconds
+        gameSeconds
+        gamePeriod {
+          id
+        }
+      }
+      gameStatus
+      name
+      location
+      scheduledStartTime
     }
     gamePlan {
       id
@@ -196,6 +212,50 @@ mutation CreateGamePlayer (
 }
 `;
 
+const UPDATE_GAME = gql`
+mutation UpdateGame(
+  $id: ID!
+  $name: String!
+  $gameStatus: GameStatus!
+  $location: String
+  $scheduledStartTime: DateTime
+){
+  updateGame(
+    id: $id
+    name: $name
+    gameStatus: $gameStatus
+    location: $location
+    scheduledStartTime: $scheduledStartTime
+  ) {
+    id
+  }
+}
+`;
+
+const CREATE_GAME_ACTIVITY = gql`
+mutation CreateGameActivity(
+  $gameId: ID!
+  $gamePeriodId: ID!
+  $timestamp: DateTime!
+  $gameActivityStatus: GameActivityStatus!
+  $gameActivityType: GameActivityType!
+  $gameSeconds: Int
+  $totalSeconds: Int
+){
+  createGameActivity (
+    gameActivityStatus: $gameActivityStatus
+    gameActivityType: $gameActivityType
+    gameSeconds: $gameSeconds
+    timestamp: $timestamp
+    totalSeconds: $totalSeconds
+    gameId: $gameId
+    gamePeriodId: $gamePeriodId
+  ) {
+    id
+  }
+}
+`;
+
 const deleteGameTeamSeason = (client, {
   id,
 }) => {
@@ -232,6 +292,57 @@ const deleteGamePlayer = (client, {
 //   })
 //   .then((result) => result.data.GameTeamSeason);
 // };
+
+const createGameActivity = (client, {
+  gameId,
+  gamePeriodId,
+  timestamp,
+  gameActivityStatus,
+  gameActivityType,
+  gameSeconds,
+  totalSeconds,
+}) => {
+  return client.mutate({
+    mutation: CREATE_GAME_ACTIVITY,
+    variables: {
+      gameId,
+      gamePeriodId,
+      timestamp,
+      gameActivityStatus,
+      gameActivityType,
+      gameSeconds,
+      totalSeconds,
+    }
+  }).then((result) => result.data.createGameActivity);
+};
+
+export const startGame = (client, {
+  game,
+  gamePeriodId,
+  timestamp,
+}) => {
+  const gameStatus = "IN_PROGRESS";
+  const updateVariables = {
+    ...game,
+    gameStatus,
+  };
+  console.log(`updateVariables`,updateVariables);
+  return client.mutate({
+    mutation: UPDATE_GAME,
+    variables: updateVariables
+  }).then(result => {console.log(result)})
+  .then(() => createGameActivity(client, {
+    gameId: game.id,
+    gamePeriodId,
+    timestamp,
+    gameActivityStatus: "IN_PROGRESS",
+    gameActivityType: "OFFICIAL",
+    gameSeconds: 0,
+    totalSeconds: 0,
+  }))
+  .then(() => console.log("startGame succeeded"))
+  .catch((error) => console.log(`error: ${error}`));
+};
 
 const createGamePlayer = (client, {
   gameTeamSeasonId,
@@ -348,7 +459,7 @@ export const deleteGameEtc = (client, {
   gameTeamSeason,
 }) => {
   // ToDo: delete formation substitutions and substitutions!!!
-  deleteGamePlayers(client, {
+  return deleteGamePlayers(client, {
     gameTeamSeason,
   })
   .then(() => deleteGameTeamSeason(client, {

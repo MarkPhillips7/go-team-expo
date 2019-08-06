@@ -2,7 +2,6 @@ import gql from 'graphql-tag';
 
 export const defaults = {
   isConnected: true,
-  // assignmentsIndex: 0,
   gameState: {
     // __typename: 'GameTeamSeason',
     clockMultiplier: 5.0,
