@@ -228,6 +228,10 @@ mutation UpdateGame(
     scheduledStartTime: $scheduledStartTime
   ) {
     id
+    name
+    gameStatus
+    location
+    scheduledStartTime
   }
 }
 `;
@@ -294,6 +298,7 @@ const deleteGamePlayer = (client, {
 // };
 
 const createGameActivity = (client, {
+  gameTeamSeasonId,
   gameId,
   gamePeriodId,
   timestamp,
@@ -312,35 +317,88 @@ const createGameActivity = (client, {
       gameActivityType,
       gameSeconds,
       totalSeconds,
-    }
+    },
+    refetchQueries: [{
+      query: GAME_TEAM_SEASON_INFO,
+      variables:{gameTeamSeasonId}
+    }],
   }).then((result) => result.data.createGameActivity);
 };
 
+const updateGameIfAppropriate = (client, {
+  gameBeforeUpdate,
+  gameAfterUpdate,
+}) => {
+  if (_.isEqual(gameBeforeUpdate, gameAfterUpdate)) {
+    return Promise.resolve(gameAfterUpdate);
+  }
+  return client.mutate({
+    mutation: UPDATE_GAME,
+    variables: gameAfterUpdate
+  })
+};
+
 export const startGame = (client, {
+  gameTeamSeasonId,
   game,
   gamePeriodId,
   timestamp,
+  gameSeconds,
+  totalSeconds,
 }) => {
   const gameStatus = "IN_PROGRESS";
-  const updateVariables = {
-    ...game,
-    gameStatus,
-  };
-  console.log(`updateVariables`,updateVariables);
-  return client.mutate({
-    mutation: UPDATE_GAME,
-    variables: updateVariables
+  return updateGameIfAppropriate(client, {
+    gameBeforeUpdate: game,
+    gameAfterUpdate: {
+      ...game,
+      gameStatus,
+    },
   }).then(result => {console.log(result)})
   .then(() => createGameActivity(client, {
+    gameTeamSeasonId,
     gameId: game.id,
     gamePeriodId,
     timestamp,
     gameActivityStatus: "IN_PROGRESS",
     gameActivityType: "OFFICIAL",
-    gameSeconds: 0,
-    totalSeconds: 0,
+    gameSeconds,
+    totalSeconds,
   }))
   .then(() => console.log("startGame succeeded"))
+  .catch((error) => console.log(`error: ${error}`));
+};
+
+export const stopGame = (client, {
+  gameTeamSeasonId,
+  game,
+  gamePeriods,
+  gamePeriodId,
+  timestamp,
+  gameSeconds,
+  totalSeconds,
+  nextGamePeriod,
+}) => {
+  const gameStatus = nextGamePeriod
+  ? "IN_PROGRESS"
+  : "COMPLETED";
+  return updateGameIfAppropriate(client, {
+    gameBeforeUpdate: game,
+    gameAfterUpdate: {
+      ...game,
+      gameStatus,
+    },
+  }).then(result => {console.log(result)})
+  .then(() => createGameActivity(client, {
+    gameTeamSeasonId,
+    gameId: game.id,
+    gamePeriodId,
+    timestamp,
+    gameActivityStatus: "STOPPED",
+    gameActivityType: "OFFICIAL",
+    gameSeconds,
+    totalSeconds,
+  }))
+  .then(() => console.log("stopGame succeeded"))
   .catch((error) => console.log(`error: ${error}`));
 };
 

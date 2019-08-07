@@ -214,11 +214,11 @@ export const getGameStats = ({
   return gameStats;
 };
 
-const getGamePeriodAfter = (gamePeriods, gamePeriodId) => {
+export const getGamePeriodAfter = (gamePeriods, gamePeriodId) => {
   if (!gamePeriods) {
     return null;
   }
-  const index = gamePeriods.indexOf(gamePeriodId);
+  const index = _.findIndex(gamePeriods, (gamePeriod) => gamePeriod.id === gamePeriodId);
   if (index === -1) {
     return null;
   }
@@ -254,23 +254,22 @@ export const getCurrentTimeInfo = (gameTeamSeason) => {
   const mostRecentGameActivity = gameTeamSeason &&
   gameTeamSeason.game &&
   _.last(gameTeamSeason.game.gameActivities);
-  let timestamp = undefined;
+  const now = moment();
+  const timestamp = now.toDate();
   let totalSeconds = 0;
   let gameSeconds = 0;
   let isGameOver = gameStatus === "COMPLETED";
 
   if (gameStatus === "IN_PROGRESS" || gameStatus === "COMPLETED") {
     if (mostRecentGameActivity) {
-      timestamp = mostRecentGameActivity.timestamp;
       totalSeconds = mostRecentGameActivity.totalSeconds;
       gameSeconds = mostRecentGameActivity.gameSeconds;
     }
 
     if (gameStatus === "IN_PROGRESS") {
-      const now = moment();
-      timestamp = now.toDate();
       if (mostRecentGameActivity) {
         const secondsSinceMostRecentActivity = Math.round(now.diff(mostRecentGameActivity.timestamp) / 1000);
+        //console.log(`getCurrentTimeInfo`, secondsSinceMostRecentActivity, mostRecentGameActivity,timestamp,gameSeconds,totalSeconds);
 
         if (mostRecentGameActivity.gameActivityStatus === "IN_PROGRESS") {
           gameSeconds += secondsSinceMostRecentActivity;
@@ -281,6 +280,7 @@ export const getCurrentTimeInfo = (gameTeamSeason) => {
           totalSeconds += secondsSinceMostRecentActivity;
         }
       }
+      //console.log(`getCurrentTimeInfo`,mostRecentGameActivity,timestamp,gameSeconds,totalSeconds)
     }
   }
 

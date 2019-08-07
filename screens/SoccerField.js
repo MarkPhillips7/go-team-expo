@@ -23,12 +23,14 @@ import {
 import {
   deleteGameEtc,
   startGame,
+  stopGame,
 } from '../graphql/game';
 import {
   canSetLineup,
   canSubstitute,
   getCurrentTimeInfo,
   getCancelPressedSelectionInfo,
+  getGamePeriodAfter,
   getGameTimeline,
   getGameSnapshot,
   getGameStatusInfo,
@@ -68,6 +70,12 @@ class SoccerField extends React.Component {
   }
 
   getInitialState() {
+    const {
+      timestamp,
+      totalSeconds,
+      gameSeconds,
+      isGameOver,
+    } = getCurrentTimeInfo(this.props.gameTeamSeason);
     const state = {
       clockMultiplier: 1.0,
       currentGameTime: undefined,
@@ -75,9 +83,9 @@ class SoccerField extends React.Component {
       isClockRunning: true,
       isGameOver: false,
       mode: modes.default,
-      totalSeconds: 0,
-      gameSeconds: 0,
-      timestamp: undefined,
+      totalSeconds,
+      gameSeconds,
+      timestamp,
     };
     return state;
   }
@@ -92,6 +100,8 @@ class SoccerField extends React.Component {
       gameTeamSeason,
     });
 
+    console.log(`gameStatusInfo`,gameStatusInfo);
+
     // If the game is in progress we need to update clocks every second
     if (gameStatusInfo.gameStatus === "IN_PROGRESS") {
       const updateGameTimer = setTimeout(this.updateGame, 0);
@@ -99,6 +109,10 @@ class SoccerField extends React.Component {
         isClockRunning: true,
         updateGameTimer,
       });
+    } else {
+      if (this.state.updateGameTimer) {
+        clearTimeout(this.state.updateGameTimer);
+      }
     }
   }
 
@@ -245,43 +259,62 @@ class SoccerField extends React.Component {
   onPressStart() {
     const {client, gameTeamSeason} = this.props;
     const {game} = gameTeamSeason;
+    const gameTeamSeasonId = gameTeamSeason && gameTeamSeason.id;
     const {gamePeriod: {id: gamePeriodId}} = getGameStatusInfo({
       gameTeamSeason,
     });
+    const {
+      timestamp,
+      gameSeconds,
+      totalSeconds,
+    } = getCurrentTimeInfo(gameTeamSeason);
     startGame(client, {
+      gameTeamSeasonId,
       game,
       gamePeriodId,
-      timestamp: new Date(),
+      timestamp,
+      gameSeconds,
+      totalSeconds,
     })
     .then(this.startOrStopGameTimer);
-    // this.setState((previousState) => {
-    //   if (previousState.isClockRunning) {
-    //     return {
-    //       ...previousState,
-    //       isClockRunning: false,
-    //     };
-    //   }
-    //
-    //   setTimeout(this.updateGame, 200);
-    //
-    //   const gameStartTime = previousState.gameStartTime || new Date();
-    //   return {
-    //     ...previousState,
-    //     gameStartTime,
-    //     isClockRunning: true,
-    //     isGameOver: false,
-    //   };
-    // });
   }
 
   onPressStop() {
     const {client, gameTeamSeason} = this.props;
-    startGame(client, {
+    const {game} = gameTeamSeason;
+    const gameTeamSeasonId = gameTeamSeason && gameTeamSeason.id;
+    const {gamePeriod: {id: gamePeriodId}} = getGameStatusInfo({
+      gameTeamSeason,
+    });
+    const {gamePeriods} = gameTeamSeason.teamSeason.team.league.gameDefinition;
+    const {
+      timestamp,
+      gameSeconds,
+      totalSeconds,
+    } = getCurrentTimeInfo(gameTeamSeason);
+    const nextGamePeriod = getGamePeriodAfter(gamePeriods, gamePeriodId);
+    console.log(`onPressStop`,
+      gamePeriods,
+      gameTeamSeasonId,
       game,
       gamePeriodId,
       timestamp,
+      gameSeconds,
+      totalSeconds,
+      nextGamePeriod,
+    );
+    stopGame(client, {
+      gamePeriods,
+      gameTeamSeasonId,
+      game,
+      gamePeriodId,
+      timestamp,
+      gameSeconds,
+      totalSeconds,
+      nextGamePeriod,
     })
-    .then(this.startOrStopGameTimer);
+    .then(this.startOrStopGameTimer)
+    .then(this.props.onSubsChange);
   };
 
   onSliderMove(gameSeconds) {
@@ -619,7 +652,7 @@ class SoccerField extends React.Component {
                 {gamePeriod &&
                   ((gameStatus === "SCHEDULED" && gameActivityType === "PLAN") ||
                   (gameStatus === "IN_PROGRESS" && gameActivityType === "OFFICIAL" &&
-                  gameActivityStatus === "COMPLETED")) &&
+                  gameActivityStatus === "STOPPED")) &&
                   <Button
                     style={styles.button}
                     onPress={this.onPressStart}
