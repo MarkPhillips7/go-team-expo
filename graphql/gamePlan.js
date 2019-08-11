@@ -47,13 +47,15 @@ mutation (
   $gameActivityType: GameActivityType!
   $gameActivityStatus: GameActivityStatus!
   $gameTeamSeasonId: ID!
+  $timestamp: DateTime
   $totalSeconds: Int
   $gameSeconds:  Int
-){
+) {
   createSubstitution (
     gameActivityType: $gameActivityType
     gameActivityStatus: $gameActivityStatus
     gameTeamSeasonId: $gameTeamSeasonId
+    timestamp: $timestamp
     totalSeconds: $totalSeconds
     gameSeconds: $gameSeconds
   ) {
@@ -61,6 +63,21 @@ mutation (
     timestamp
     totalSeconds
     gameSeconds
+  }
+}
+`;
+
+const UPDATE_SUBSTITUTION = gql`
+mutation (
+  $id: ID!
+  $gameActivityStatus: GameActivityStatus!
+){
+  updateSubstitution (
+    id: $id
+    gameActivityStatus: $gameActivityStatus
+  ) {
+    id
+    gameActivityStatus
   }
 }
 `;
@@ -121,7 +138,7 @@ mutation DeletePlayerPosition (
 }
 `;
 
-const createPlayerPosition = (client, {
+export const createPlayerPosition = (client, {
   playerId,
   positionId,
 }) => {
@@ -135,7 +152,7 @@ const createPlayerPosition = (client, {
   .then((result) => result.data.createPlayerPosition);
 };
 
-const createPlayerPositionAssignment = (client, {
+export const createPlayerPositionAssignment = (client, {
   playerPositionAssignmentType,
   playerPositionId,
   substitutionId,
@@ -216,10 +233,11 @@ export const getOrCreateFormationSubstitution = (client, {
   return Promise.resolve(gameTeamSeason.formationSubstitutions[0]);
 };
 
-const createSubstitution = (client, {
+export const createSubstitution = (client, {
   gameActivityStatus,
   gameActivityType,
   gameTeamSeason,
+  timestamp,
   totalSeconds,
   gameSeconds,
 }) => {
@@ -230,6 +248,7 @@ const createSubstitution = (client, {
       gameActivityType,
       gameActivityStatus,
       gameTeamSeasonId,
+      timestamp,
       totalSeconds,
       gameSeconds,
     }
@@ -237,10 +256,25 @@ const createSubstitution = (client, {
   .then((result) => result.data.createSubstitution);
 };
 
+export const updateSubstitution = (client, {
+  id,
+  gameActivityStatus,
+}) => {
+  return client.mutate({
+    mutation: UPDATE_SUBSTITUTION,
+    variables: {
+      id,
+      gameActivityStatus,
+    }
+  })
+  .then((result) => result.data.updateSubstitution);
+};
+
 const getOrCreateSubstitutionAtSpecificTime = (client, {
   gameActivityStatus,
   gameActivityType,
   gameTeamSeason,
+  timestamp,
   totalSeconds,
   gameSeconds,
 }) => {
@@ -251,6 +285,7 @@ const getOrCreateSubstitutionAtSpecificTime = (client, {
       gameActivityStatus,
       gameActivityType,
       gameTeamSeason,
+      timestamp,
       totalSeconds,
       gameSeconds,
     });
@@ -262,6 +297,7 @@ const getOrCreateSubstitution = (client, {
   gameActivityStatus,
   gameActivityType,
   gameTeamSeason,
+  timestamp,
   totalSeconds,
   gameSeconds,
 }) => {
@@ -270,6 +306,7 @@ const getOrCreateSubstitution = (client, {
       gameActivityStatus,
       gameActivityType,
       gameTeamSeason,
+      timestamp,
       totalSeconds,
       gameSeconds,
     });
@@ -514,6 +551,7 @@ export const createSubstitutionForSelections = (client, {
   gameActivityType,
   gameActivityStatus,
   gameTeamSeason,
+  timestamp,
   gameSeconds,
   totalSeconds,
 }) => {
@@ -526,6 +564,7 @@ export const createSubstitutionForSelections = (client, {
     gameActivityType,
     gameActivityStatus,
     gameTeamSeason,
+    timestamp,
     totalSeconds,
     gameSeconds,
   }).then(result => {substitution = result; console.log(result)})
@@ -536,6 +575,7 @@ export const createSubstitutionForSelections = (client, {
     gameActivityType,
     gameActivityStatus,
     gameTeamSeason,
+    timestamp,
     totalSeconds,
     gameSeconds,
   })).then(result => {console.log(result)})
@@ -548,6 +588,7 @@ export const createNextMassSubstitution = (client, {
   gameActivityType,
   gameActivityStatus,
   gameTeamSeason,
+  timestamp,
   gameSeconds,
   totalSeconds,
 }) => {
@@ -559,6 +600,7 @@ export const createNextMassSubstitution = (client, {
     gameActivityType,
     gameActivityStatus,
     gameTeamSeason,
+    timestamp,
     totalSeconds,
     gameSeconds,
   }).then(result => {substitution = result; console.log(result)})

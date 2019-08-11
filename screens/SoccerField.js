@@ -22,10 +22,12 @@ import {
 } from '../graphql/gamePlan';
 import {
   deleteGameEtc,
+  makePlannedSubstitutionOfficial,
   startGame,
   stopGame,
 } from '../graphql/game';
 import {
+  canApplyPlannedSubstitution,
   canSetLineup,
   canSubstitute,
   getCurrentTimeInfo,
@@ -34,6 +36,7 @@ import {
   getGameTimeline,
   getGameSnapshot,
   getGameStatusInfo,
+  getNextPlannedSubstitution,
   getPlayerDisplayMode,
   getPlayerPressedSelectionInfo,
 } from '../helpers/game';
@@ -163,17 +166,49 @@ class SoccerField extends React.Component {
 
   onPressSubNow(){
     const {client, gameTeamSeason} = this.props;
-    const {gameSeconds, selectionInfo, totalSeconds} = this.state;
-    console.log(`totalSeconds: ${totalSeconds}, gameSeconds: ${gameSeconds}`,selectionInfo);
-    createSubstitutionForSelections(client, {
-      selectionInfo,
+    const {selectionInfo} = this.state;
+    const {timestamp, gameSeconds, totalSeconds} = getCurrentTimeInfo(gameTeamSeason);
+    const gameStatusInfo = getGameStatusInfo({
       gameTeamSeason,
-      gameActivityType: "PLAN",
-      gameActivityStatus: "PENDING",
-      gameSeconds,
-      totalSeconds,
-    })
-    .then(this.props.onSubsChange);
+    });
+    const {
+      gameStatus,
+      gamePeriod,
+      mostRecentGameActivity,
+      gameActivityType,
+      //gameActivityStatus,
+      gameDurationSeconds
+    } = gameStatusInfo;
+    const gameActivityStatus = gameActivityType === "OFFICIAL"
+    ? "COMPLETED"
+    : "PENDING";
+
+    console.log(`onPressSubNow`,gameStatusInfo, selectionInfo);
+    if (selectionInfo && selectionInfo.selections) {
+      createSubstitutionForSelections(client, {
+        selectionInfo,
+        gameTeamSeason,
+        gameActivityType,
+        gameActivityStatus,
+        timestamp,
+        gameSeconds,
+        totalSeconds,
+      })
+      .then(this.props.onSubsChange);
+    } else if (canApplyPlannedSubstitution(gameTeamSeason)) {
+      // Make the planned substitutions official
+      const plannedSubstitution = getNextPlannedSubstitution(gameTeamSeason);
+      makePlannedSubstitutionOfficial(client, {
+        plannedSubstitution,
+        gameTeamSeason,
+        gameActivityType,
+        gameActivityStatus,
+        timestamp,
+        gameSeconds,
+        totalSeconds,
+      })
+      .then(this.props.onSubsChange);
+    }
   }
 
   onPressSubNextTime() {
@@ -256,6 +291,7 @@ class SoccerField extends React.Component {
     })
   }
 
+
   onPressStart() {
     const {client, gameTeamSeason} = this.props;
     const {game} = gameTeamSeason;
@@ -268,13 +304,16 @@ class SoccerField extends React.Component {
       gameSeconds,
       totalSeconds,
     } = getCurrentTimeInfo(gameTeamSeason);
+    const initialLineupSubstitution = getNextPlannedSubstitution(gameTeamSeason);
     startGame(client, {
+      gameTeamSeason,
       gameTeamSeasonId,
       game,
       gamePeriodId,
       timestamp,
       gameSeconds,
       totalSeconds,
+      plannedSubstitution: initialLineupSubstitution,
     })
     .then(this.startOrStopGameTimer);
   }
@@ -359,46 +398,6 @@ class SoccerField extends React.Component {
         isClockRunning,
         updateGameTimer,
       };
-
-      // const now = moment();
-      // // const demoTimeMultiplier = previousState.gameDurationSeconds / totalDemoSeconds;
-      // const actualMillisecondsSinceGameStart = now.diff(previousState.gameStartTime);
-      // const currentGameTime = moment(previousState.gameStartTime).add(
-      //   actualMillisecondsSinceGameStart*this.props.gameState.clockMultiplier, "milliseconds").toDate();
-      // const gamePlan = previousState.gamePlan && {
-      //   ...previousState.gamePlan,
-      // };
-      // const assignmentsList = gamePlan && gamePlan.assignmentsList;
-      // let assignmentsIndex = previousState.assignmentsIndex;
-      // let isGameOver = previousState.isGameOver;
-      // const currentAssignments = assignmentsList[assignmentsIndex];
-      //
-      // // check whether current game position assignments have expired and should be substituted
-      // if (currentAssignments
-      //   && currentAssignments.startTime
-      //   && moment(currentGameTime).diff(currentAssignments.startTime, 'seconds')
-      //   > previousState.gamePlan.secondsBetweenSubs) {
-      //   console.log("substitution time");
-      //   currentAssignments.endTime = currentGameTime;
-      //   if (assignmentsIndex + 1 >= numberOfLineups) {
-      //     isGameOver = true;
-      //   } else {
-      //     assignmentsIndex += 1;
-      //     assignmentsList[assignmentsIndex].startTime = currentGameTime;
-      //   }
-      // }
-      //
-      // if (!isGameOver) {
-      //   setTimeout(this.updateGame, 200);
-      // }
-      //
-      // return {
-      //   ...previousState,
-      //   currentGameTime,
-      //   gamePlan,
-      //   assignmentsIndex,
-      //   isGameOver,
-      // };
     });
   }
 
@@ -430,6 +429,7 @@ class SoccerField extends React.Component {
       gameDurationSeconds
     } = gameStatusInfo;
     const gameTimeline = getGameTimeline({
+      gameStatus,
       gameTeamSeason,
       gameActivityType,
       gameActivityStatus,
@@ -438,6 +438,7 @@ class SoccerField extends React.Component {
       timestamp,
     });
     const gameSnapshot = getGameSnapshot({
+      gameStatus,
       gameTimeline,
       positionCategories,
       gameTeamSeason,
@@ -667,6 +668,17 @@ class SoccerField extends React.Component {
                     style={styles.button}
                     onPress={this.onPressStop}
                     title={`End ${gamePeriod.name}`}
+                  />
+                }
+                {gamePeriod &&
+                  gameStatus === "IN_PROGRESS" &&
+                  gameActivityType === "OFFICIAL" &&
+                  gameActivityStatus === "IN_PROGRESS" &&
+                  canApplyPlannedSubstitution(gameTeamSeason) &&
+                  <Button
+                    style={styles.button}
+                    onPress={this.onPressSubNow}
+                    title="Sub Now"
                   />
                 }
                 <Button

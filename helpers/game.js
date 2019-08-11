@@ -192,6 +192,10 @@ export const getGameStats = ({
   });
 
   _.forEach(gameTeamSeason.substitutions, (substitution) => {
+    // if (substitution.gameActivityType === "PLAN" &&
+    // substitution.gameActivityStatus === "COMPLETED") {
+    //   return;
+    // }
     _.forEach(substitution.playerPositionAssignments, (playerPositionAssignment) => {
       const timeInfo = getTimeInfo(substitution, playerPositionAssignment, {gameSeconds, totalSeconds, timestamp});
       const playerStats = initializePlayerStats(gameStats, playerPositionAssignment.playerPosition.player);
@@ -269,7 +273,6 @@ export const getCurrentTimeInfo = (gameTeamSeason) => {
     if (gameStatus === "IN_PROGRESS") {
       if (mostRecentGameActivity) {
         const secondsSinceMostRecentActivity = Math.round(now.diff(mostRecentGameActivity.timestamp) / 1000);
-        //console.log(`getCurrentTimeInfo`, secondsSinceMostRecentActivity, mostRecentGameActivity,timestamp,gameSeconds,totalSeconds);
 
         if (mostRecentGameActivity.gameActivityStatus === "IN_PROGRESS") {
           gameSeconds += secondsSinceMostRecentActivity;
@@ -280,7 +283,6 @@ export const getCurrentTimeInfo = (gameTeamSeason) => {
           totalSeconds += secondsSinceMostRecentActivity;
         }
       }
-      //console.log(`getCurrentTimeInfo`,mostRecentGameActivity,timestamp,gameSeconds,totalSeconds)
     }
   }
 
@@ -326,6 +328,7 @@ export const getGameStatusInfo = ({
 };
 
 export const getGameTimeline = ({
+  gameStatus,
   gameTeamSeason,
   gameActivityType,
   gameActivityStatus,
@@ -354,11 +357,17 @@ export const getGameTimeline = ({
       eventType: "UNAVAILABLE",
       position: null,
       timeInfo,
+      gameActivityType,
     });
   })
   .value();
 
   _.forEach(gameTeamSeason.substitutions, (substitution) => {
+    // if (gameStatus === "IN_PROGRESS" &&
+    // substitution.gameActivityType === "PLAN" &&
+    // substitution.gameActivityStatus === "COMPLETED") {
+    //   return;
+    // }
     _.forEach(substitution.playerPositionAssignments, (playerPositionAssignment) => {
       const timeInfo = getTimeInfo(substitution, playerPositionAssignment, {});//gameSeconds, totalSeconds, timestamp});
       const playerTimeline = initializePlayerTimeline(gameTimeline, playerPositionAssignment.playerPosition.player);
@@ -367,6 +376,7 @@ export const getGameTimeline = ({
         eventType: playerPositionAssignment.playerPositionAssignmentType,
         position: playerPositionAssignment.playerPosition.position,
         timeInfo,
+        gameActivityType: substitution.gameActivityType,
       });
     });
   });
@@ -422,6 +432,7 @@ const updatePositionsSnapshot = (positionsSnapshot, event, playerId) => {
 };
 
 export const getGameSnapshot = ({
+  gameStatus,
   gameTimeline,
   positionCategories,
   gameTeamSeason,
@@ -443,9 +454,13 @@ export const getGameSnapshot = ({
     let cumulativeInGameSeconds = 0;
     const piePieces = [];
     _.forEach(playerTimeline.events, (event, index) => {
+      // console.log(event);
       const startSecondsSinceGameStart = secondsCounter;
-      const endSecondsSinceGameStart = Math.min(event.timeInfo.gameSeconds, gameSeconds);
-
+      const endSecondsSinceGameStart = gameStatus === "IN_PROGRESS" &&
+      event.gameActivityType === "PLAN"
+      ? gameSeconds
+      : Math.min(event.timeInfo.gameSeconds, gameSeconds);
+      // const endSecondsSinceGameStart = Math.min(event.timeInfo.gameSeconds, gameSeconds);
       const startValue = startSecondsSinceGameStart / maxSeconds;
       const endValue = endSecondsSinceGameStart / maxSeconds;
       const color = getColor({
@@ -629,6 +644,22 @@ export const getPlayerDisplayMode = (positionSnapshot, state) => {
   }
 
   return playerDisplayModes.unselected;
+};
+
+export const getNextPlannedSubstitution = (gameTeamSeason) => {
+  return gameTeamSeason &&
+  gameTeamSeason.substitutions &&
+  _.find(gameTeamSeason.substitutions, (sub) =>
+    sub.gameActivityType === "PLAN" &&
+    sub.gameActivityStatus === "PENDING");
+};
+
+export const canApplyPlannedSubstitution = (gameTeamSeason) => {
+  const nextPlannedSubstitution = getNextPlannedSubstitution(gameTeamSeason);
+  //console.log(`canApplyPlannedSubstitution`, nextPlannedSubstitution);
+  // ToDo: Make sure the player position assignments are allowed
+  // console.log(`nextPlannedSubstitution`, nextPlannedSubstitution);
+  return !!nextPlannedSubstitution;
 };
 
 // if selectionInfo.selections has 3 position snapshots then

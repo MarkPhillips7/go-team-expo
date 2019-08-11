@@ -3,7 +3,13 @@ import _ from 'lodash';
 import {
   playerAvailability,
 } from '../constants/Soccer';
-import {getOrCreateFormationSubstitution} from './gamePlan';
+import {
+  createPlayerPosition,
+  createPlayerPositionAssignment,
+  createSubstitution,
+  getOrCreateFormationSubstitution,
+  updateSubstitution
+} from './gamePlan';
 import {TEAM_SEASON} from '../graphql/games';
 
 export const GAME_TEAM_SEASON_INFO = gql`
@@ -31,15 +37,13 @@ query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
         }
       }
     }
-    substitutions (
-      filter: {
-        gameActivityType: PLAN
-      }
-    ) {
+    substitutions {
       id
       timestamp
       totalSeconds
       gameSeconds
+      gameActivityStatus
+      gameActivityType
       playerPositionAssignments {
         id
         timestamp
@@ -69,11 +73,7 @@ query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
         }
       }
     }
-    formationSubstitutions (
-      filter: {
-        gameActivityType: PLAN
-      }
-    ) {
+    formationSubstitutions {
       gameActivityType
       gameSeconds
       formation {
@@ -338,14 +338,73 @@ const updateGameIfAppropriate = (client, {
   })
 };
 
-export const startGame = (client, {
+const copyPlayerAssignments = (client, {
+  sourceSubstitution,
+  destinationSubstitution,
+}) => {
+  let playerPosition;
+  return Promise.all(_.map(sourceSubstitution.playerPositionAssignments,
+    (playerPositionAssignment) => {
+      return createPlayerPosition(client, {
+        playerId: playerPositionAssignment.playerPosition.player.id,
+        positionId: playerPositionAssignment.playerPosition.position &&
+          playerPositionAssignment.playerPosition.position.id,
+      })
+      .then(result => {playerPosition = result; console.log(result)})
+      .then(() => createPlayerPositionAssignment(client, {
+        playerPositionAssignmentType: playerPositionAssignment.playerPositionAssignmentType,
+        playerPositionId: playerPosition.id,
+        substitutionId: destinationSubstitution.id,
+      }));
+    }));
+};
+
+export const makePlannedSubstitutionOfficial = (client, {
+  gameTeamSeason,
   gameTeamSeasonId,
   game,
   gamePeriodId,
   timestamp,
   gameSeconds,
   totalSeconds,
+  plannedSubstitution,
 }) => {
+  if (!plannedSubstitution) {
+    console.log(`no planToSubstitution in makePlannedSubstitutionOfficial???`);
+    return Promise.resolve();
+  }
+
+  // update planned substitution to COMPLETED
+  return updateSubstitution(client, {
+    id: plannedSubstitution.id,
+    gameActivityStatus: "COMPLETED",
+  })
+  // create official substitution
+  .then(() => createSubstitution(client, {
+    gameActivityType: "OFFICIAL",
+    gameActivityStatus: "COMPLETED",
+    gameTeamSeason,
+    timestamp,
+    totalSeconds,
+    gameSeconds,
+  })).then(result => {substitution = result; console.log(result)})
+  .then(() => copyPlayerAssignments(client, {
+    sourceSubstitution: plannedSubstitution,
+    destinationSubstitution: substitution,
+  })).then(result => {console.log(result)});
+}
+
+export const startGame = (client, {
+  gameTeamSeason,
+  gameTeamSeasonId,
+  game,
+  gamePeriodId,
+  timestamp,
+  gameSeconds,
+  totalSeconds,
+  plannedSubstitution,
+}) => {
+  let substitution;
   const gameStatus = "IN_PROGRESS";
   return updateGameIfAppropriate(client, {
     gameBeforeUpdate: game,
@@ -363,6 +422,16 @@ export const startGame = (client, {
     gameActivityType: "OFFICIAL",
     gameSeconds,
     totalSeconds,
+  }))
+  .then(() => makePlannedSubstitutionOfficial(client, {
+    gameTeamSeason,
+    gameTeamSeasonId,
+    game,
+    gamePeriodId,
+    timestamp,
+    gameSeconds,
+    totalSeconds,
+    plannedSubstitution,
   }))
   .then(() => console.log("startGame succeeded"))
   .catch((error) => console.log(`error: ${error}`));
