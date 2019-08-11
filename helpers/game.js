@@ -110,7 +110,10 @@ const getInGameSecondsSincePreviousEvent = (previousEvent, event, gameSeconds) =
     case "INITIAL":
     case "IN":
     case "CHANGE":
-      return Math.min(event.timeInfo.gameSeconds, gameSeconds) - previousEvent.timeInfo.gameSeconds;
+      const eventGameSeconds = event.isOverdue
+      ? gameSeconds
+      : Math.min(event.timeInfo.gameSeconds, gameSeconds);
+      return eventGameSeconds - previousEvent.timeInfo.gameSeconds;
   }
   return 0;
 };
@@ -357,26 +360,30 @@ export const getGameTimeline = ({
       eventType: "UNAVAILABLE",
       position: null,
       timeInfo,
-      gameActivityType,
+      isOverdue: false,
     });
   })
   .value();
 
   _.forEach(gameTeamSeason.substitutions, (substitution) => {
-    // if (gameStatus === "IN_PROGRESS" &&
-    // substitution.gameActivityType === "PLAN" &&
-    // substitution.gameActivityStatus === "COMPLETED") {
-    //   return;
-    // }
+    if (gameStatus === "IN_PROGRESS" &&
+    substitution.gameActivityType === "PLAN" &&
+    substitution.gameActivityStatus === "COMPLETED") {
+      return;
+    }
     _.forEach(substitution.playerPositionAssignments, (playerPositionAssignment) => {
-      const timeInfo = getTimeInfo(substitution, playerPositionAssignment, {});//gameSeconds, totalSeconds, timestamp});
+      // Do not alter times if substitution is overdue (isOverdue on event will help determine what to do with events)
+      const isOverdue = gameStatus === "IN_PROGRESS" &&
+      substitution.gameActivityType === "PLAN" &&
+      substitution.gameSeconds < gameSeconds;
+      const timeInfo = getTimeInfo(substitution, playerPositionAssignment, {});
       const playerTimeline = initializePlayerTimeline(gameTimeline, playerPositionAssignment.playerPosition.player);
 
       playerTimeline.events.push({
         eventType: playerPositionAssignment.playerPositionAssignmentType,
         position: playerPositionAssignment.playerPosition.position,
         timeInfo,
-        gameActivityType: substitution.gameActivityType,
+        isOverdue,
       });
     });
   });
@@ -454,13 +461,10 @@ export const getGameSnapshot = ({
     let cumulativeInGameSeconds = 0;
     const piePieces = [];
     _.forEach(playerTimeline.events, (event, index) => {
-      // console.log(event);
       const startSecondsSinceGameStart = secondsCounter;
-      const endSecondsSinceGameStart = gameStatus === "IN_PROGRESS" &&
-      event.gameActivityType === "PLAN"
+      const endSecondsSinceGameStart = event.isOverdue
       ? gameSeconds
       : Math.min(event.timeInfo.gameSeconds, gameSeconds);
-      // const endSecondsSinceGameStart = Math.min(event.timeInfo.gameSeconds, gameSeconds);
       const startValue = startSecondsSinceGameStart / maxSeconds;
       const endValue = endSecondsSinceGameStart / maxSeconds;
       const color = getColor({
@@ -479,25 +483,39 @@ export const getGameSnapshot = ({
         }
       }
 
-      if (event.timeInfo.gameSeconds > gameSeconds) {
-        if (event.timeInfo.gameSeconds - endSecondsSinceGameStart < gameTeamSeason.gamePlan.secondsBetweenSubs) {
-          // console.log(`should have a pending move`);
-          const pendingMoveSeconds = event.timeInfo.gameSeconds - endSecondsSinceGameStart;
-          const pendingMoveTime = moment.utc(pendingMoveSeconds*1000).format("m:ss") || "0:00";
-          const percentToMove = (gameTeamSeason.gamePlan.secondsBetweenSubs -
-            (event.timeInfo.gameSeconds - endSecondsSinceGameStart)) /
+      if (event.isOverdue || event.timeInfo.gameSeconds >= gameSeconds) {
+        const pendingMoveSeconds = event.timeInfo.gameSeconds - endSecondsSinceGameStart;
+        const pendingMoveTime = pendingMoveSeconds < 0
+        ? `-${moment.utc(-pendingMoveSeconds*1000).format("m:ss")}`
+        : moment.utc(pendingMoveSeconds*1000).format("m:ss") || "0:00";
+
+        // percentToMove should be 0 up to secondsBetweenSubs away and 100 from sub time thereafter
+        // So if secondsBetweenSubs is 1000 expect pendingMoveSeconds/percentToMove...
+        // 2000/0   1000/0   750/25   500/50   250/75   0/100   -1000/100
+        let percentToMove;
+        if (pendingMoveSeconds > gameTeamSeason.gamePlan.secondsBetweenSubs) {
+          percentToMove = 0;
+        } else if (pendingMoveSeconds <= 0) {
+          percentToMove = 100;
+        } else {
+          percentToMove = (gameTeamSeason.gamePlan.secondsBetweenSubs -
+            pendingMoveSeconds) /
             gameTeamSeason.gamePlan.secondsBetweenSubs * 100;
-          const color = getColor({
-            event,
-            positionCategories,
-          });
-          pendingMove = {
-            color,
-            pendingMoveTime,
-            percentToMove,
-          };
         }
-        return false;
+        const color = getColor({
+          event,
+          positionCategories,
+        });
+        pendingMove = {
+          color,
+          pendingMoveTime,
+          percentToMove,
+        };
+
+        if (event.isOverdue ||
+          event.timeInfo.gameSeconds - endSecondsSinceGameStart < gameTeamSeason.gamePlan.secondsBetweenSubs) {
+          return false;
+        }
       }
       activeEvent = event;
       updatePositionsSnapshot(positionsSnapshot, event, playerId);
@@ -531,7 +549,7 @@ export const getGameSnapshot = ({
     if (gameTeamSeason.formationSubstitutions && gameTeamSeason.formationSubstitutions.length) {
       _.forEach(gameTeamSeason.formationSubstitutions[0].formation.positions, (position) => {
         if (!positionsSnapshot[position.id]) {
-          const timeInfo = {//getTimeInfo(substitution, playerPositionAssignment, {});//gameSeconds, totalSeconds, timestamp});
+          const timeInfo = {
             gameSeconds,
             totalSeconds,
             timestamp,
@@ -554,11 +572,9 @@ export const getGameSnapshot = ({
     };
   });
   const gameSnapshot = {
-    // bench: benchSnapshot,
     players: playersSnapshot,
     positions: positionsSnapshot,
   }
-  // console.log(gameSnapshot);
   return gameSnapshot;
 };
 

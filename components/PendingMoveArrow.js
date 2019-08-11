@@ -29,7 +29,7 @@ export default class PendingMoveArrow extends Component {
     const progressHalf = half - (arrowStrokeWidth / 2);
     let progressPathData = [];
     const width = progressFull * 2 * this.props.percent / 100;
-    if (width > 0) {
+    if (width >= 0) {
       progressPathData.push(`M -${progressFull} -${progressHalf}`); //Move to arrow mid-upper left vertex
       const arrowStemProgressWidth = Math.min(full, width);
       progressPathData.push(`l ${arrowStemProgressWidth} 0`); // arrow stem progress mid-upper vertex
@@ -53,6 +53,7 @@ export default class PendingMoveArrow extends Component {
       progressPathData.push(`l -${arrowStemProgressWidth} 0`); // mid-lower left vertex
       progressPathData.push(`l 0 -${progressFull}`); // Back to mid-upper left vertex
     }
+
     progressPathData = progressPathData.join(' ');
 
     // transform={[{rotateZ: '45deg'}]}

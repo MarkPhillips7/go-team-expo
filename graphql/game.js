@@ -37,7 +37,7 @@ query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
         }
       }
     }
-    substitutions {
+    substitutions (orderBy: gameSeconds_ASC) {
       id
       timestamp
       totalSeconds
@@ -284,18 +284,6 @@ const deleteGamePlayer = (client, {
   })
   .then((result) => result.data.deleteGamePlayer);
 };
-
-// const getGameTeamSeason = (client, {
-//   gameTeamSeasonId,
-// }) => {
-//   return client.query({
-//     query: GAME_TEAM_SEASON_INFO,
-//     variables: {
-//       gameTeamSeasonId,
-//     }
-//   })
-//   .then((result) => result.data.GameTeamSeason);
-// };
 
 const createGameActivity = (client, {
   gameTeamSeasonId,

@@ -369,6 +369,11 @@ class SoccerField extends React.Component {
   }
 
   updateGame() {
+    // Don't do anything if no updateGameTimer since that means the component was unmounted
+    if (!this.state.updateGameTimer) {
+      console.log(`Doing nothing in updateGame because no updateGameTimer`);
+      return;
+    }
     this.setState((previousState) => {
       let {isClockRunning, updateGameTimer} = this.state;
 
@@ -399,14 +404,6 @@ class SoccerField extends React.Component {
         updateGameTimer,
       };
     });
-  }
-
-  getCurrentLineup() {
-    return this.props.gameTeamSeason &&
-      this.props.gameTeamSeason.substitutions &&
-      this.props.gameTeamSeason.substitutions.length &&
-      this.props.gameTeamSeason.substitutions[0] &&
-      this.props.gameTeamSeason.substitutions[0].playerPositionAssignments || [];
   }
 
   render() {

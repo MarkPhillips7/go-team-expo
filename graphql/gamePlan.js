@@ -459,6 +459,7 @@ const substituteMaxPlayersFromBench = (client, {
   gameTeamSeason,
   totalSeconds,
   gameSeconds,
+  timestamp,
 }) => {
   const gameStats = getGameStats({
     gameTeamSeason,
@@ -466,6 +467,7 @@ const substituteMaxPlayersFromBench = (client, {
     gameActivityStatus,
     totalSeconds,
     gameSeconds,
+    timestamp,
   });
   console.log(JSON.stringify(gameStats, {indent: true}));
 
@@ -612,6 +614,7 @@ export const createNextMassSubstitution = (client, {
     gameTeamSeason,
     totalSeconds,
     gameSeconds,
+    timestamp,
   })).then(result => {console.log(result)})
   .then(() => console.log("createNextMassSubstitution succeeded"))
   .catch((error) => console.log(`error: ${error}`));
