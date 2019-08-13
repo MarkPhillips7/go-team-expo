@@ -15,7 +15,7 @@
     "apollo-boost": "^0.1.23",
     "expo": "^32.0.0",
     "graphql": "^14.0.2",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.15",
     "moment": "^2.23.0",
     "react": "16.5.0",
     "react-apollo": "^2.3.3",
@@ -23,8 +23,10 @@
     "react-navigation": "^3.0.9"
   },
   "devDependencies": {
+    "babel-eslint": "^10.0.2",
     "babel-preset-expo": "^5.0.0",
-    "eslint": "^6.0.1",
+    "eslint": "^6.1.0",
+    "eslint-plugin-graphql": "^3.0.3",
     "eslint-plugin-react": "^7.14.2",
     "jest-expo": "^32.0.0"
   },

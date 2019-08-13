@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "dev": {
+      "schemaPath": "schema.graphql",
+      "extensions": {
+        "endpoints": {
+          "default": "https://api.graph.cool/simple/v1/cjpeel49p81sr0135wsewoo11"
+        }
+      }
+    }
+  }
+}
