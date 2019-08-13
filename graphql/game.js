@@ -349,14 +349,12 @@ const copyPlayerAssignments = (client, {
 
 export const makePlannedSubstitutionOfficial = (client, {
   gameTeamSeason,
-  gameTeamSeasonId,
-  game,
-  gamePeriodId,
   timestamp,
   gameSeconds,
   totalSeconds,
   plannedSubstitution,
 }) => {
+  let substitution;
   if (!plannedSubstitution) {
     console.log(`no planToSubstitution in makePlannedSubstitutionOfficial???`);
     return Promise.resolve();
@@ -392,7 +390,6 @@ export const startGame = (client, {
   totalSeconds,
   plannedSubstitution,
 }) => {
-  let substitution;
   const gameStatus = "IN_PROGRESS";
   return updateGameIfAppropriate(client, {
     gameBeforeUpdate: game,
@@ -413,9 +410,6 @@ export const startGame = (client, {
   }))
   .then(() => makePlannedSubstitutionOfficial(client, {
     gameTeamSeason,
-    gameTeamSeasonId,
-    game,
-    gamePeriodId,
     timestamp,
     gameSeconds,
     totalSeconds,
@@ -428,7 +422,6 @@ export const startGame = (client, {
 export const stopGame = (client, {
   gameTeamSeasonId,
   game,
-  gamePeriods,
   gamePeriodId,
   timestamp,
   gameSeconds,

@@ -1,9 +1,13 @@
 module.exports = {
   "env": {
+      "amd": true,
       "browser": true,
       "es6": true
   },
-  "extends": "eslint:recommended",
+  "extends": [
+    "eslint:recommended",
+    "plugin:react/recommended"
+  ],
   "globals": {
       "Atomics": "readonly",
       "SharedArrayBuffer": "readonly"
@@ -17,6 +21,7 @@ module.exports = {
   },
   parser: "babel-eslint",
   rules: {
+    "react/prop-types": ["error", { "ignore": ["navigation", "client"] }],
     "graphql/template-strings": ['error', {
       // Import default settings for your GraphQL client. Supported values:
       // 'apollo', 'relay', 'lokka', 'fraql', 'literal'

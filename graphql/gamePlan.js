@@ -3,7 +3,6 @@ import _ from 'lodash';
 import {
   playerAvailability,
 } from '../constants/Soccer';
-import {GAME_TEAM_SEASON_INFO} from '../graphql/game';
 import {getGameStats, getSubOutScore, getSubstitutionScore, playerIsCurrentlyPlaying} from '../helpers/game';
 
 const CREATE_FORMATION_SUBSTITUTION = gql`
@@ -317,11 +316,7 @@ const getOrCreateSubstitution = (client, {
 const getOrCreatePlayerPositionsAndPlayerPositionAssignments = (client, {
   formationSubstitution,
   substitution,
-  gameActivityType,
-  gameActivityStatus,
   gameTeamSeason,
-  totalSeconds,
-  gameSeconds,
   playerPositionAssignmentType,
 }) => {
   const gamePositions = formationSubstitution &&
@@ -412,14 +407,8 @@ const positionSnapshotRepresentsBench = (positionSnapshot) => {
 };
 
 const substituteSelectedPlayers = (client, {
-  formationSubstitution,
   selectionInfo,
   substitution,
-  gameActivityType,
-  gameActivityStatus,
-  gameTeamSeason,
-  totalSeconds,
-  gameSeconds,
 }) => {
   let playerPosition;
 
@@ -454,8 +443,6 @@ const substituteSelectedPlayers = (client, {
 const substituteMaxPlayersFromBench = (client, {
   formationSubstitution,
   substitution,
-  gameActivityType,
-  gameActivityStatus,
   gameTeamSeason,
   totalSeconds,
   gameSeconds,
@@ -463,8 +450,6 @@ const substituteMaxPlayersFromBench = (client, {
 }) => {
   const gameStats = getGameStats({
     gameTeamSeason,
-    gameActivityType,
-    gameActivityStatus,
     totalSeconds,
     gameSeconds,
     timestamp,
@@ -494,6 +479,7 @@ const substituteMaxPlayersFromBench = (client, {
     subOutCandidate,
   }));
 
+  let playerPosition;
   const getAvailableSubOutCandidate = (subInCandidate) => {
     const availableSubOutCandidateWithFilledStatus =
     _.chain(subOutCandidatesWithFilledStatus)
@@ -558,8 +544,8 @@ export const createSubstitutionForSelections = (client, {
   totalSeconds,
 }) => {
   // ToDo: Get formation substitution based on the gameSeconds
-  const formationSubstitution = gameTeamSeason.formationSubstitutions
-  [gameTeamSeason.formationSubstitutions.length - 1];
+  // const formationSubstitution =
+  // gameTeamSeason.formationSubstitutions[gameTeamSeason.formationSubstitutions.length - 1];
   let substitution;
 
   return getOrCreateSubstitutionAtSpecificTime(client, {
@@ -571,15 +557,8 @@ export const createSubstitutionForSelections = (client, {
     gameSeconds,
   }).then(result => {substitution = result; console.log(result)})
   .then(() => substituteSelectedPlayers(client, {
-    formationSubstitution,
     selectionInfo,
     substitution,
-    gameActivityType,
-    gameActivityStatus,
-    gameTeamSeason,
-    timestamp,
-    totalSeconds,
-    gameSeconds,
   })).then(result => {console.log(result)})
   .then(() => console.log("createSubstitutionForSelections succeeded"))
   .catch((error) => console.log(`error: ${error}`));
@@ -594,8 +573,8 @@ export const createNextMassSubstitution = (client, {
   gameSeconds,
   totalSeconds,
 }) => {
-  const formationSubstitution = gameTeamSeason.formationSubstitutions
-  [gameTeamSeason.formationSubstitutions.length - 1];
+  const formationSubstitution =
+  gameTeamSeason.formationSubstitutions[gameTeamSeason.formationSubstitutions.length - 1];
   let substitution;
 
   return createSubstitution(client, {
@@ -609,8 +588,6 @@ export const createNextMassSubstitution = (client, {
   .then(() => substituteMaxPlayersFromBench(client, {
     formationSubstitution,
     substitution,
-    gameActivityType,
-    gameActivityStatus,
     gameTeamSeason,
     totalSeconds,
     gameSeconds,
@@ -631,7 +608,6 @@ export const addToLineup = (client, {
   positionSnapshotTo,
   playerPositionAssignmentType,
 }) => {
-  let formationSubstitution;
   let substitution;
   let playerPosition;
 
@@ -642,7 +618,7 @@ export const addToLineup = (client, {
     gameTeamSeason,
     totalSeconds,
     gameSeconds,
-  }).then(result => {formationSubstitution = result; console.log(result)})
+  }).then(result => {console.log(result)})
   .then(() => getOrCreateSubstitution(client, {
     gameActivityType,
     gameActivityStatus,
@@ -692,11 +668,7 @@ export const createInitialLineup = (client, {
   .then(() => getOrCreatePlayerPositionsAndPlayerPositionAssignments(client, {
     formationSubstitution,
     substitution,
-    gameActivityType,
-    gameActivityStatus,
     gameTeamSeason,
-    totalSeconds: 0,
-    gameSeconds: 0,
     playerPositionAssignmentType: "INITIAL"
   })).then(result => {console.log(result)})
   .then(() => console.log("createInitialLineup succeeded"))

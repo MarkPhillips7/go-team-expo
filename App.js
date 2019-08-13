@@ -1,4 +1,5 @@
 import React from 'react';
+import {PropTypes} from 'prop-types';
 import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { AppLoading, Asset, Font, Icon } from 'expo';
 import AppNavigator from './navigation/AppNavigator';
@@ -17,7 +18,7 @@ const client = new ApolloClient({
   },
   uri: "https://api.graph.cool/simple/v1/cjpeel49p81sr0135wsewoo11"
 });
-import gql from "graphql-tag";
+// import gql from "graphql-tag";
 import { ApolloProvider } from "react-apollo";
 
 import { createAppContainer } from 'react-navigation';
@@ -38,6 +39,9 @@ const AppContainer = createAppContainer(AppNavigator);
 
 
 export default class App extends React.Component {
+  static propTypes = {
+    skipLoadingScreen: PropTypes.boolean,
+  };
   state = {
     isLoadingComplete: false,
   };

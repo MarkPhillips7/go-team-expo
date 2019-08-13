@@ -1,17 +1,11 @@
 import React from 'react';
 import { Query , withApollo} from 'react-apollo';
-import gql from "graphql-tag";
 import SoccerField from './SoccerField';
 import { Text } from 'react-native';
 import {GAME_TEAM_SEASON_INFO} from '../graphql/game';
-// getGameState @client {
-//   clockMultiplier
-//   mode
-// },
 
 export default  withApollo(
-class Game extends React.Component {
-
+class Game extends React.Component {  
   constructor(props) {
     super(props);
     // Don't call this.setState() here!
@@ -21,9 +15,7 @@ class Game extends React.Component {
   }
 
   render() {
-    // console.log(`Game render`);
     const gameTeamSeasonId = this.props.navigation.getParam('gameTeamSeasonId');
-    // console.log(`gameTeamSeasonId: ${gameTeamSeasonId}`);
     return (
       <Query
         query={GAME_TEAM_SEASON_INFO}

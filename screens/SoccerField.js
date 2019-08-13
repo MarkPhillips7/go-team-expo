@@ -1,7 +1,8 @@
 import React, {Fragment} from 'react';
-import { Button, ScrollView, Slider, StyleSheet, Switch, Text, View } from 'react-native';
+import {PropTypes} from 'prop-types';
+import { Button, ScrollView, Slider, StyleSheet, Text, View } from 'react-native';
 import {withApollo} from 'react-apollo';
-import gql from "graphql-tag";
+// import gql from "graphql-tag";
 import FormationLine from '../components/FormationLine';
 import Player from '../components/Player';
 import Roster from '../components/Roster';
@@ -10,7 +11,7 @@ import _ from 'lodash';
 import {
   // gameRoster as theGameRoster,
   playerAvailability,
-  specialPositions,
+  // specialPositions,
   // positionCategories,
 } from '../constants/Soccer';
 import {
@@ -46,6 +47,17 @@ const millisecondsBeforeSliderAction = 500;
 export default withApollo(
 // export default
 class SoccerField extends React.Component {
+  static propTypes = {
+    gameDefinition: PropTypes.object,
+    gameTeamSeasonId: PropTypes.string.isRequired,
+    gameState: PropTypes.object,
+    gamePlan: PropTypes.object,
+    gameTeamSeason: PropTypes.object,
+    gamePlayers: PropTypes.object,
+    positionCategories: PropTypes.object,
+    onLineupChange: PropTypes.function,
+    onSubsChange: PropTypes.function,
+  }
   static navigationOptions = {
     title: 'Game',
   }
@@ -84,7 +96,7 @@ class SoccerField extends React.Component {
       currentGameTime: undefined,
       gameStartTime: undefined,
       isClockRunning: true,
-      isGameOver: false,
+      isGameOver,
       mode: modes.default,
       totalSeconds,
       gameSeconds,
@@ -172,12 +184,7 @@ class SoccerField extends React.Component {
       gameTeamSeason,
     });
     const {
-      gameStatus,
-      gamePeriod,
-      mostRecentGameActivity,
       gameActivityType,
-      //gameActivityStatus,
-      gameDurationSeconds
     } = gameStatusInfo;
     const gameActivityStatus = gameActivityType === "OFFICIAL"
     ? "COMPLETED"
@@ -201,8 +208,6 @@ class SoccerField extends React.Component {
       makePlannedSubstitutionOfficial(client, {
         plannedSubstitution,
         gameTeamSeason,
-        gameActivityType,
-        gameActivityStatus,
         timestamp,
         gameSeconds,
         totalSeconds,
@@ -343,7 +348,6 @@ class SoccerField extends React.Component {
       nextGamePeriod,
     );
     stopGame(client, {
-      gamePeriods,
       gameTeamSeasonId,
       game,
       gamePeriodId,
@@ -354,7 +358,7 @@ class SoccerField extends React.Component {
     })
     .then(this.startOrStopGameTimer)
     .then(this.props.onSubsChange);
-  };
+  }
 
   onSliderMove(gameSeconds) {
     if (moment().diff(this.state.lastSliderMoveTime) < millisecondsBeforeSliderAction) {
@@ -420,7 +424,6 @@ class SoccerField extends React.Component {
     const {
       gameStatus,
       gamePeriod,
-      mostRecentGameActivity,
       gameActivityType,
       gameActivityStatus,
       gameDurationSeconds
@@ -428,19 +431,14 @@ class SoccerField extends React.Component {
     const gameTimeline = getGameTimeline({
       gameStatus,
       gameTeamSeason,
-      gameActivityType,
-      gameActivityStatus,
       totalSeconds,
       gameSeconds,
       timestamp,
     });
     const gameSnapshot = getGameSnapshot({
-      gameStatus,
       gameTimeline,
       positionCategories,
       gameTeamSeason,
-      gameActivityType,
-      gameActivityStatus,
       totalSeconds,
       gameSeconds,
       timestamp,
@@ -487,33 +485,35 @@ class SoccerField extends React.Component {
               }}
               title="State"
             />
-            <Button
-              style={styles.button}
-              onPress={() => {
-                const gamePlayers = this.props.client.readQuery({
-  query: gql`
-    query {
-      allGamePlayers(
-        filter: {
-          gameTeamSeason: {
-            id: ${this.props.gameTeamSeasonId}
-          }
-        }
-      ) {
-        id
-        availability
-        player {
-          id
-          name
-        }
-      }
-    }
-  `,
-});
-                console.log("cache: " + JSON.stringify(gamePlayers));
-              }}
-              title="GamePlayers Cache"
-            />
+{
+//             <Button
+//               style={styles.button}
+//               onPress={() => {
+//                 const gamePlayers = this.props.client.readQuery({
+//   query: gql`
+//     query {
+//       allGamePlayers(
+//         filter: {
+//           gameTeamSeason: {
+//             id: ${this.props.gameTeamSeasonId}
+//           }
+//         }
+//       ) {
+//         id
+//         availability
+//         player {
+//           id
+//           name
+//         }
+//       }
+//     }
+//   `,
+// });
+//                 console.log("cache: " + JSON.stringify(gamePlayers));
+//               }}
+//               title="GamePlayers Cache"
+//             />
+}
           </ScrollView>
         )}
         {this.state.mode === modes.roster && (
@@ -756,7 +756,7 @@ class SoccerField extends React.Component {
   }
 });
 
-const numberOfLineups = 8;
+// const numberOfLineups = 8;
 // const totalDemoSeconds = 15;
 
 const modes = {
@@ -786,7 +786,7 @@ const modes = {
 //   }
 // });
 
-let CIRCLE_RADIUS = 30;
+// let CIRCLE_RADIUS = 30;
 let styles = StyleSheet.create({
   screen: {
     flex: 1,

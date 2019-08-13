@@ -106,11 +106,12 @@ const getTimeInfo = (substitution, playerPositionAssignment, maxTimeInfo) => {
 };
 
 const getInGameSecondsSincePreviousEvent = (previousEvent, event, gameSeconds) => {
+  let eventGameSeconds;
   switch (previousEvent.eventType) {
     case "INITIAL":
     case "IN":
     case "CHANGE":
-      const eventGameSeconds = event.isOverdue
+      eventGameSeconds = event.isOverdue
       ? gameSeconds
       : Math.min(event.timeInfo.gameSeconds, gameSeconds);
       return eventGameSeconds - previousEvent.timeInfo.gameSeconds;
@@ -171,8 +172,6 @@ export const playerIsCurrentlyPlaying = (gameStats, gamePlayer) => {
 // Get game statistics at a certain point in time
 export const getGameStats = ({
   gameTeamSeason,
-  gameActivityType,
-  gameActivityStatus,
   totalSeconds,
   gameSeconds,
   timestamp,
@@ -213,7 +212,7 @@ export const getGameStats = ({
     });
   });
 
-  _.forEach(gameStats.players, (playerStats, playerId) => {
+  _.forEach(gameStats.players, (playerStats) => {
     const positionStats = playerStats.currentPositionId && playerStats.positions[playerStats.currentPositionId];
     updateCumulativeTimeStatsSinceLastEvent(playerStats, positionStats, {gameSeconds, totalSeconds, timestamp});
   });
@@ -299,9 +298,6 @@ export const getCurrentTimeInfo = (gameTeamSeason) => {
 
 export const getGameStatusInfo = ({
   gameTeamSeason,
-  timestamp,
-  totalSeconds,
-  gameSeconds,
 }) => {
   const gameStatus = gameTeamSeason &&
   gameTeamSeason.game &&
@@ -333,8 +329,6 @@ export const getGameStatusInfo = ({
 export const getGameTimeline = ({
   gameStatus,
   gameTeamSeason,
-  gameActivityType,
-  gameActivityStatus,
   totalSeconds,
   gameSeconds,
   timestamp,
@@ -392,11 +386,11 @@ export const getGameTimeline = ({
   return gameTimeline;
 };
 
-const getPositionCategory = (position, positionCategories) => {
+const getPositionCategory = (position) => {
   if (!position || !position.positionCategory) {
     return null;
   }
-  return position.positionCategory;//positionCategories[position.positionCategory.id];
+  return position.positionCategory;
 };
 
 const getColor = ({
@@ -408,6 +402,7 @@ const getColor = ({
     return "gray";
   }
 
+  let positionCategory;
   switch (event.eventType) {
     case "OUT":
       return "gray";
@@ -417,7 +412,7 @@ const getColor = ({
     // case "IN":
     // case "CHANGE":
     default:
-      const positionCategory = getPositionCategory(event.position, positionCategories);
+      positionCategory = getPositionCategory(event.position, positionCategories);
       return positionCategory && positionCategory.color || "white";
   }
 };
@@ -439,12 +434,9 @@ const updatePositionsSnapshot = (positionsSnapshot, event, playerId) => {
 };
 
 export const getGameSnapshot = ({
-  gameStatus,
   gameTimeline,
   positionCategories,
   gameTeamSeason,
-  gameActivityType,
-  gameActivityStatus,
   totalSeconds,
   gameSeconds,
   timestamp,
@@ -748,4 +740,4 @@ export const getPlayerPressedSelectionInfo = (
   };
 };
 
-export const getCancelPressedSelectionInfo = (previousState) => {};
+export const getCancelPressedSelectionInfo = () => {};
