@@ -40,7 +40,7 @@ const AppContainer = createAppContainer(AppNavigator);
 
 export default class App extends React.Component {
   static propTypes = {
-    skipLoadingScreen: PropTypes.boolean,
+    skipLoadingScreen: PropTypes.bool,
   };
   state = {
     isLoadingComplete: false,

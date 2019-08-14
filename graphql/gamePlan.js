@@ -649,21 +649,22 @@ export const createInitialLineup = (client, {
 }) => {
   let formationSubstitution;
   let substitution;
-
+  const gameSeconds = 0;
+  const totalSeconds = gameSeconds;
   return getOrCreateFormationSubstitution(client, {
     formationId: "cjqcfvx3167k30128b70ieu58",
     gameActivityType,
     gameActivityStatus,
     gameTeamSeason,
-    totalSeconds: 0,
-    gameSeconds: 0,
+    totalSeconds,
+    gameSeconds,
   }).then(result => {formationSubstitution = result; console.log(result)})
   .then(() => getOrCreateSubstitution(client, {
     gameActivityType,
     gameActivityStatus,
     gameTeamSeason,
-    totalSeconds: 0,
-    gameSeconds: 0,
+    totalSeconds,
+    gameSeconds,
   })).then(result => {substitution = result; console.log(result)})
   .then(() => getOrCreatePlayerPositionsAndPlayerPositionAssignments(client, {
     formationSubstitution,

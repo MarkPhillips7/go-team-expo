@@ -382,7 +382,6 @@ export const getGameTimeline = ({
     });
   });
 
-  // console.log(gameTimeline);
   return gameTimeline;
 };
 
@@ -445,6 +444,12 @@ export const getGameSnapshot = ({
   const maxSeconds = gameDurationSeconds;
   const minSeconds = 0.0;
   const positionsSnapshot = {};
+  // Only show pending moves for the next substitution. Identify it by futureEventGameSeconds.
+  const nextPlannedSubstitution = getNextPlannedSubstitution({
+    gameTeamSeason,
+    excludeInitial: true
+  });
+  let nextPlannedSubstitutionGameSeconds = nextPlannedSubstitution ? nextPlannedSubstitution.gameSeconds : Number.MAX_SAFE_INTEGER;
   const playersSnapshot = _.mapValues(gameTimeline.players, (playerTimeline, playerId) => {
     let secondsCounter = minSeconds;
     let previousEvent = undefined;
@@ -475,7 +480,9 @@ export const getGameSnapshot = ({
         }
       }
 
-      if (event.isOverdue || event.timeInfo.gameSeconds >= gameSeconds) {
+      if (event.eventType !== "INITIAL" &&
+      (event.isOverdue || event.timeInfo.gameSeconds >= gameSeconds) &&
+      event.timeInfo.gameSeconds <= nextPlannedSubstitutionGameSeconds) {
         const pendingMoveSeconds = event.timeInfo.gameSeconds - endSecondsSinceGameStart;
         const pendingMoveTime = pendingMoveSeconds < 0
         ? `-${moment.utc(-pendingMoveSeconds*1000).format("m:ss")}`
@@ -503,12 +510,14 @@ export const getGameSnapshot = ({
           pendingMoveTime,
           percentToMove,
         };
-
-        if (event.isOverdue ||
-          event.timeInfo.gameSeconds - endSecondsSinceGameStart < gameTeamSeason.gamePlan.secondsBetweenSubs) {
-          return false;
-        }
       }
+
+      // Returning false here essentially prevents event from being included in snapshot
+      if (event.eventType !== "INITIAL" &&
+      (event.isOverdue || event.timeInfo.gameSeconds >= gameSeconds)) {
+          return false;
+      }
+
       activeEvent = event;
       updatePositionsSnapshot(positionsSnapshot, event, playerId);
 
@@ -654,16 +663,26 @@ export const getPlayerDisplayMode = (positionSnapshot, state) => {
   return playerDisplayModes.unselected;
 };
 
-export const getNextPlannedSubstitution = (gameTeamSeason) => {
+export const getNextPlannedSubstitution = ({
+  gameTeamSeason,
+  excludeInitial = true
+}) => {
   return gameTeamSeason &&
   gameTeamSeason.substitutions &&
   _.find(gameTeamSeason.substitutions, (sub) =>
     sub.gameActivityType === "PLAN" &&
-    sub.gameActivityStatus === "PENDING");
+    sub.gameActivityStatus === "PENDING" &&
+    (!excludeInitial ||
+      !_.find(sub.playerPositionAssignments, (playerPositionAssignment =>
+      playerPositionAssignment.playerPositionAssignmentType === "INITIAL")))
+  );
 };
 
 export const canApplyPlannedSubstitution = (gameTeamSeason) => {
-  const nextPlannedSubstitution = getNextPlannedSubstitution(gameTeamSeason);
+  const nextPlannedSubstitution = getNextPlannedSubstitution({
+    gameTeamSeason,
+    excludeInitial: true
+  });
   //console.log(`canApplyPlannedSubstitution`, nextPlannedSubstitution);
   // ToDo: Make sure the player position assignments are allowed
   // console.log(`nextPlannedSubstitution`, nextPlannedSubstitution);

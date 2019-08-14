@@ -5,7 +5,7 @@ import { Text } from 'react-native';
 import {GAME_TEAM_SEASON_INFO} from '../graphql/game';
 
 export default  withApollo(
-class Game extends React.Component {  
+class Game extends React.Component {
   constructor(props) {
     super(props);
     // Don't call this.setState() here!
@@ -39,8 +39,8 @@ class Game extends React.Component {
               gameTeamSeason={data && data.GameTeamSeason}
               gamePlayers={data && data.GameTeamSeason && data.GameTeamSeason.gamePlayers}
               positionCategories={data && data.allPositionCategories}
-              onLineupChange={() => refetch()}
-              onSubsChange={() => refetch()}
+              onLineupChange={refetch}
+              onSubsChange={refetch}
             />
           );
         }}

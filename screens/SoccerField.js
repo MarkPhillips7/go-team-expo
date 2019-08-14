@@ -53,10 +53,10 @@ class SoccerField extends React.Component {
     gameState: PropTypes.object,
     gamePlan: PropTypes.object,
     gameTeamSeason: PropTypes.object,
-    gamePlayers: PropTypes.object,
-    positionCategories: PropTypes.object,
-    onLineupChange: PropTypes.function,
-    onSubsChange: PropTypes.function,
+    gamePlayers: PropTypes.array,
+    positionCategories: PropTypes.array,
+    onLineupChange: PropTypes.func.isRequired,
+    onSubsChange: PropTypes.func.isRequired,
   }
   static navigationOptions = {
     title: 'Game',
@@ -204,7 +204,10 @@ class SoccerField extends React.Component {
       .then(this.props.onSubsChange);
     } else if (canApplyPlannedSubstitution(gameTeamSeason)) {
       // Make the planned substitutions official
-      const plannedSubstitution = getNextPlannedSubstitution(gameTeamSeason);
+      const plannedSubstitution = getNextPlannedSubstitution({
+        gameTeamSeason,
+        excludeInitial: true
+      });
       makePlannedSubstitutionOfficial(client, {
         plannedSubstitution,
         gameTeamSeason,
@@ -235,7 +238,6 @@ class SoccerField extends React.Component {
   onPressAutoSubs(){
     const {client, gameTeamSeason} = this.props;
     const {totalSeconds, gameSeconds} = getNextSubstitutionInfo(gameTeamSeason);
-    // console.log(`totalSeconds: ${totalSeconds}, gameSeconds: ${gameSeconds}`);
     createNextMassSubstitution(client, {
       gameTeamSeason,
       gameActivityType: "PLAN",
@@ -248,8 +250,7 @@ class SoccerField extends React.Component {
 
   onPressAddToLineup() {
     const {client, gameTeamSeason} = this.props;
-    const {gameSeconds} = this.state;
-    const totalSeconds = 0;
+    const {gameSeconds, totalSeconds} = this.state;
     const {selectionInfo} = this.state;
     if (!selectionInfo.selections || selectionInfo.selections.length !== 2) {
       console.error(`Must have two selections in onPressAddToLineup`);
@@ -258,8 +259,6 @@ class SoccerField extends React.Component {
     const positionSnapshotFrom = _.find(selectionInfo.selections, (selection) => selection.playerId);
     const positionSnapshotTo = _.find(selectionInfo.selections, (selection) => !selection.playerId);
     const playerPositionAssignmentType = "INITIAL";
-    // const {totalSeconds, gameSeconds} = getNextSubstitutionInfo(gameTeamSeason);
-    // console.log(`totalSeconds: ${totalSeconds}, gameSeconds: ${gameSeconds}`);
     addToLineup(client, {
       gameTeamSeason,
       gameActivityType: "PLAN",
@@ -309,7 +308,10 @@ class SoccerField extends React.Component {
       gameSeconds,
       totalSeconds,
     } = getCurrentTimeInfo(gameTeamSeason);
-    const initialLineupSubstitution = getNextPlannedSubstitution(gameTeamSeason);
+    const initialLineupSubstitution = getNextPlannedSubstitution({
+      gameTeamSeason,
+      excludeInitial: false
+    });
     startGame(client, {
       gameTeamSeason,
       gameTeamSeasonId,
@@ -320,7 +322,8 @@ class SoccerField extends React.Component {
       totalSeconds,
       plannedSubstitution: initialLineupSubstitution,
     })
-    .then(this.startOrStopGameTimer);
+    .then(this.startOrStopGameTimer)
+    .then(this.props.onSubsChange);
   }
 
   onPressStop() {
@@ -447,7 +450,7 @@ class SoccerField extends React.Component {
     const playersSelected = this.state.selectionInfo &&
       this.state.selectionInfo.selections &&
       this.state.selectionInfo.selections.length || 0;
-    // console.log(`gameStatusInfo:`, gameStatusInfo);
+    // console.log(`gameSnapshot:`, gameSnapshot);
     return (
       <View style={styles.screen}>
         {this.state.mode === modes.debug && (
