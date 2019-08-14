@@ -1,4 +1,5 @@
 import React from 'react'
+import {PropTypes} from 'prop-types';
 import {
   FlatList,
   StyleSheet,
@@ -25,6 +26,9 @@ mutation UpdateGamePlayer($id: ID!,$availability: Availability!){
 `;
 
 export default class Roster extends React.Component {
+  static propTypes = {
+    gameRoster: PropTypes.array,
+  };
   // constructor(props) {
   //   super(props);
   //   // Don't call this.setState() here!
@@ -64,7 +68,7 @@ export default class Roster extends React.Component {
                 mutation={updateGamePlayerMutation}
                 key={id}
               >
-                {(updateGamePlayer, { data }) => (
+                {(updateGamePlayer) => (
                   <View style={styles.playerAvailability}>
                     <Switch
                       style={styles.switch}
@@ -88,7 +92,7 @@ export default class Roster extends React.Component {
       </View>
     );
   }
-};
+}
 
 let styles = StyleSheet.create({
   playerAvailability: {

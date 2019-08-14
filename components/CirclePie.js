@@ -1,17 +1,23 @@
 import React, {
     Component
 } from 'react';
+import {PropTypes} from 'prop-types';
 import _ from 'lodash';
 import { Svg } from 'expo';
 const {
     Circle,
     Path,
-    Text
 } = Svg;
 
 const circleBorderWidth = 0.08;
 
 export default class CirclePie extends Component {
+  static propTypes = {
+    circleDisplayMode: PropTypes.object.isRequired,
+    style: PropTypes.object,
+    positionColor: PropTypes.string.isRequired,
+    piePieces: PropTypes.array,
+  };
   render() {
     const getCoordinatesPieSlice = (percent) => {
       const quarterTurnOffset = -1/4*2 * Math.PI;
@@ -62,7 +68,7 @@ export default class CirclePie extends Component {
 
             // Using a radius less than one causes app to crash on ios
 
-          	// create an array and join it just for code readability
+            // create an array and join it just for code readability
             const pathData = [
               `M ${startX} ${startY}`, // Move
               `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`, // Arc

@@ -1,4 +1,5 @@
 import React from 'react'
+import {PropTypes} from 'prop-types';
 import CirclePie from '../components/CirclePie'
 import ColoredTextBox from '../components/ColoredTextBox'
 import PendingMoveArrow from '../components/PendingMoveArrow'
@@ -10,11 +11,16 @@ import {
 } from 'react-native';
 import _ from 'lodash';
 import moment from 'moment';
-import {
-  specialPositions,
-} from '../constants/Soccer';
 
 export default class Player extends React.Component {
+  static propTypes = {
+    playerStats: PropTypes.object,
+    player: PropTypes.object,
+    style: PropTypes.object.isRequired,
+    onPress: PropTypes.func.isRequired,
+    playerDisplayMode: PropTypes.object.isRequired,
+    positionCategory: PropTypes.object.isRequired,
+  };
   render() {
     const applyMultiplier = (styleObject, multiplier) => {
       const newStyleObject = {...styleObject};
@@ -81,7 +87,7 @@ export default class Player extends React.Component {
       </TouchableOpacity>
     );
   }
-};
+}
 
 const styles = StyleSheet.create({
   playerName: {
