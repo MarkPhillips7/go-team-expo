@@ -413,9 +413,53 @@ class SoccerField extends React.Component {
     });
   }
 
-  render() {
-    const {gameTeamSeason, positionCategories} = this.props;
+  getFlexValues(gameSnapshot, gamePlayers) {
+    const positionCount = _.keys(gameSnapshot.positions).length;
+    const benchCount =
+    _.filter(gamePlayers, (gamePlayer) =>
+      gamePlayer.availability === playerAvailability.active &&
+      gameSnapshot.players[gamePlayer.player.id] &&
+      (!gameSnapshot.players[gamePlayer.player.id].activeEvent ||
+      !gameSnapshot.players[gamePlayer.player.id].activeEvent.position)).length;
+      
+    // Intention is that the flex value would match max number of players from left right.
+    // Currently using 1-2-2-2 formation and fieldFlex is 2 as desired.
+    // This approximation would not work for 1-3-2-1 formation though.
+    const fieldFlex = Math.floor((positionCount - 1) / 4) + 1;
+    const benchFlex = Math.floor((benchCount - 1) / 4) + 1;
+    const playerBasis = Math.floor(280 / (fieldFlex + benchFlex));
+    return {
+      fieldFlex,
+      benchFlex,
+      playerBasis,
+    };
+  }
 
+  getDynamicStyles(gameSnapshot, gamePlayers) {
+    const {benchFlex, fieldFlex, playerBasis} = this.getFlexValues(gameSnapshot, gamePlayers);
+    const benchStyles = {
+      ...styles.bench,
+      flex: benchFlex,
+    };
+    const fieldStyles = {
+      ...styles.field,
+      flex: fieldFlex,
+    };
+    const playerStyles = {
+      ...styles.player,
+      flexBasis: playerBasis,
+    };
+    return {benchStyles, fieldStyles, playerStyles};
+}
+
+  render() {
+    const {
+      gamePlan,
+      gamePlayers,
+      gameState,
+      gameTeamSeason,
+      positionCategories
+    } = this.props;
     const {
       timestamp,
       totalSeconds,
@@ -450,6 +494,7 @@ class SoccerField extends React.Component {
     const playersSelected = this.state.selectionInfo &&
       this.state.selectionInfo.selections &&
       this.state.selectionInfo.selections.length || 0;
+    const {benchStyles, fieldStyles, playerStyles} = this.getDynamicStyles(gameSnapshot, gamePlayers);
     // console.log(`gameSnapshot:`, gameSnapshot);
     return (
       <View style={styles.screen}>
@@ -479,7 +524,7 @@ class SoccerField extends React.Component {
                   }
                 });
               }}
-              value={this.props.gameState.clockMultiplier}
+              value={gameState.clockMultiplier}
             />
             <Button
               style={styles.button}
@@ -521,14 +566,14 @@ class SoccerField extends React.Component {
         )}
         {this.state.mode === modes.roster && (
           <Roster
-            gameRoster={this.props.gamePlayers}
+            gameRoster={gamePlayers}
           />
         )}
         {this.state.mode === modes.default && (
         <View style={styles.park}>
-          <View style={styles.field}>
+          <View style={fieldStyles}>
           {
-            _.chain(this.props.positionCategories)
+            _.chain(positionCategories)
             .filter((category) => category.parkLocation === "FIELD")
             .reverse()
             .map((category, categoryIndex) => (
@@ -546,13 +591,13 @@ class SoccerField extends React.Component {
                   .map((positionSnapshot, positionSnapshotIndex) => (
                     <Player
                       key={positionSnapshotIndex}
-                      style={styles.player}
+                      style={playerStyles}
                       position={positionSnapshot.event.position}
                       positionCategory={category}
-                      player={_.find(this.props.gamePlayers, (gamePlayer) => gamePlayer.player.id === positionSnapshot.playerId) &&
-                        _.find(this.props.gamePlayers, (gamePlayer) => gamePlayer.player.id === positionSnapshot.playerId).player}
-                      gamePlan={this.props.gamePlan}
-                      gamePlayers={this.props.gamePlayers}
+                      player={_.find(gamePlayers, (gamePlayer) => gamePlayer.player.id === positionSnapshot.playerId) &&
+                        _.find(gamePlayers, (gamePlayer) => gamePlayer.player.id === positionSnapshot.playerId).player}
+                      gamePlan={gamePlan}
+                      gamePlayers={gamePlayers}
                       gameStartTime={this.state.gameStartTime}
                       gameSeconds={gameSeconds}
                       currentGameTime={this.state.currentGameTime}
@@ -571,9 +616,9 @@ class SoccerField extends React.Component {
             .value()
           }
           </View>
-          <View style={styles.bench}>
+          <View style={benchStyles}>
           {
-            _.chain(this.props.positionCategories)
+            _.chain(positionCategories)
             .filter((category) => category.parkLocation === "BENCH")
             .reverse()
             .map((category, categoryIndex) => (
@@ -584,7 +629,7 @@ class SoccerField extends React.Component {
                 positionCategory={category}
               >
                 {
-                  _.chain(this.props.gamePlayers)
+                  _.chain(gamePlayers)
                   .filter((gamePlayer) =>
                   gamePlayer.availability === playerAvailability.active &&
                   gameSnapshot.players[gamePlayer.player.id] &&
@@ -594,12 +639,12 @@ class SoccerField extends React.Component {
                   .map((gamePlayer, gamePlayerIndex) => (
                     <Player
                       key={gamePlayerIndex}
-                      style={styles.player}
+                      style={playerStyles}
                       position={undefined}
                       positionCategory={category}
                       player={gamePlayer.player}
-                      gamePlan={this.props.gamePlan}
-                      gamePlayers={this.props.gamePlayers}
+                      gamePlan={gamePlan}
+                      gamePlayers={gamePlayers}
                       gameStartTime={this.state.gameStartTime}
                       currentGameTime={this.state.currentGameTime}
                       isGameOver={this.state.isGameOver}
@@ -821,9 +866,11 @@ let styles = StyleSheet.create({
   },
   player: {
     flex: 1,
+    flexBasis: 70,
     alignItems: 'center',
     justifyContent: 'center',
     margin: 10,
+    width: 100,
   },
   slider: {
     width: 100,

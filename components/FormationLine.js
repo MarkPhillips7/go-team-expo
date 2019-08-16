@@ -8,14 +8,27 @@ export default class FormationLine extends React.Component {
     //   ...(this.props.style || {}),
     //   ...(styles.formationContainer || {})
     // };
-    const flexDirection = this.props.lineOrientation === "horizontal" ? "row" : "column";
-    const containerStyle = styles.formationContainer;
-    const formationLineStyle = {
+    const flexDirection = "row";//this.props.lineOrientation === "horizontal" ? "row" : "column";
+    const _formationLineStyle = {
       flex: 1,
-      alignItems: 'center',
+      flexWrap: 'wrap',
+      //alignItems: 'flex-start',//'center',
       justifyContent: 'center',
       flexDirection,
+      height: "97%",
     }
+
+    let styles = StyleSheet.create({
+      containerStyle: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+      },
+      formationLineStyle: _formationLineStyle,
+    });
+    const {formationLineStyle, containerStyle} = styles;
+
     return (
       <View style={containerStyle}>
         <View style={{
@@ -32,12 +45,3 @@ export default class FormationLine extends React.Component {
     );
   }
 }
-
-let styles = StyleSheet.create({
-  formationContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
-});
