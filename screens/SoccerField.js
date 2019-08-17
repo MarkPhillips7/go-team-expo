@@ -222,8 +222,14 @@ class SoccerField extends React.Component {
   onPressSubNextTime() {
     const {client, gameTeamSeason} = this.props;
     const {selectionInfo} = this.state;
-    // ToDo: Fix this; currently not right because getNeckSubstitutionInfo does not consider current time
-    const {totalSeconds, gameSeconds} = getNextSubstitutionInfo(gameTeamSeason);
+    const nextPlannedSubstitution = getNextPlannedSubstitution({
+      gameTeamSeason,
+      excludeInitial: true
+    });
+    // ToDo: Fix this; currently not right because getNextSubstitutionInfo
+    // does not consider current time or time of last official substitution
+    const {totalSeconds, gameSeconds} =
+      nextPlannedSubstitution || getNextSubstitutionInfo(gameTeamSeason);
     createSubstitutionForSelections(client, {
       selectionInfo,
       gameTeamSeason,
@@ -421,7 +427,7 @@ class SoccerField extends React.Component {
       gameSnapshot.players[gamePlayer.player.id] &&
       (!gameSnapshot.players[gamePlayer.player.id].activeEvent ||
       !gameSnapshot.players[gamePlayer.player.id].activeEvent.position)).length;
-      
+
     // Intention is that the flex value would match max number of players from left right.
     // Currently using 1-2-2-2 formation and fieldFlex is 2 as desired.
     // This approximation would not work for 1-3-2-1 formation though.
