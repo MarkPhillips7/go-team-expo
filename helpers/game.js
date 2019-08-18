@@ -560,6 +560,7 @@ export const getGameSnapshot = ({
               eventType: "INITIAL",
               position,
               timeInfo,
+              isOverdue: false,
             }
           };
         }
@@ -689,13 +690,21 @@ export const canApplyPlannedSubstitution = (gameTeamSeason) => {
   return !!nextPlannedSubstitution;
 };
 
+export const canRemoveSelectedSubs = (selectionInfo) => {
+  return selectionInfo.hasPlannedSubstitutionAssignments;
+};
+
+
 // if selectionInfo.selections has 3 position snapshots then
-// returns true if can substitute from
+// returns true if !hasPlannedSubstitutionAssignments and can substitute from
 //   [position snapshot 1] to [position snapshot 2]
 //   [position snapshot 2] to [position snapshot 3]
 //   [position snapshot 3] to [position snapshot 1]
 export const canSubstitute = (selectionInfo) => {
-  const {selections} = selectionInfo;
+  const {hasPlannedSubstitutionAssignments, selections} = selectionInfo;
+  if (hasPlannedSubstitutionAssignments) {
+    return false;
+  }
   if (!selections || selections.length < 2) {
     return false;
   }
@@ -716,7 +725,7 @@ export const canSubstituteFromTo = (positionSnapshotFrom, positionSnapshotTo) =>
 };
 
 // Returns true when there are exactly two selections and one
-// has a player in one does not.
+// has a player and one does not.
 export const canSetLineup = (selectionInfo) => {
   const {selections} = selectionInfo;
   return selections &&
@@ -724,20 +733,117 @@ export const canSetLineup = (selectionInfo) => {
     !selections[0].playerId === !!selections[1].playerId;
 };
 
+export const getPlayerPositionAssignmentRelatedToPositionSnapshot = (
+  nextPlannedSubstitution,
+  positionSnapshot,
+) => {
+  const selectedPlayerId = positionSnapshot.playerId;
+  return nextPlannedSubstitution &&
+  _.find(nextPlannedSubstitution.playerPositionAssignments,
+    (playerPositionAssignment) =>
+    (!selectedPlayerId &&
+      playerPositionAssignment.playerPosition.position &&
+      // playerPositionAssignment.playerPositionAssignmentType === "CHANGE"
+      //   CHANGE # change position on the field
+      //   INITIAL # starting lineup position
+      //   IN # change from bench to position on the field
+      //   OUT
+    positionSnapshot &&
+    positionSnapshot.event &&
+    positionSnapshot.event.position &&
+    playerPositionAssignment.playerPosition.position.id === positionSnapshot.event.position.id) ||
+    (selectedPlayerId &&
+      playerPositionAssignment.playerPosition &&
+      playerPositionAssignment.playerPosition.player &&
+      positionSnapshot.playerId === playerPositionAssignment.playerPosition.player.id));
+};
+
+const getPlannedSubstitutionPositionsFor = (
+  nextPlannedSubstitution,
+  positionSnapshot,
+  {
+    //gameTeamSeason,
+    gameSnapshot
+  }
+) => {
+  let playerPositionAssignmentRelatedToPositionSnapshot =
+  getPlayerPositionAssignmentRelatedToPositionSnapshot(
+    nextPlannedSubstitution,
+    positionSnapshot,
+  );
+  if (!playerPositionAssignmentRelatedToPositionSnapshot) {
+    return null;
+  }
+  const positionSnapshots = [positionSnapshot];
+  let done;
+  do {
+    console.log(`done, playerPositionAssignmentRelatedToPositionSnapshot`, done, playerPositionAssignmentRelatedToPositionSnapshot);
+    const nextRelatedPositionSnapshot =
+    playerPositionAssignmentRelatedToPositionSnapshot.playerPosition &&
+    playerPositionAssignmentRelatedToPositionSnapshot.playerPosition.position
+    ? _.find(gameSnapshot.positions, (_positionSnapshot) =>
+      _positionSnapshot.event &&
+      _positionSnapshot.event.position &&
+      _positionSnapshot.event.position.id === playerPositionAssignmentRelatedToPositionSnapshot.playerPosition.position.id &&
+      positionSnapshots.indexOf(_positionSnapshot) === -1)
+    : _.find(gameSnapshot.positions, (_positionSnapshot) =>
+      playerPositionAssignmentRelatedToPositionSnapshot.playerPosition &&
+      playerPositionAssignmentRelatedToPositionSnapshot.playerPosition.player &&
+      _positionSnapshot.playerId === playerPositionAssignmentRelatedToPositionSnapshot.playerPosition.player.id &&
+      positionSnapshots.indexOf(_positionSnapshot) === -1);
+
+    done = !nextRelatedPositionSnapshot ||
+    positionSnapshotsMatch(nextRelatedPositionSnapshot, positionSnapshot);
+
+    if (!done) {
+      positionSnapshots.push(nextRelatedPositionSnapshot);
+      playerPositionAssignmentRelatedToPositionSnapshot =
+      getPlayerPositionAssignmentRelatedToPositionSnapshot(
+        nextPlannedSubstitution,
+        nextRelatedPositionSnapshot,
+      );
+    }
+  } while (!done);
+  return positionSnapshots;
+};
+
 export const getPlayerPressedSelectionInfo = (
   previousState,
-  positionSnapshot
+  positionSnapshot,
+  {
+    gameTeamSeason,
+    gameSnapshot,
+  }
 ) => {
   const {selectionInfo: previousSelectionInfo} = previousState;
 
-  // ToDo: Add concept of automatic selection (when you press one player
-  // the corresponding sub is automatically selected). Clicking automatic
-  // selection turns it into a non-automatic selection rather than unselecting it.
-
-  // If no selection info then just return this single selection
+  // If no selection info then just return this single selection or all
+  // of the positions related to a pending substitution involving this position
   if (!previousSelectionInfo) {
+    // When you press one player the corresponding sub(s) is automatically selected.
+    const nextPlannedSubstitution = getNextPlannedSubstitution({
+      gameTeamSeason,
+      excludeInitial: true
+    });
+    const plannedSubstitutionPositions = getPlannedSubstitutionPositionsFor(
+      nextPlannedSubstitution,
+      positionSnapshot,
+      {
+        gameTeamSeason,
+        gameSnapshot
+      }
+    );
+    if (plannedSubstitutionPositions) {
+      return {
+        selectedPlayerId: positionSnapshot.playerId,
+        selections: plannedSubstitutionPositions,
+        hasPlannedSubstitutionAssignments: true,
+      };
+    }
     return {
-      selections: [positionSnapshot]
+      selectedPlayerId: positionSnapshot.playerId,
+      selections: [positionSnapshot],
+      hasPlannedSubstitutionAssignments: false,
     };
   }
 
@@ -746,15 +852,19 @@ export const getPlayerPressedSelectionInfo = (
     previousSelectionInfo.selections &&
     previousSelectionInfo.selections.length &&
     positionSnapshotsMatch(previousSelectionInfo.selections[previousSelectionInfo.selections.length - 1], positionSnapshot)) {
+    const selections = previousSelectionInfo.selections.slice(0, previousSelectionInfo.selections.length - 1);
+    const selectedPlayerId = selections.length === 1 ? selections[0].playerId : null;
     return {
       ...previousSelectionInfo,
-      selections: previousSelectionInfo.selections.slice(0, previousSelectionInfo.selections.length - 1),
+      selectedPlayerId,
+      selections,
     };
   }
 
   // Append this selection
   return {
     ...previousSelectionInfo,
+    selectedPlayerId: null,
     selections: [...previousSelectionInfo.selections, positionSnapshot]
   };
 };

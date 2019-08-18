@@ -3,7 +3,13 @@ import _ from 'lodash';
 import {
   playerAvailability,
 } from '../constants/Soccer';
-import {getGameStats, getSubOutScore, getSubstitutionScore, playerIsCurrentlyPlaying} from '../helpers/game';
+import {
+  getGameStats,
+  getPlayerPositionAssignmentRelatedToPositionSnapshot,
+  getSubOutScore,
+  getSubstitutionScore,
+  playerIsCurrentlyPlaying
+} from '../helpers/game';
 
 const CREATE_FORMATION_SUBSTITUTION = gql`
 mutation CreateFormationSubstitution(
@@ -137,6 +143,18 @@ mutation DeletePlayerPosition (
 }
 `;
 
+const DELETE_SUBSTITUTION = gql`
+mutation deleteSubstitution (
+  $id: ID!
+){
+  deleteSubstitution(
+    id: $id
+  ) {
+    id
+  }
+}
+`;
+
 export const createPlayerPosition = (client, {
   playerId,
   positionId,
@@ -189,6 +207,29 @@ const deletePlayerPosition = (client, {
     variables: {
       id,
     },
+  });
+};
+
+const deleteSubstitution = (client, {
+  id,
+}) => {
+  return client.mutate({
+    mutation: DELETE_SUBSTITUTION,
+    variables: {
+      id,
+    },
+  });
+};
+
+const deleteSubstitutionIfAppropriate = (client, {
+  shouldDeleteSubstitution,
+  id,
+}) => {
+  if (!shouldDeleteSubstitution) {
+    return Promise.resolve();
+  }
+  return deleteSubstitution(client, {
+    id,
   });
 };
 
@@ -269,6 +310,19 @@ export const updateSubstitution = (client, {
   .then((result) => result.data.updateSubstitution);
 };
 
+const getSubstitutionAtSpecificTime = ({
+  gameActivityType,
+  gameTeamSeason,
+  // timestamp,
+  // totalSeconds,
+  gameSeconds,
+}) => {
+  return gameTeamSeason.substitutions &&
+    _.find(gameTeamSeason.substitutions, (sub) =>
+    sub.gameActivityType === gameActivityType &&
+    sub.gameSeconds === gameSeconds);
+};
+
 const getOrCreateSubstitutionAtSpecificTime = (client, {
   gameActivityStatus,
   gameActivityType,
@@ -277,8 +331,13 @@ const getOrCreateSubstitutionAtSpecificTime = (client, {
   totalSeconds,
   gameSeconds,
 }) => {
-  const substitution = gameTeamSeason.substitutions &&
-    _.find(gameTeamSeason.substitutions, (sub) => sub.gameSeconds === gameSeconds);
+  const substitution = getSubstitutionAtSpecificTime({
+    gameActivityType,
+    gameTeamSeason,
+    // timestamp,
+    // totalSeconds,
+    gameSeconds,
+  });
   if (!substitution) {
     return createSubstitution(client, {
       gameActivityStatus,
@@ -402,8 +461,6 @@ const positionSnapshotRepresentsBench = (positionSnapshot) => {
   // Currently the bench is represented by there not being a position
   return !positionSnapshot.event ||
     !positionSnapshot.event.position;
-    //  ||
-    // positionSnapshot.event.position.positionCategory.parkLocation === "BENCH"
 };
 
 const substituteSelectedPlayers = (client, {
@@ -436,6 +493,25 @@ const substituteSelectedPlayers = (client, {
       playerPositionAssignmentType,
       playerPositionId: playerPosition.id,
       substitutionId: substitution.id,
+    }));
+  }));
+};
+
+const deleteSelectedPlayerPositionAssignments = (client, {
+  selectionInfo,
+  substitution,
+}) => {
+  return Promise.all(_.map(selectionInfo.selections, (positionSnapshot) => {
+    const playerPositionAssignment =
+    getPlayerPositionAssignmentRelatedToPositionSnapshot(
+      substitution,
+      positionSnapshot,
+    );
+    return deletePlayerPositionAssignment(client, {
+      id: playerPositionAssignment.id,
+    })
+    .then(() => deletePlayerPosition(client, {
+      id: playerPositionAssignment.playerPosition.id,
     }));
   }));
 };
@@ -561,6 +637,41 @@ export const createSubstitutionForSelections = (client, {
     substitution,
   })).then(result => {console.log(result)})
   .then(() => console.log("createSubstitutionForSelections succeeded"))
+  .catch((error) => console.log(`error: ${error}`));
+};
+
+// Delete the selected player/position assignments. If the substitution
+// no longer has any player/position assignments then also delete the substitution.
+export const deleteSelectedSubstitutions = (client, {
+  selectionInfo,
+  gameActivityType,
+  gameTeamSeason,
+  // timestamp,
+  // totalSeconds,
+  gameSeconds,
+}) => {
+  const substitution = getSubstitutionAtSpecificTime({
+    gameActivityType,
+    gameTeamSeason,
+    // timestamp,
+    // totalSeconds,
+    gameSeconds,
+  });
+  const shouldDeleteSubstitution =
+  selectionInfo &&
+  selectionInfo.selections &&
+  substitution &&
+  substitution.playerPositionAssignments &&
+  selectionInfo.selections.length === substitution.playerPositionAssignments.length;
+  return deleteSelectedPlayerPositionAssignments(client, {
+    selectionInfo,
+    substitution,
+  }).then(result => {console.log(result)})
+  .then(() => deleteSubstitutionIfAppropriate(client, {
+    shouldDeleteSubstitution,
+    id: substitution.id,
+  }))
+  .then(() => console.log("deleteSelectedSubstitutions succeeded"))
   .catch((error) => console.log(`error: ${error}`));
 };
 

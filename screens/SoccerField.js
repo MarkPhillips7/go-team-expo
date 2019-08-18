@@ -20,6 +20,7 @@ import {
   createNextMassSubstitution,
   createSubstitutionForSelections,
   getNextSubstitutionInfo,
+  deleteSelectedSubstitutions,
 } from '../graphql/gamePlan';
 import {
   deleteGameEtc,
@@ -29,6 +30,7 @@ import {
 } from '../graphql/game';
 import {
   canApplyPlannedSubstitution,
+  canRemoveSelectedSubs,
   canSetLineup,
   canSubstitute,
   getCurrentTimeInfo,
@@ -74,6 +76,7 @@ class SoccerField extends React.Component {
     this.onPressDebug = this.onPressDebug.bind(this);
     this.onPressDelete = this.onPressDelete.bind(this);
     this.onPressManageRoster = this.onPressManageRoster.bind(this);
+    this.onPressRemoveSelectedSubs = this.onPressRemoveSelectedSubs.bind(this);
     this.onPressStart = this.onPressStart.bind(this);
     this.onPressStop = this.onPressStop.bind(this);
     this.onPressReset = this.onPressReset.bind(this);
@@ -146,9 +149,10 @@ class SoccerField extends React.Component {
     });
   }
 
-  onPressPlayer(positionSnapshot) {
+  onPressPlayer(positionSnapshot, {gameSnapshot}) {
     this.setState((previousState) => {
-      const selectionInfo = getPlayerPressedSelectionInfo(previousState, positionSnapshot);
+      const {gameTeamSeason} = this.props;
+      const selectionInfo = getPlayerPressedSelectionInfo(previousState, positionSnapshot, {gameTeamSeason, gameSnapshot});
       return {
         ...previousState,
         selectionInfo,
@@ -235,6 +239,26 @@ class SoccerField extends React.Component {
       gameTeamSeason,
       gameActivityType: "PLAN",
       gameActivityStatus: "PENDING",
+      gameSeconds,
+      totalSeconds,
+    })
+    .then(this.props.onSubsChange);
+  }
+
+  onPressRemoveSelectedSubs() {
+    const {client, gameTeamSeason} = this.props;
+    const {selectionInfo} = this.state;
+    const nextPlannedSubstitution = getNextPlannedSubstitution({
+      gameTeamSeason,
+      excludeInitial: true
+    });
+    const {totalSeconds, gameSeconds} =
+      nextPlannedSubstitution || getNextSubstitutionInfo(gameTeamSeason);
+    deleteSelectedSubstitutions(client, {
+      selectionInfo,
+      gameTeamSeason,
+      gameActivityType: "PLAN",
+      //gameActivityStatus: "PENDING",
       gameSeconds,
       totalSeconds,
     })
@@ -612,7 +636,7 @@ class SoccerField extends React.Component {
                       pendingMove={gameSnapshot.players[positionSnapshot.playerId] && gameSnapshot.players[positionSnapshot.playerId].pendingMove}
                       piePieces={gameSnapshot.players[positionSnapshot.playerId] && gameSnapshot.players[positionSnapshot.playerId].piePieces}
                       playerDisplayMode={getPlayerDisplayMode(positionSnapshot, this.state)}
-                      onPress={() => this.onPressPlayer(positionSnapshot)}
+                      onPress={() => this.onPressPlayer(positionSnapshot, {gameSnapshot})}
                     />
                   ))
                   .value()
@@ -658,7 +682,7 @@ class SoccerField extends React.Component {
                       pendingMove={gameSnapshot.players[gamePlayer.player.id].pendingMove}
                       piePieces={gameSnapshot.players[gamePlayer.player.id].piePieces}
                       playerDisplayMode={getPlayerDisplayMode({playerId:gamePlayer.player.id}, this.state)}
-                      onPress={() => this.onPressPlayer({playerId:gamePlayer.player.id})}
+                      onPress={() => this.onPressPlayer({playerId:gamePlayer.player.id}, {gameSnapshot})}
                     />
                   ))
                   .value()
@@ -780,7 +804,8 @@ class SoccerField extends React.Component {
             )}
             {playersSelected > 1 && (
               <Fragment>
-                {canSubstitute(this.state.selectionInfo) && (
+                {gameStatus === "IN_PROGRESS" &&
+                canSubstitute(this.state.selectionInfo) && (
                   <Button
                     style={styles.button}
                     onPress={this.onPressSubNow}
@@ -792,6 +817,13 @@ class SoccerField extends React.Component {
                     style={styles.button}
                     onPress={this.onPressSubNextTime}
                     title="Sub Next Time"
+                  />
+                )}
+                {canRemoveSelectedSubs(this.state.selectionInfo) && (
+                  <Button
+                    style={styles.button}
+                    onPress={this.onPressRemoveSelectedSubs}
+                    title="Remove Selected Sub"
                   />
                 )}
                 {canSetLineup(this.state.selectionInfo) && (
