@@ -26,6 +26,7 @@ import {
   deleteGameEtc,
   makePlannedSubstitutionOfficial,
   startGame,
+  startPeriod,
   stopGame,
 } from '../graphql/game';
 import {
@@ -330,7 +331,7 @@ class SoccerField extends React.Component {
     const {client, gameTeamSeason} = this.props;
     const {game} = gameTeamSeason;
     const gameTeamSeasonId = gameTeamSeason && gameTeamSeason.id;
-    const {gamePeriod: {id: gamePeriodId}} = getGameStatusInfo({
+    const {gamePeriod: {id: gamePeriodId}, isFirstPeriod} = getGameStatusInfo({
       gameTeamSeason,
     });
     const {
@@ -338,22 +339,35 @@ class SoccerField extends React.Component {
       gameSeconds,
       totalSeconds,
     } = getCurrentTimeInfo(gameTeamSeason);
-    const initialLineupSubstitution = getNextPlannedSubstitution({
-      gameTeamSeason,
-      excludeInitial: false
-    });
-    startGame(client, {
-      gameTeamSeason,
-      gameTeamSeasonId,
-      game,
-      gamePeriodId,
-      timestamp,
-      gameSeconds,
-      totalSeconds,
-      plannedSubstitution: initialLineupSubstitution,
-    })
-    .then(this.startOrStopGameTimer)
-    .then(this.props.onSubsChange);
+    if (isFirstPeriod) {
+      const initialLineupSubstitution = getNextPlannedSubstitution({
+        gameTeamSeason,
+        excludeInitial: false
+      });
+      startGame(client, {
+        gameTeamSeason,
+        gameTeamSeasonId,
+        game,
+        gamePeriodId,
+        timestamp,
+        gameSeconds,
+        totalSeconds,
+        plannedSubstitution: initialLineupSubstitution,
+      })
+      .then(this.startOrStopGameTimer)
+      .then(this.props.onSubsChange);
+    } else {
+      startPeriod(client, {
+        gameTeamSeasonId,
+        game,
+        gamePeriodId,
+        timestamp,
+        gameSeconds,
+        totalSeconds,
+      })
+      .then(this.startOrStopGameTimer)
+      .then(this.props.onSubsChange);
+    }
   }
 
   onPressStop() {

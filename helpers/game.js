@@ -231,26 +231,36 @@ export const getGamePeriodAfter = (gamePeriods, gamePeriodId) => {
   return gamePeriods.length > index ? gamePeriods[index + 1] : null;
 };
 
-const getGamePeriod = (mostRecentGameActivity, gameTeamSeason, gameStatus) => {
+const getGamePeriodInfo = (mostRecentGameActivity, gameTeamSeason, gameStatus) => {
   if (gameStatus === "SCHEDULED") {
-    return gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods[0];
+    return {
+      isFirstPeriod: true,
+      gamePeriod: gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods[0],
+    };
   }
 
   if (gameStatus === "IN_PROGRESS" && mostRecentGameActivity) {
     if (mostRecentGameActivity.gameActivityStatus === "PENDING" ||
       mostRecentGameActivity.gameActivityStatus === "IN_PROGRESS") {
-        return _.find(gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods,
-          (gamePeriod) => gamePeriod.id === mostRecentGameActivity.gamePeriod.id);
+        const gamePeriod =  _.find(gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods,
+        (gamePeriod) => gamePeriod.id === mostRecentGameActivity.gamePeriod.id);
+        return {
+          isFirstPeriod: gamePeriod && gamePeriod.id === gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods[0].id,
+          gamePeriod
+        };
     }
 
     // gameActivityStatus is COMPLETED or STOPPED
-    return getGamePeriodAfter(
-      gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods,
-      mostRecentGameActivity.gamePeriod.id);
+    return {
+      isFirstPeriod: false,
+      gamePeriod: getGamePeriodAfter(
+        gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods,
+        mostRecentGameActivity.gamePeriod.id)
+    };
   }
 
   // if (gameStatus === "COMPLETED") {
-  return null;
+  return {};
 };
 
 export const getCurrentTimeInfo = (gameTeamSeason) => {
@@ -305,7 +315,7 @@ export const getGameStatusInfo = ({
   const mostRecentGameActivity = gameTeamSeason &&
   gameTeamSeason.game &&
   _.last(gameTeamSeason.game.gameActivities);
-  const gamePeriod = getGamePeriod(mostRecentGameActivity, gameTeamSeason, gameStatus);
+  const {isFirstPeriod, gamePeriod} = getGamePeriodInfo(mostRecentGameActivity, gameTeamSeason, gameStatus);
   const gameDurationSeconds = _.reduce(gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods,
   (sum, gamePeriod) => sum + gamePeriod.durationSeconds, 0);
   const gameActivityType =
@@ -317,6 +327,7 @@ export const getGameStatusInfo = ({
   : "PENDING";
 
   return {
+    isFirstPeriod,
     gameStatus,
     gamePeriod,
     mostRecentGameActivity,
@@ -481,7 +492,7 @@ export const getGameSnapshot = ({
       }
 
       if (event.eventType !== "INITIAL" &&
-      (event.isOverdue || event.timeInfo.gameSeconds >= gameSeconds) &&
+      (event.isOverdue || event.timeInfo.gameSeconds > gameSeconds) &&
       event.timeInfo.gameSeconds <= nextPlannedSubstitutionGameSeconds) {
         const pendingMoveSeconds = event.timeInfo.gameSeconds - endSecondsSinceGameStart;
         const pendingMoveTime = pendingMoveSeconds < 0
@@ -514,7 +525,7 @@ export const getGameSnapshot = ({
 
       // Returning false here essentially prevents event from being included in snapshot
       if (event.eventType !== "INITIAL" &&
-      (event.isOverdue || event.timeInfo.gameSeconds >= gameSeconds)) {
+      (event.isOverdue || event.timeInfo.gameSeconds > gameSeconds)) {
           return false;
       }
 
@@ -525,7 +536,7 @@ export const getGameSnapshot = ({
       previousEvent = event;
 
       if (index === playerTimeline.events.length - 1 &&
-        endSecondsSinceGameStart < gameSeconds
+        endSecondsSinceGameStart <= gameSeconds
       ) {
         piePieces.push({
           color: getColor({

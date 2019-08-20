@@ -379,6 +379,27 @@ export const makePlannedSubstitutionOfficial = (client, {
     destinationSubstitution: substitution,
   })).then(result => {console.log(result)});
 }
+export const startPeriod = (client, {
+  gameTeamSeasonId,
+  game,
+  gamePeriodId,
+  timestamp,
+  gameSeconds,
+  totalSeconds,
+}) => {
+  return createGameActivity(client, {
+    gameTeamSeasonId,
+    gameId: game.id,
+    gamePeriodId,
+    timestamp,
+    gameActivityStatus: "IN_PROGRESS",
+    gameActivityType: "OFFICIAL",
+    gameSeconds,
+    totalSeconds,
+  })
+  .then(() => console.log("startPeriod succeeded"))
+  .catch((error) => console.log(`error: ${error}`));
+};
 
 export const startGame = (client, {
   gameTeamSeason,
