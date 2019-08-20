@@ -700,9 +700,12 @@ export const canRemoveSelectedSubs = (selectionInfo) => {
 //   [position snapshot 1] to [position snapshot 2]
 //   [position snapshot 2] to [position snapshot 3]
 //   [position snapshot 3] to [position snapshot 1]
-export const canSubstitute = (selectionInfo) => {
+export const canSubstitute = ({
+  selectionInfo,
+  gameActivityType,
+}) => {
   const {hasPlannedSubstitutionAssignments, selections} = selectionInfo;
-  if (hasPlannedSubstitutionAssignments) {
+  if (gameActivityType === "PLAN" && hasPlannedSubstitutionAssignments) {
     return false;
   }
   if (!selections || selections.length < 2) {

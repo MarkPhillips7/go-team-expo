@@ -493,7 +493,8 @@ class SoccerField extends React.Component {
     const {
       timestamp,
       totalSeconds,
-      gameSeconds
+      gameSeconds,
+      selectionInfo,
     } = this.state;
     const gameStatusInfo = getGameStatusInfo({
       gameTeamSeason,
@@ -521,9 +522,9 @@ class SoccerField extends React.Component {
       timestamp,
       gameDurationSeconds,
     });
-    const playersSelected = this.state.selectionInfo &&
-      this.state.selectionInfo.selections &&
-      this.state.selectionInfo.selections.length || 0;
+    const playersSelected = selectionInfo &&
+      selectionInfo.selections &&
+      selectionInfo.selections.length || 0;
     const {benchStyles, fieldStyles, playerStyles} = this.getDynamicStyles(gameSnapshot, gamePlayers);
     // console.log(`gameSnapshot:`, gameSnapshot);
     return (
@@ -748,7 +749,7 @@ class SoccerField extends React.Component {
                 {gamePeriod &&
                   gameStatus === "IN_PROGRESS" &&
                   gameActivityType === "OFFICIAL" &&
-                  gameActivityStatus === "IN_PROGRESS" &&
+                  // gameActivityStatus === "IN_PROGRESS" &&
                   canApplyPlannedSubstitution(gameTeamSeason) &&
                   <Button
                     style={styles.button}
@@ -805,28 +806,28 @@ class SoccerField extends React.Component {
             {playersSelected > 1 && (
               <Fragment>
                 {gameStatus === "IN_PROGRESS" &&
-                canSubstitute(this.state.selectionInfo) && (
+                canSubstitute({selectionInfo, gameActivityType: "OFFICIAL"}) && (
                   <Button
                     style={styles.button}
                     onPress={this.onPressSubNow}
                     title="Sub Now"
                   />
                 )}
-                {canSubstitute(this.state.selectionInfo) && (
+                {canSubstitute({selectionInfo, gameActivityType: "PLAN"}) && (
                   <Button
                     style={styles.button}
                     onPress={this.onPressSubNextTime}
                     title="Sub Next Time"
                   />
                 )}
-                {canRemoveSelectedSubs(this.state.selectionInfo) && (
+                {canRemoveSelectedSubs(selectionInfo) && (
                   <Button
                     style={styles.button}
                     onPress={this.onPressRemoveSelectedSubs}
                     title="Remove Selected Sub"
                   />
                 )}
-                {canSetLineup(this.state.selectionInfo) && (
+                {canSetLineup(selectionInfo) && (
                   <Button
                     style={styles.button}
                     onPress={this.onPressAddToLineup}
