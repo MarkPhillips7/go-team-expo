@@ -87,6 +87,21 @@ mutation (
 }
 `;
 
+const UPDATE_PLAYER_POSITION_ASSIGNMENT = gql`
+mutation (
+  $id: ID!
+  $gameActivityStatus: GameActivityStatus!
+){
+  updatePlayerPositionAssignment (
+    id: $id
+    gameActivityStatus: $gameActivityStatus
+  ) {
+    id
+    gameActivityStatus
+  }
+}
+`;
+
 const CREATE_PLAYER_POSITION = gql`
 mutation CreatePlayerPosition (
   $playerId: ID!
@@ -104,10 +119,12 @@ mutation CreatePlayerPosition (
 const CREATE_PLAYER_POSITION_ASSIGNMENT = gql`
 mutation CreatePlayerPositionAssignment (
   $playerPositionAssignmentType: PlayerPositionAssignmentType!
+  $gameActivityStatus: GameActivityStatus
   $playerPositionId: ID!
   $substitutionId: ID!
 ){
   createPlayerPositionAssignment(
+    gameActivityStatus: $gameActivityStatus
     playerPositionAssignmentType: $playerPositionAssignmentType
     playerPositionId: $playerPositionId
     substitutionsIds: [
@@ -170,6 +187,7 @@ export const createPlayerPosition = (client, {
 };
 
 export const createPlayerPositionAssignment = (client, {
+  gameActivityStatus,
   playerPositionAssignmentType,
   playerPositionId,
   substitutionId,
@@ -179,6 +197,7 @@ export const createPlayerPositionAssignment = (client, {
   return client.mutate({
     mutation: CREATE_PLAYER_POSITION_ASSIGNMENT,
     variables: {
+      gameActivityStatus,
       playerPositionAssignmentType,
       playerPositionId,
       substitutionId,
@@ -197,6 +216,20 @@ const deletePlayerPositionAssignment = (client, {
       id,
     },
   });
+};
+
+export const updatePlayerPositionAssignment = (client, {
+  id,
+  gameActivityStatus,
+}) => {
+  return client.mutate({
+    mutation: UPDATE_PLAYER_POSITION_ASSIGNMENT,
+    variables: {
+      id,
+      gameActivityStatus,
+    }
+  })
+  .then((result) => result.data.updatePlayerPositionAssignment);
 };
 
 const deletePlayerPosition = (client, {

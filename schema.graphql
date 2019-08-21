@@ -1,5 +1,5 @@
 # source: https://api.graph.cool/simple/v1/cjpeel49p81sr0135wsewoo11
-# timestamp: Mon Aug 12 2019 21:30:25 GMT-0400 (EDT)
+# timestamp: Tue Aug 20 2019 19:25:47 GMT-0400 (EDT)
 
 enum _ModelMutationType {
   CREATED
@@ -352,6 +352,7 @@ input CreatePlayerPosition {
 }
 
 input CreatePlayerPositionAssignment {
+  gameActivityStatus: GameActivityStatus
   playerPositionAssignmentType: PlayerPositionAssignmentType
   timestamp: DateTime
   playerPositionId: ID
@@ -4704,7 +4705,7 @@ type Mutation {
   createLeagueSeason(endDate: DateTime, maximumBirthDate: DateTime, minimumBirthDate: DateTime, name: String!, startDate: DateTime, tags: [String!], leagueId: ID, league: LeagueSeasonleagueLeague, seasonId: ID, season: LeagueSeasonseasonSeason, teamSeasonsIds: [ID!], teamSeasons: [LeagueSeasonteamSeasonsTeamSeason!]): LeagueSeason
   createOrganization(location: String, name: String!, tags: [String!], leaguesIds: [ID!], leagues: [OrganizationleaguesLeague!], sportsIds: [ID!], sports: [OrganizationsportsSport!]): Organization
   createPlayerPosition(playerId: ID, player: PlayerPositionplayerUser, positionId: ID, position: PlayerPositionpositionPosition, playerPositionAssignmentsIds: [ID!], playerPositionAssignments: [PlayerPositionplayerPositionAssignmentsPlayerPositionAssignment!]): PlayerPosition
-  createPlayerPositionAssignment(playerPositionAssignmentType: PlayerPositionAssignmentType, timestamp: DateTime, playerPositionId: ID, playerPosition: PlayerPositionAssignmentplayerPositionPlayerPosition, substitutionsIds: [ID!], substitutions: [PlayerPositionAssignmentsubstitutionsSubstitution!]): PlayerPositionAssignment
+  createPlayerPositionAssignment(gameActivityStatus: GameActivityStatus, playerPositionAssignmentType: PlayerPositionAssignmentType, timestamp: DateTime, playerPositionId: ID, playerPosition: PlayerPositionAssignmentplayerPositionPlayerPosition, substitutionsIds: [ID!], substitutions: [PlayerPositionAssignmentsubstitutionsSubstitution!]): PlayerPositionAssignment
   createPosition(lateralLocation: LateralLocation, leftToRightPercent: Float, name: String!, positionCategoryId: ID, positionCategory: PositionpositionCategoryPositionCategory, formationsIds: [ID!], formations: [PositionformationsFormation!], playerPositionsIds: [ID!], playerPositions: [PositionplayerPositionsPlayerPosition!]): Position
   createPositionCategory(color: String, name: String!, parkLocation: ParkLocation, pitchLocation: PitchLocation, positionCategoryPreferencesIds: [ID!], positionCategoryPreferences: [PositionCategorypositionCategoryPreferencesPositionCategoryPreference!], positionsIds: [ID!], positions: [PositionCategorypositionsPosition!]): PositionCategory
   createPositionCategoryPreference(playerId: ID, player: PositionCategoryPreferenceplayerUser, positionCategoryId: ID, positionCategory: PositionCategoryPreferencepositionCategoryPositionCategory, prefererId: ID, preferer: PositionCategoryPreferenceprefererUser): PositionCategoryPreference
@@ -4727,7 +4728,7 @@ type Mutation {
   updateLeagueSeason(endDate: DateTime, id: ID!, maximumBirthDate: DateTime, minimumBirthDate: DateTime, name: String, startDate: DateTime, tags: [String!], leagueId: ID, league: LeagueSeasonleagueLeague, seasonId: ID, season: LeagueSeasonseasonSeason, teamSeasonsIds: [ID!], teamSeasons: [LeagueSeasonteamSeasonsTeamSeason!]): LeagueSeason
   updateOrganization(id: ID!, location: String, name: String, tags: [String!], leaguesIds: [ID!], leagues: [OrganizationleaguesLeague!], sportsIds: [ID!], sports: [OrganizationsportsSport!]): Organization
   updatePlayerPosition(id: ID!, playerId: ID, player: PlayerPositionplayerUser, positionId: ID, position: PlayerPositionpositionPosition, playerPositionAssignmentsIds: [ID!], playerPositionAssignments: [PlayerPositionplayerPositionAssignmentsPlayerPositionAssignment!]): PlayerPosition
-  updatePlayerPositionAssignment(id: ID!, playerPositionAssignmentType: PlayerPositionAssignmentType, timestamp: DateTime, playerPositionId: ID, playerPosition: PlayerPositionAssignmentplayerPositionPlayerPosition, substitutionsIds: [ID!], substitutions: [PlayerPositionAssignmentsubstitutionsSubstitution!]): PlayerPositionAssignment
+  updatePlayerPositionAssignment(gameActivityStatus: GameActivityStatus, id: ID!, playerPositionAssignmentType: PlayerPositionAssignmentType, timestamp: DateTime, playerPositionId: ID, playerPosition: PlayerPositionAssignmentplayerPositionPlayerPosition, substitutionsIds: [ID!], substitutions: [PlayerPositionAssignmentsubstitutionsSubstitution!]): PlayerPositionAssignment
   updatePosition(id: ID!, lateralLocation: LateralLocation, leftToRightPercent: Float, name: String, positionCategoryId: ID, positionCategory: PositionpositionCategoryPositionCategory, formationsIds: [ID!], formations: [PositionformationsFormation!], playerPositionsIds: [ID!], playerPositions: [PositionplayerPositionsPlayerPosition!]): Position
   updatePositionCategory(color: String, id: ID!, name: String, parkLocation: ParkLocation, pitchLocation: PitchLocation, positionCategoryPreferencesIds: [ID!], positionCategoryPreferences: [PositionCategorypositionCategoryPreferencesPositionCategoryPreference!], positionsIds: [ID!], positions: [PositionCategorypositionsPosition!]): PositionCategory
   updatePositionCategoryPreference(id: ID!, playerId: ID, player: PositionCategoryPreferenceplayerUser, positionCategoryId: ID, positionCategory: PositionCategoryPreferencepositionCategoryPositionCategory, prefererId: ID, preferer: PositionCategoryPreferenceprefererUser): PositionCategoryPreference
@@ -5226,6 +5227,7 @@ type PlayerPosition implements Node {
 }
 
 type PlayerPositionAssignment implements Node {
+  gameActivityStatus: GameActivityStatus
   id: ID!
   playerPosition(filter: PlayerPositionFilter): PlayerPosition!
   playerPositionAssignmentType: PlayerPositionAssignmentType
@@ -5242,6 +5244,16 @@ input PlayerPositionAssignmentFilter {
 
   """Logical OR on all given filters."""
   OR: [PlayerPositionAssignmentFilter!]
+  gameActivityStatus: GameActivityStatus
+
+  """All values that are not equal to given value."""
+  gameActivityStatus_not: GameActivityStatus
+
+  """All values that are contained in given list."""
+  gameActivityStatus_in: [GameActivityStatus!]
+
+  """All values that are not contained in given list."""
+  gameActivityStatus_not_in: [GameActivityStatus!]
   id: ID
 
   """All values that are not equal to given value."""
@@ -5321,6 +5333,8 @@ input PlayerPositionAssignmentFilter {
 }
 
 enum PlayerPositionAssignmentOrderBy {
+  gameActivityStatus_ASC
+  gameActivityStatus_DESC
   id_ASC
   id_DESC
   playerPositionAssignmentType_ASC
@@ -5339,6 +5353,7 @@ input PlayerPositionAssignmentplayerPositionPlayerPosition {
 }
 
 type PlayerPositionAssignmentPreviousValues {
+  gameActivityStatus: GameActivityStatus
   id: ID!
   playerPositionAssignmentType: PlayerPositionAssignmentType
   timestamp: DateTime
@@ -5372,6 +5387,16 @@ input PlayerPositionAssignmentSubscriptionFilter {
 }
 
 input PlayerPositionAssignmentSubscriptionFilterNode {
+  gameActivityStatus: GameActivityStatus
+
+  """All values that are not equal to given value."""
+  gameActivityStatus_not: GameActivityStatus
+
+  """All values that are contained in given list."""
+  gameActivityStatus_in: [GameActivityStatus!]
+
+  """All values that are not contained in given list."""
+  gameActivityStatus_not_in: [GameActivityStatus!]
   id: ID
 
   """All values that are not equal to given value."""
@@ -5536,6 +5561,7 @@ enum PlayerPositionOrderBy {
 }
 
 input PlayerPositionplayerPositionAssignmentsPlayerPositionAssignment {
+  gameActivityStatus: GameActivityStatus
   playerPositionAssignmentType: PlayerPositionAssignmentType
   timestamp: DateTime
   substitutionsIds: [ID!]
@@ -7872,6 +7898,7 @@ enum SubstitutionOrderBy {
 }
 
 input SubstitutionplayerPositionAssignmentsPlayerPositionAssignment {
+  gameActivityStatus: GameActivityStatus
   playerPositionAssignmentType: PlayerPositionAssignmentType
   timestamp: DateTime
   playerPositionId: ID
@@ -8933,6 +8960,7 @@ input UpdatePlayerPosition {
 }
 
 input UpdatePlayerPositionAssignment {
+  gameActivityStatus: GameActivityStatus
   id: ID!
   playerPositionAssignmentType: PlayerPositionAssignmentType
   timestamp: DateTime

@@ -377,6 +377,11 @@ export const getGameTimeline = ({
       return;
     }
     _.forEach(substitution.playerPositionAssignments, (playerPositionAssignment) => {
+      if (gameStatus === "IN_PROGRESS" &&
+      substitution.gameActivityType === "PLAN" &&
+      playerPositionAssignment.gameActivityStatus === "COMPLETED") {
+        return;
+      }
       // Do not alter times if substitution is overdue (isOverdue on event will help determine what to do with events)
       const isOverdue = gameStatus === "IN_PROGRESS" &&
       substitution.gameActivityType === "PLAN" &&
@@ -699,6 +704,20 @@ export const canApplyPlannedSubstitution = (gameTeamSeason) => {
   // ToDo: Make sure the player position assignments are allowed
   // console.log(`nextPlannedSubstitution`, nextPlannedSubstitution);
   return !!nextPlannedSubstitution;
+};
+
+export const selectionsPartOfPlannedSubstitution = (selectionInfo, gameTeamSeason) => {
+  const nextPlannedSubstitution = getNextPlannedSubstitution({
+    gameTeamSeason,
+    excludeInitial: true
+  });
+  return selectionInfo &&
+  selectionInfo.selections &&
+  _.every(selectionInfo.selections, (positionSnapshot) => 
+  getPlayerPositionAssignmentRelatedToPositionSnapshot(
+      nextPlannedSubstitution,
+      positionSnapshot,
+    ));
 };
 
 export const canRemoveSelectedSubs = (selectionInfo) => {

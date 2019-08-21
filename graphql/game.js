@@ -4,11 +4,15 @@ import {
   playerAvailability,
 } from '../constants/Soccer';
 import {
+  getPlayerPositionAssignmentRelatedToPositionSnapshot,
+} from '../helpers/game';
+import {
   createPlayerPosition,
   createPlayerPositionAssignment,
   createSubstitution,
   getOrCreateFormationSubstitution,
-  updateSubstitution
+  updateSubstitution,
+  updatePlayerPositionAssignment,
 } from './gamePlan';
 import {TEAM_SEASON} from '../graphql/games';
 
@@ -47,6 +51,7 @@ query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
       playerPositionAssignments {
         id
         timestamp
+        gameActivityStatus
         playerPositionAssignmentType
         playerPosition {
           id
@@ -327,11 +332,12 @@ const updateGameIfAppropriate = (client, {
 };
 
 const copyPlayerAssignments = (client, {
-  sourceSubstitution,
+  sourcePlayerPositionAssignments,
   destinationSubstitution,
+  markSourcePlayerPositionAssignmentsCompleted,
 }) => {
   let playerPosition;
-  return Promise.all(_.map(sourceSubstitution.playerPositionAssignments,
+  return Promise.all(_.map(sourcePlayerPositionAssignments,
     (playerPositionAssignment) => {
       return createPlayerPosition(client, {
         playerId: playerPositionAssignment.playerPosition.player.id,
@@ -343,11 +349,20 @@ const copyPlayerAssignments = (client, {
         playerPositionAssignmentType: playerPositionAssignment.playerPositionAssignmentType,
         playerPositionId: playerPosition.id,
         substitutionId: destinationSubstitution.id,
-      }));
+      }))
+      .then(() => {
+        if (markSourcePlayerPositionAssignmentsCompleted) {
+          return updatePlayerPositionAssignment(client, {
+            ...playerPositionAssignment,
+            gameActivityStatus: "COMPLETED",
+          });
+        }
+      });
     }));
 };
 
 export const makePlannedSubstitutionOfficial = (client, {
+  selectionInfo,
   gameTeamSeason,
   timestamp,
   gameSeconds,
@@ -356,15 +371,39 @@ export const makePlannedSubstitutionOfficial = (client, {
 }) => {
   let substitution;
   if (!plannedSubstitution) {
-    console.log(`no planToSubstitution in makePlannedSubstitutionOfficial???`);
+    console.log(`no plannedSubstitution in makePlannedSubstitutionOfficial???`);
     return Promise.resolve();
   }
 
-  // update planned substitution to COMPLETED
-  return updateSubstitution(client, {
+  const plannedPlayerPositionAssignments =
+  _.filter(plannedSubstitution.playerPositionAssignments,
+    (playerPositionAssignment) => playerPositionAssignment.gameActivityStatus !== "COMPLETED");
+  const selectedPlayerPositionAssignments = selectionInfo &&
+  _.map(selectionInfo.selections, (positionSnapshot) =>
+  getPlayerPositionAssignmentRelatedToPositionSnapshot(
+    plannedSubstitution,
+    positionSnapshot,
+  ));
+  const sourcePlayerPositionAssignments = selectionInfo
+  ? selectedPlayerPositionAssignments
+  : plannedPlayerPositionAssignments;
+
+  const allPlayerPositionAssignmentsIncluded = !selectionInfo ||
+  (selectionInfo.selections &&
+    selectionInfo.selections.length === plannedPlayerPositionAssignments.length);
+
+  const markSourcePlayerPositionAssignmentsCompleted =
+  !allPlayerPositionAssignmentsIncluded;
+
+  console.log(`sourcePlayerPositionAssignments, markSourcePlayerPositionAssignmentsCompleted)`, sourcePlayerPositionAssignments, markSourcePlayerPositionAssignmentsCompleted);
+
+  // update planned substitution to COMPLETED if all player position assignments included
+  return (allPlayerPositionAssignmentsIncluded
+  ? updateSubstitution(client, {
     id: plannedSubstitution.id,
     gameActivityStatus: "COMPLETED",
   })
+  : Promise.resolve())
   // create official substitution
   .then(() => createSubstitution(client, {
     gameActivityType: "OFFICIAL",
@@ -375,10 +414,12 @@ export const makePlannedSubstitutionOfficial = (client, {
     gameSeconds,
   })).then(result => {substitution = result; console.log(result)})
   .then(() => copyPlayerAssignments(client, {
-    sourceSubstitution: plannedSubstitution,
+    sourcePlayerPositionAssignments,
     destinationSubstitution: substitution,
+    markSourcePlayerPositionAssignmentsCompleted
   })).then(result => {console.log(result)});
-}
+};
+
 export const startPeriod = (client, {
   gameTeamSeasonId,
   game,

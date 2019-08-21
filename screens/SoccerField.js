@@ -43,6 +43,7 @@ import {
   getNextPlannedSubstitution,
   getPlayerDisplayMode,
   getPlayerPressedSelectionInfo,
+  selectionsPartOfPlannedSubstitution,
 } from '../helpers/game';
 
 const millisecondsBeforeSliderAction = 500;
@@ -196,7 +197,8 @@ class SoccerField extends React.Component {
     : "PENDING";
 
     console.log(`onPressSubNow`,gameStatusInfo, selectionInfo);
-    if (selectionInfo && selectionInfo.selections) {
+    if (selectionInfo && selectionInfo.selections &&
+    !selectionsPartOfPlannedSubstitution(selectionInfo, gameTeamSeason)) {
       createSubstitutionForSelections(client, {
         selectionInfo,
         gameTeamSeason,
@@ -214,6 +216,7 @@ class SoccerField extends React.Component {
         excludeInitial: true
       });
       makePlannedSubstitutionOfficial(client, {
+        selectionInfo,
         plannedSubstitution,
         gameTeamSeason,
         timestamp,
