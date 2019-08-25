@@ -124,11 +124,13 @@ class SoccerField extends React.Component {
 
     // If the game is in progress we need to update clocks every second
     if (gameStatusInfo.gameStatus === "IN_PROGRESS") {
-      const updateGameTimer = setTimeout(this.updateGame, 0);
-      this.setState({
-        isClockRunning: true,
-        updateGameTimer,
-      });
+      if (!this.state.updateGameTimer) {
+        const updateGameTimer = setTimeout(this.updateGame, 0);
+        this.setState({
+          isClockRunning: true,
+          updateGameTimer,
+        });
+      }
     } else {
       if (this.state.updateGameTimer) {
         clearTimeout(this.state.updateGameTimer);
