@@ -821,6 +821,12 @@ export const createInitialLineup = (client, {
 };
 
 export const getNextSubstitutionInfo = (gameTeamSeason) => {
+  if (!gameTeamSeason) {
+    return {
+      gameSeconds: 0,
+      totalSeconds: 0,
+    };
+  }
   const lastSubstitution = gameTeamSeason.substitutions[gameTeamSeason.substitutions.length - 1];
   const maxGameSeconds = lastSubstitution.gameSeconds + gameTeamSeason.gamePlan.secondsBetweenSubs;
   const {gameSeconds, totalSeconds} = gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods.reduce(

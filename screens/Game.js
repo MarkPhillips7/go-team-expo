@@ -41,6 +41,7 @@ class Game extends React.Component {
               positionCategories={data && data.allPositionCategories}
               onLineupChange={refetch}
               onSubsChange={refetch}
+              navigation={this.props.navigation}
             />
           );
         }}

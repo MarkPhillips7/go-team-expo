@@ -232,6 +232,9 @@ export const getGamePeriodAfter = (gamePeriods, gamePeriodId) => {
 };
 
 const getGamePeriodInfo = (mostRecentGameActivity, gameTeamSeason, gameStatus) => {
+  if (!gameTeamSeason) {
+    return {};
+  }
   if (gameStatus === "SCHEDULED") {
     return {
       isFirstPeriod: true,
@@ -316,8 +319,10 @@ export const getGameStatusInfo = ({
   gameTeamSeason.game &&
   _.last(gameTeamSeason.game.gameActivities);
   const {isFirstPeriod, gamePeriod} = getGamePeriodInfo(mostRecentGameActivity, gameTeamSeason, gameStatus);
-  const gameDurationSeconds = _.reduce(gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods,
-  (sum, gamePeriod) => sum + gamePeriod.durationSeconds, 0);
+  const gameDurationSeconds = gameTeamSeason
+  ? _.reduce(gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods,
+  (sum, gamePeriod) => sum + gamePeriod.durationSeconds, 0)
+  : 0;  
   const gameActivityType =
   gameStatus === "IN_PROGRESS" || gameStatus === "COMPLETED"
   ? "OFFICIAL"
@@ -713,7 +718,7 @@ export const selectionsPartOfPlannedSubstitution = (selectionInfo, gameTeamSeaso
   });
   return selectionInfo &&
   selectionInfo.selections &&
-  _.every(selectionInfo.selections, (positionSnapshot) => 
+  _.every(selectionInfo.selections, (positionSnapshot) =>
   getPlayerPositionAssignmentRelatedToPositionSnapshot(
       nextPlannedSubstitution,
       positionSnapshot,

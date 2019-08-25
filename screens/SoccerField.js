@@ -311,7 +311,10 @@ class SoccerField extends React.Component {
     deleteGameEtc(client, {
       gameTeamSeason
     })
-    .then(this.props.onSubsChange);
+    // .then(this.props.onSubsChange);
+    .then(() => {
+      this.props.navigation.navigate('Games');
+    });
   }
 
   onPressReset() {
@@ -507,6 +510,9 @@ class SoccerField extends React.Component {
       gameTeamSeason,
       positionCategories
     } = this.props;
+    if (!gameTeamSeason) {
+      return <View></View>;
+    }
     const {
       timestamp,
       totalSeconds,
