@@ -1,6 +1,6 @@
 import React, {Fragment} from 'react';
 import {PropTypes} from 'prop-types';
-import { Button, ScrollView, Slider, StyleSheet, Text, View } from 'react-native';
+import { Button, Dimensions, ScrollView, Slider, StyleSheet, Text, View } from 'react-native';
 import {withApollo} from 'react-apollo';
 // import gql from "graphql-tag";
 import FormationLine from '../components/FormationLine';
@@ -465,7 +465,7 @@ class SoccerField extends React.Component {
     });
   }
 
-  getFlexValues(gameSnapshot, gamePlayers) {
+  getFlexValues(gameSnapshot, gamePlayers, multiplier) {
     const positionCount = _.keys(gameSnapshot.positions).length;
     const benchCount =
     _.filter(gamePlayers, (gamePlayer) =>
@@ -479,7 +479,7 @@ class SoccerField extends React.Component {
     // This approximation would not work for 1-3-2-1 formation though.
     const fieldFlex = Math.floor((positionCount - 1) / 4) + 1;
     const benchFlex = Math.floor((benchCount - 1) / 4) + 1;
-    const playerBasis = Math.floor(280 / (fieldFlex + benchFlex));
+    const playerBasis = Math.floor(280 / (fieldFlex + benchFlex)) * multiplier;
     return {
       fieldFlex,
       benchFlex,
@@ -487,8 +487,8 @@ class SoccerField extends React.Component {
     };
   }
 
-  getDynamicStyles(gameSnapshot, gamePlayers) {
-    const {benchFlex, fieldFlex, playerBasis} = this.getFlexValues(gameSnapshot, gamePlayers);
+  getDynamicStyles(gameSnapshot, gamePlayers, multiplier) {
+    const {benchFlex, fieldFlex, playerBasis} = this.getFlexValues(gameSnapshot, gamePlayers, multiplier);
     const benchStyles = {
       ...styles.bench,
       flex: benchFlex,
@@ -550,8 +550,8 @@ class SoccerField extends React.Component {
     const playersSelected = selectionInfo &&
       selectionInfo.selections &&
       selectionInfo.selections.length || 0;
-    const {benchStyles, fieldStyles, playerStyles} = this.getDynamicStyles(gameSnapshot, gamePlayers);
-    // console.log(`gameSnapshot:`, gameSnapshot);
+    const multiplier = Dimensions.get('window').width / 450;
+    const {benchStyles, fieldStyles, playerStyles} = this.getDynamicStyles(gameSnapshot, gamePlayers, multiplier);
     return (
       <View style={styles.screen}>
         {this.state.mode === modes.debug && (
@@ -658,6 +658,7 @@ class SoccerField extends React.Component {
                       gameSeconds={gameSeconds}
                       currentGameTime={this.state.currentGameTime}
                       isGameOver={this.state.isGameOver}
+                      multiplier={multiplier}
                       playerStats={gameSnapshot.players[positionSnapshot.playerId]}
                       pendingMove={gameSnapshot.players[positionSnapshot.playerId] && gameSnapshot.players[positionSnapshot.playerId].pendingMove}
                       piePieces={gameSnapshot.players[positionSnapshot.playerId] && gameSnapshot.players[positionSnapshot.playerId].piePieces}
@@ -704,6 +705,7 @@ class SoccerField extends React.Component {
                       gameStartTime={this.state.gameStartTime}
                       currentGameTime={this.state.currentGameTime}
                       isGameOver={this.state.isGameOver}
+                      multiplier={multiplier}
                       playerStats={gameSnapshot.players[gamePlayer.player.id]}
                       pendingMove={gameSnapshot.players[gamePlayer.player.id].pendingMove}
                       piePieces={gameSnapshot.players[gamePlayer.player.id].piePieces}

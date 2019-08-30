@@ -14,6 +14,7 @@ import moment from 'moment';
 
 export default class Player extends React.Component {
   static propTypes = {
+    multiplier: PropTypes.number,
     playerStats: PropTypes.object,
     player: PropTypes.object,
     style: PropTypes.object.isRequired,
@@ -39,13 +40,14 @@ export default class Player extends React.Component {
     _.map(this.props.player.positionCategoryPreferencesAsPlayer, (positionCategoryPreference) =>
       positionCategoryPreference.positionCategory.color)
     || ["gray"];
+    const multiplier = this.props.multiplier * this.props.playerDisplayMode.multiplier;
     return (
       <TouchableOpacity
         style={this.props.style}
         onPress={this.props.onPress}
       >
         {this.props.player && this.props.player.name &&
-          <Text style={applyMultiplier(styles.playTime, this.props.playerDisplayMode.multiplier)}>
+          <Text style={applyMultiplier(styles.playTime, multiplier)}>
             {playTime}
           </Text>
         }
@@ -54,24 +56,25 @@ export default class Player extends React.Component {
         }
         <View
           pointerEvents="none"
-          style={applyMultiplier(styles.pieAndArrow, this.props.playerDisplayMode.multiplier)}
+          style={applyMultiplier(styles.pieAndArrow, multiplier)}
         >
           <CirclePie
             player={this.props.player}
             circleDisplayMode={this.props.playerDisplayMode}
+            multiplier={multiplier}
             piePieces={piePieces}
             positionColor={this.props.positionCategory.color}
           />
           {pendingMove &&
             <View
-              style={applyMultiplier(styles.arrowAndCountdown, this.props.playerDisplayMode.multiplier)}
+              style={applyMultiplier(styles.arrowAndCountdown, multiplier)}
             >
               <PendingMoveArrow
-                style={applyMultiplier(styles.arrow, this.props.playerDisplayMode.multiplier)}
+                style={applyMultiplier(styles.arrow, multiplier)}
                 percent={pendingMove.percentToMove}
                 color={pendingMove.color}
               />
-              <Text style={applyMultiplier(styles.pendingMoveTime, this.props.playerDisplayMode.multiplier)}>
+              <Text style={applyMultiplier(styles.pendingMoveTime, multiplier)}>
                 {pendingMove.pendingMoveTime}
               </Text>
             </View>
@@ -79,7 +82,8 @@ export default class Player extends React.Component {
         </View>
         {this.props.player && this.props.player.name &&
           <ColoredTextBox
-            style={applyMultiplier(styles.playerName, this.props.playerDisplayMode.multiplier)}
+            multiplier={multiplier}
+            style={applyMultiplier(styles.playerName, multiplier)}
             colors={colors}
             text={this.props.player && this.props.player.name || ""}
           />

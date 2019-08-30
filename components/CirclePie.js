@@ -13,6 +13,7 @@ const circleBorderWidth = 0.08;
 
 export default class CirclePie extends Component {
   static propTypes = {
+    multiplier: PropTypes.number,
     circleDisplayMode: PropTypes.object.isRequired,
     style: PropTypes.object,
     positionColor: PropTypes.string.isRequired,
@@ -28,8 +29,8 @@ export default class CirclePie extends Component {
 
     return (
       <Svg
-        height={30*this.props.circleDisplayMode.multiplier*2}
-        width={30*this.props.circleDisplayMode.multiplier*2}
+        height={30*this.props.multiplier*2}
+        width={30*this.props.multiplier*2}
         style={this.props.style}
         viewBox="-1 -1 2 2"
         opacity={this.props.circleDisplayMode.opacity}
