@@ -3,6 +3,7 @@ import {PropTypes} from 'prop-types';
 import { Button, Dimensions, ScrollView, Slider, StyleSheet, Text, View } from 'react-native';
 import {withApollo} from 'react-apollo';
 // import gql from "graphql-tag";
+import GameHeader from '../components/GameHeader';
 import FormationLine from '../components/FormationLine';
 import Player from '../components/Player';
 import Roster from '../components/Roster';
@@ -98,8 +99,6 @@ class SoccerField extends React.Component {
     } = getCurrentTimeInfo(this.props.gameTeamSeason);
     const state = {
       clockMultiplier: 1.0,
-      currentGameTime: undefined,
-      gameStartTime: undefined,
       isClockRunning: true,
       isGameOver,
       mode: modes.default,
@@ -557,12 +556,6 @@ class SoccerField extends React.Component {
         {this.state.mode === modes.debug && (
           <ScrollView>
             <Text>
-              gameStartTime {this.state && this.state.gameStartTime && moment(this.state.gameStartTime).format("hh:mm:ss")}
-            </Text>
-            <Text>
-              currentGameTime {this.state && this.state.currentGameTime && moment(this.state.currentGameTime).format("hh:mm:ss")}
-            </Text>
-            <Text>
               gameDurationSeconds {this.state && this.state.gameDurationSeconds}
             </Text>
             <Text>
@@ -626,6 +619,12 @@ class SoccerField extends React.Component {
           />
         )}
         {this.state.mode === modes.default && (
+        <GameHeader
+          style={styles.gameHeader}
+          gameSeconds={gameSeconds}
+          gameTeamSeason={gameTeamSeason}
+        />)}
+        {this.state.mode === modes.default && (
         <View style={styles.park}>
           <View style={fieldStyles}>
           {
@@ -654,9 +653,7 @@ class SoccerField extends React.Component {
                         _.find(gamePlayers, (gamePlayer) => gamePlayer.player.id === positionSnapshot.playerId).player}
                       gamePlan={gamePlan}
                       gamePlayers={gamePlayers}
-                      gameStartTime={this.state.gameStartTime}
                       gameSeconds={gameSeconds}
-                      currentGameTime={this.state.currentGameTime}
                       isGameOver={this.state.isGameOver}
                       multiplier={multiplier}
                       playerStats={gameSnapshot.players[positionSnapshot.playerId]}
@@ -702,8 +699,6 @@ class SoccerField extends React.Component {
                       player={gamePlayer.player}
                       gamePlan={gamePlan}
                       gamePlayers={gamePlayers}
-                      gameStartTime={this.state.gameStartTime}
-                      currentGameTime={this.state.currentGameTime}
                       isGameOver={this.state.isGameOver}
                       multiplier={multiplier}
                       playerStats={gameSnapshot.players[gamePlayer.player.id]}
@@ -912,8 +907,12 @@ let styles = StyleSheet.create({
   // roster: {
   //   paddingTop: 15,
   // },
+  gameHeader: {
+    flex: 1,
+    width: '100%',
+  },
   park: {
-    flex: 2.5,
+    flex: 12,
     backgroundColor: '#ccffcc',//'lightgreen',
     alignItems: 'center',
     justifyContent: 'center',
@@ -942,7 +941,7 @@ let styles = StyleSheet.create({
     width: 100,
   },
   inputArea: {
-    flex: 1,
+    flex: 3,
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'flex-start',

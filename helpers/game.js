@@ -232,13 +232,21 @@ export const getGamePeriodAfter = (gamePeriods, gamePeriodId) => {
 };
 
 const getGamePeriodInfo = (mostRecentGameActivity, gameTeamSeason, gameStatus) => {
+  let gameTimeframeSummary = "Waiting for kickoff";
+  let isFirstPeriod = true;
+  let gamePeriod;
   if (!gameTeamSeason) {
     return {};
   }
   if (gameStatus === "SCHEDULED") {
+    if (gameTeamSeason.game.scheduledStartTime) {
+      gameTimeframeSummary = moment(gameTeamSeason.game.scheduledStartTime).format(`LT`);
+    }
+    gamePeriod = gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods[0];
     return {
-      isFirstPeriod: true,
-      gamePeriod: gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods[0],
+      isFirstPeriod,
+      gamePeriod,
+      gameTimeframeSummary,
     };
   }
 
@@ -247,23 +255,34 @@ const getGamePeriodInfo = (mostRecentGameActivity, gameTeamSeason, gameStatus) =
       mostRecentGameActivity.gameActivityStatus === "IN_PROGRESS") {
         const gamePeriod =  _.find(gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods,
         (gamePeriod) => gamePeriod.id === mostRecentGameActivity.gamePeriod.id);
+        isFirstPeriod = gamePeriod &&
+          gamePeriod.id === gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods[0].id,
+        gameTimeframeSummary = gamePeriod.name;
         return {
-          isFirstPeriod: gamePeriod && gamePeriod.id === gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods[0].id,
-          gamePeriod
+          isFirstPeriod,
+          gamePeriod,
+          gameTimeframeSummary,
         };
     }
 
     // gameActivityStatus is COMPLETED or STOPPED
+    isFirstPeriod = false;
+    gamePeriod = getGamePeriodAfter(
+      gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods,
+      mostRecentGameActivity.gamePeriod.id);
+    gameTimeframeSummary = "Halftime";
     return {
-      isFirstPeriod: false,
-      gamePeriod: getGamePeriodAfter(
-        gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods,
-        mostRecentGameActivity.gamePeriod.id)
+      isFirstPeriod,
+      gamePeriod,
+      gameTimeframeSummary,
     };
   }
 
+  gameTimeframeSummary = "Full time";
   // if (gameStatus === "COMPLETED") {
-  return {};
+  return {
+    gameTimeframeSummary,
+  };
 };
 
 export const getCurrentTimeInfo = (gameTeamSeason) => {
@@ -318,11 +337,11 @@ export const getGameStatusInfo = ({
   const mostRecentGameActivity = gameTeamSeason &&
   gameTeamSeason.game &&
   _.last(gameTeamSeason.game.gameActivities);
-  const {isFirstPeriod, gamePeriod} = getGamePeriodInfo(mostRecentGameActivity, gameTeamSeason, gameStatus);
+  const {isFirstPeriod, gamePeriod, gameTimeframeSummary} = getGamePeriodInfo(mostRecentGameActivity, gameTeamSeason, gameStatus);
   const gameDurationSeconds = gameTeamSeason
   ? _.reduce(gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods,
   (sum, gamePeriod) => sum + gamePeriod.durationSeconds, 0)
-  : 0;  
+  : 0;
   const gameActivityType =
   gameStatus === "IN_PROGRESS" || gameStatus === "COMPLETED"
   ? "OFFICIAL"
@@ -338,7 +357,8 @@ export const getGameStatusInfo = ({
     mostRecentGameActivity,
     gameActivityType,
     gameActivityStatus,
-    gameDurationSeconds
+    gameDurationSeconds,
+    gameTimeframeSummary,
   };
 };
 
