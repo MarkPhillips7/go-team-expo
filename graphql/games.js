@@ -2,7 +2,7 @@ import gql from "graphql-tag";
 
 export const TEAM_SEASON = gql`
 query {
-  TeamSeason(id: "cjpt1epj50ijp0119511ogsg6") {
+  TeamSeason(id: "ck08dcuph0osf0130xcw56xrk") {
     id
     name
     gameTeamSeasons {
@@ -10,6 +10,7 @@ query {
       game {
         scheduledStartTime
         name
+        location
       }
       name
     }

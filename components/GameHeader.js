@@ -20,16 +20,18 @@ export default class GameHeader extends Component {
       gameTeamSeason
     } = this.props;
     const {
-      gameStatus,
       gameTimeframeSummary,
     } = getGameStatusInfo({
       gameTeamSeason,
     });
-    const gameTime = moment.utc(gameSeconds*1000).format("m:ss") || "0:00";
+    const gameTimeMoment = moment.utc(gameSeconds*1000);
+    // For soccer we should display 87:45 instead of 1:27:45
+    const gameTime = `${gameTimeMoment.hours() * 60 + gameTimeMoment.minutes()}:${gameTimeMoment.format("ss")}` || "0:00";
 
     return (
       <View style={styles.gameHeader}>
-        <Text>{gameTime}</Text>
+        {gameTeamSeason && gameTeamSeason.game && <Text>{gameTeamSeason.game.name}</Text>}
+        <Text style={styles.gameTime}>{gameTime}</Text>
         <Text>{gameTimeframeSummary}</Text>
       </View>
     );
@@ -45,4 +47,7 @@ let styles = StyleSheet.create({
     height: '100%',
     width: '100%',
   },
+  gameTime: {
+    fontSize: 19,
+  }
 });

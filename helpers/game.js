@@ -240,7 +240,12 @@ const getGamePeriodInfo = (mostRecentGameActivity, gameTeamSeason, gameStatus) =
   }
   if (gameStatus === "SCHEDULED") {
     if (gameTeamSeason.game.scheduledStartTime) {
-      gameTimeframeSummary = moment(gameTeamSeason.game.scheduledStartTime).format(`LT`);
+      const format =
+      moment(gameTeamSeason.game.scheduledStartTime).startOf('day')
+      .isSame(moment().startOf('day'))
+      ? `LT`
+      : `M/D, LT`;
+      gameTimeframeSummary = moment(gameTeamSeason.game.scheduledStartTime).format(format);
     }
     gamePeriod = gameTeamSeason.teamSeason.team.league.gameDefinition.gamePeriods[0];
     return {

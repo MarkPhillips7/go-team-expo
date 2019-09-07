@@ -4,6 +4,7 @@ import { Button, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View }
 import {TEAM_SEASON} from '../graphql/games';
 import {createGameEtc} from '../graphql/game';
 import {withApollo} from 'react-apollo';
+import moment from 'moment';
 
 export default withApollo(
 // export default
@@ -50,6 +51,9 @@ class Games extends React.Component {
             <View style={styles.screen}>
               {teamSeasonData && teamSeasonData.TeamSeason &&
                 <View>
+                  <Text style={{ padding: 12, color: "black", fontSize: 17, fontWeight: "bold" }}>
+                    {teamSeasonData.TeamSeason.name}
+                  </Text>
                   <FlatList
                     data={teamSeasonData.TeamSeason.gameTeamSeasons}
                     keyExtractor={(item) => item.id}
@@ -60,10 +64,25 @@ class Games extends React.Component {
                           this.props.navigation.navigate('Game', { gameTeamSeasonId: item.id });
                         }}
                       >
-                        <View>
-                          <Text style={{ color: "blue" }}>
+                        <View style={styles.gameItem}>
+                          {item.game.scheduledStartTime && (
+                            <Text style={{ color: "black", fontWeight: "bold" }}>
+                              {moment(item.game.scheduledStartTime).format("M/D")}
+                            </Text>
+                          )}
+                          {item.game.scheduledStartTime && (
+                            <Text style={{ color: "green", fontWeight: "bold" }}>
+                              {moment(item.game.scheduledStartTime).format("LT")}
+                            </Text>
+                          )}
+                          <Text style={{ color: "black" }}>
                             {item.name}
                           </Text>
+                          {item.game.location && (
+                            <Text style={{ color: "green" }}>
+                              {item.game.location}
+                            </Text>
+                          )}
                         </View>
                       </TouchableOpacity>
                     )}
@@ -95,5 +114,13 @@ let styles = StyleSheet.create({
     backgroundColor: 'white',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  gameItem: {
+    margin: 10,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: "100%",
   },
 });
