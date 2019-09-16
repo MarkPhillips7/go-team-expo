@@ -22,6 +22,7 @@ import {
   createSubstitutionForSelections,
   getNextSubstitutionInfo,
   deleteSelectedSubstitutions,
+  removeFromLineup,
 } from '../graphql/gamePlan';
 import {
   deleteGameEtc,
@@ -32,6 +33,7 @@ import {
 } from '../graphql/game';
 import {
   canApplyPlannedSubstitution,
+  canRemoveFromLineup,
   canRemoveSelectedSubs,
   canSetLineup,
   canSubstitute,
@@ -44,6 +46,7 @@ import {
   getNextPlannedSubstitution,
   getPlayerDisplayMode,
   getPlayerPressedSelectionInfo,
+  playerIsOnBench,
   selectionsPartOfPlannedSubstitution,
 } from '../helpers/game';
 
@@ -74,6 +77,7 @@ class SoccerField extends React.Component {
 
     this.onPressAutoSubs = this.onPressAutoSubs.bind(this);
     this.onPressAddToLineup = this.onPressAddToLineup.bind(this);
+    this.onPressRemoveFromLineup = this.onPressRemoveFromLineup.bind(this);
     this.onPressSubNow = this.onPressSubNow.bind(this);
     this.onPressSubNextTime = this.onPressSubNextTime.bind(this);
     this.onPressDebug = this.onPressDebug.bind(this);
@@ -285,7 +289,11 @@ class SoccerField extends React.Component {
 
   onPressAddToLineup() {
     const {client, gameTeamSeason} = this.props;
-    const {gameSeconds, totalSeconds} = this.state;
+    const {
+      // timestamp,
+      gameSeconds,
+      totalSeconds,
+    } = getCurrentTimeInfo(gameTeamSeason);
     const {selectionInfo} = this.state;
     if (!selectionInfo.selections || selectionInfo.selections.length !== 2) {
       console.error(`Must have two selections in onPressAddToLineup`);
@@ -293,16 +301,37 @@ class SoccerField extends React.Component {
     }
     const positionSnapshotFrom = _.find(selectionInfo.selections, (selection) => selection.playerId);
     const positionSnapshotTo = _.find(selectionInfo.selections, (selection) => !selection.playerId);
-    const playerPositionAssignmentType = "INITIAL";
+    const playerPositionAssignmentType = gameSeconds === 0 ? "INITIAL" : "IN";
     addToLineup(client, {
       gameTeamSeason,
-      gameActivityType: "PLAN",
-      gameActivityStatus: "PENDING",
+      gameActivityType: gameSeconds === 0 ? "PLAN" : "OFFICIAL",
+      gameActivityStatus: gameSeconds === 0 ? "PENDING" : "COMPLETED",
       gameSeconds,
       totalSeconds,
       positionSnapshotFrom,
       positionSnapshotTo,
       playerPositionAssignmentType,
+    })
+    .then(this.props.onSubsChange);
+  }
+
+  onPressRemoveFromLineup() {
+    // Either delete INITIAL player position assignment
+    // or add substitution with only OUT player position assignment
+    const {client, gameTeamSeason} = this.props;
+    const {selectionInfo} = this.state;
+    const {
+      timestamp,
+      gameSeconds,
+      totalSeconds,
+    } = getCurrentTimeInfo(gameTeamSeason);
+
+    removeFromLineup(client, {
+      gameTeamSeason,
+      selectionInfo,
+      totalSeconds,
+      gameSeconds,
+      timestamp,
     })
     .then(this.props.onSubsChange);
   }
@@ -643,26 +672,31 @@ class SoccerField extends React.Component {
                   .filter((positionSnapshot) =>
                   positionSnapshot.event.position.positionCategory.name === category.name)
                   .sortBy((positionSnapshot) => positionSnapshot.event.position.leftToRightPercent)
-                  .map((positionSnapshot, positionSnapshotIndex) => (
-                    <Player
-                      key={positionSnapshotIndex}
-                      style={playerStyles}
-                      position={positionSnapshot.event.position}
-                      positionCategory={category}
-                      player={_.find(gamePlayers, (gamePlayer) => gamePlayer.player.id === positionSnapshot.playerId) &&
-                        _.find(gamePlayers, (gamePlayer) => gamePlayer.player.id === positionSnapshot.playerId).player}
-                      gamePlan={gamePlan}
-                      gamePlayers={gamePlayers}
-                      gameSeconds={gameSeconds}
-                      isGameOver={this.state.isGameOver}
-                      multiplier={multiplier}
-                      playerStats={gameSnapshot.players[positionSnapshot.playerId]}
-                      pendingMove={gameSnapshot.players[positionSnapshot.playerId] && gameSnapshot.players[positionSnapshot.playerId].pendingMove}
-                      piePieces={gameSnapshot.players[positionSnapshot.playerId] && gameSnapshot.players[positionSnapshot.playerId].piePieces}
-                      playerDisplayMode={getPlayerDisplayMode(positionSnapshot, this.state)}
-                      onPress={() => this.onPressPlayer(positionSnapshot, {gameSnapshot})}
-                    />
-                  ))
+                  .map((positionSnapshot, positionSnapshotIndex) => {
+                    const gamePlayer = _.find(gamePlayers, (gamePlayer) =>
+                      gamePlayer.player.id === positionSnapshot.playerId &&
+                      !playerIsOnBench(gamePlayer.player.id, gameSnapshot, gamePlayer.availability));
+                    const playerId = gamePlayer && gamePlayer.player.id;
+                    return (
+                      <Player
+                        key={positionSnapshotIndex}
+                        style={playerStyles}
+                        position={positionSnapshot.event.position}
+                        positionCategory={category}
+                        player={gamePlayer && gamePlayer.player}
+                        gamePlan={gamePlan}
+                        gamePlayers={gamePlayers}
+                        gameSeconds={gameSeconds}
+                        isGameOver={this.state.isGameOver}
+                        multiplier={multiplier}
+                        playerStats={gameSnapshot.players[playerId]}
+                        pendingMove={gameSnapshot.players[playerId] && gameSnapshot.players[playerId].pendingMove}
+                        piePieces={gameSnapshot.players[playerId] && gameSnapshot.players[playerId].piePieces}
+                        playerDisplayMode={getPlayerDisplayMode(positionSnapshot, this.state)}
+                        onPress={() => this.onPressPlayer(positionSnapshot, {gameSnapshot})}
+                      />
+                    );
+                  })
                   .value()
                 }
               </FormationLine>
@@ -684,11 +718,7 @@ class SoccerField extends React.Component {
               >
                 {
                   _.chain(gamePlayers)
-                  .filter((gamePlayer) =>
-                  gamePlayer.availability === playerAvailability.active &&
-                  gameSnapshot.players[gamePlayer.player.id] &&
-                  (!gameSnapshot.players[gamePlayer.player.id].activeEvent ||
-                  !gameSnapshot.players[gamePlayer.player.id].activeEvent.position))
+                  .filter((gamePlayer) => playerIsOnBench(gamePlayer.player.id, gameSnapshot, gamePlayer.availability))
                   .sortBy((gamePlayer) => gameSnapshot.players[gamePlayer.player.id].cumulativeInGameSeconds)
                   .map((gamePlayer, gamePlayerIndex) => (
                     <Player
@@ -823,6 +853,13 @@ class SoccerField extends React.Component {
                   onPress={this.onPressCancel}
                   title="Cancel"
                 />
+                {canRemoveFromLineup(selectionInfo) &&
+                  <Button
+                    style={styles.button}
+                    onPress={this.onPressRemoveFromLineup}
+                    title="Remove from lineup"
+                  />
+                }
               </Fragment>
             )}
             {playersSelected > 1 && (

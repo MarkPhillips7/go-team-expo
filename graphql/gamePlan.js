@@ -384,7 +384,7 @@ const getOrCreateSubstitutionAtSpecificTime = (client, {
   return Promise.resolve(substitution);
 };
 
-const getOrCreateSubstitution = (client, {
+const getOrCreateInitialSubstitution = (client, {
   gameActivityStatus,
   gameActivityType,
   gameTeamSeason,
@@ -503,7 +503,10 @@ const substituteSelectedPlayers = (client, {
   let playerPosition;
 
   return Promise.all(_.map(selectionInfo.selections, (positionSnapshotFrom, index) => {
-    const positionSnapshotTo = selectionInfo.selections[(index + 1) % selectionInfo.selections.length];
+    // If only one selection, then just sub player OUT
+    const positionSnapshotTo = selectionInfo.selections.length === 1
+    ? {}
+    : selectionInfo.selections[(index + 1) % selectionInfo.selections.length];
     let playerPositionAssignmentType;
     if (positionSnapshotRepresentsBench(positionSnapshotFrom)) {
       playerPositionAssignmentType = "IN";
@@ -763,7 +766,7 @@ export const addToLineup = (client, {
     totalSeconds,
     gameSeconds,
   }).then(result => {console.log(result)})
-  .then(() => getOrCreateSubstitution(client, {
+  .then(() => getOrCreateSubstitutionAtSpecificTime(client, {
     gameActivityType,
     gameActivityStatus,
     gameTeamSeason,
@@ -785,6 +788,106 @@ export const addToLineup = (client, {
   .catch((error) => console.log(`error: ${error}`));
 };
 
+export const removeFromLineup = (client, {
+  gameTeamSeason,
+  selectionInfo,
+  totalSeconds,
+  gameSeconds,
+  timestamp,
+}) => {
+  // For each selected player
+  //   Either delete INITIAL player position assignment if currently exists
+  //   or add substitution with only OUT player position assignment
+  return deleteInitialPlayerPositionAssignments(client, {
+    gameTeamSeason,
+    selectionInfo,
+    totalSeconds,
+    gameSeconds,
+    timestamp,
+  })
+  .then(() => {
+    addOutPlayerPositionAssignments(client, {
+      gameTeamSeason,
+      selectionInfo,
+      totalSeconds,
+      gameSeconds,
+      timestamp,
+    });
+  });
+};
+
+const isInitialLineupThatCanBeDeleted = (gameStats, selection, gameSeconds) => {
+  return gameStats.players[selection.playerId]
+  && gameStats.players[selection.playerId].lastEventType
+  && gameStats.players[selection.playerId].lastEventType === "INITIAL"
+  && gameStats.players[selection.playerId].lastEventGameSeconds === gameSeconds;
+};
+
+const addOutPlayerPositionAssignments = (client, {
+  gameTeamSeason,
+  selectionInfo,
+  totalSeconds,
+  gameSeconds,
+  timestamp,
+}) => {
+  const gameStats = getGameStats({
+    gameTeamSeason,
+    totalSeconds,
+    gameSeconds,
+    timestamp,
+  });
+
+  const selectionInfoForAddingOutPlayerPositionAssignments = {
+    ...selectionInfo,
+    selections: _.filter(selectionInfo.selections, (selection) =>
+      !isInitialLineupThatCanBeDeleted(gameStats, selection, gameSeconds)),
+  };
+  return createSubstitutionForSelections(client, {
+    selectionInfo: selectionInfoForAddingOutPlayerPositionAssignments,
+    gameActivityType: "OFFICIAL",
+    gameActivityStatus: "COMPLETED",
+    gameTeamSeason,
+    timestamp,
+    gameSeconds,
+    totalSeconds,
+  });
+};
+
+const deleteInitialPlayerPositionAssignments = (client, {
+  gameTeamSeason,
+  selectionInfo,
+  totalSeconds,
+  gameSeconds,
+  timestamp,
+}) => {
+  const gameStats = getGameStats({
+    gameTeamSeason,
+    totalSeconds,
+    gameSeconds,
+    timestamp,
+  });
+
+  const selections = _.filter(selectionInfo.selections, (selection) =>
+    isInitialLineupThatCanBeDeleted(gameStats, selection, gameSeconds));
+  if (selections.length === 0) {
+    console.log(`No initial lineup that can be deleted`);
+    return Promise.resolve();
+  }
+
+  const selectionInfoForDeleting = {
+    ...selectionInfo,
+    selections,
+  };
+  return deleteSelectedSubstitutions(client, {
+    selectionInfo: selectionInfoForDeleting,
+    gameActivityType: "PLAN",
+    gameTeamSeason,
+    // timestamp,
+    // totalSeconds,
+    gameSeconds,
+  });
+};
+
 // gameTeamSeason is expected to have the shape found in getGameTeamSeasonInfo
 export const createInitialLineup = (client, {
   gameActivityType,
@@ -803,7 +906,7 @@ export const createInitialLineup = (client, {
     totalSeconds,
     gameSeconds,
   }).then(result => {formationSubstitution = result; console.log(result)})
-  .then(() => getOrCreateSubstitution(client, {
+  .then(() => getOrCreateInitialSubstitution(client, {
     gameActivityType,
     gameActivityStatus,
     gameTeamSeason,

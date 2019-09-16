@@ -1,6 +1,9 @@
 import _ from 'lodash';
 import moment from 'moment';
 import {playerDisplayModes} from '../constants/Player';
+import {
+  playerAvailability,
+} from '../constants/Soccer';
 
 const initializeGameTimeline = ({
   totalSeconds,
@@ -463,7 +466,7 @@ const getColor = ({
 };
 
 const isEventBefore = (eventA, eventB) => {
-  return eventA.timeInfo.gameSeconds < eventB.timeInfo.gameSeconds;
+  return eventA.timeInfo.gameSeconds <= eventB.timeInfo.gameSeconds;
 };
 
 const updatePositionsSnapshot = (positionsSnapshot, event, playerId) => {
@@ -619,10 +622,17 @@ export const getGameSnapshot = ({
       pendingMove,
     };
   });
-  const gameSnapshot = {
+  let gameSnapshot = {
     players: playersSnapshot,
     positions: positionsSnapshot,
   }
+  // positionSnapshot can indicate a player that is actually on the bench, so fix that
+  _.each(positionsSnapshot, (positionSnapshot) => {
+    if (positionSnapshot.playerId && playerIsOnBench(
+    positionSnapshot.playerId, gameSnapshot, playerAvailability.active)) {
+      positionSnapshot.playerId = null;
+    }
+  });
   return gameSnapshot;
 };
 
@@ -779,6 +789,13 @@ export const canSubstitute = ({
   return returnValue;
 };
 
+export const playerIsOnBench = (playerId, gameSnapshot, availability) => {
+  return availability === playerAvailability.active &&
+    gameSnapshot.players[playerId] &&
+    (!gameSnapshot.players[playerId].activeEvent ||
+    !gameSnapshot.players[playerId].activeEvent.position);
+};
+
 export const canSubstituteFromTo = (positionSnapshotFrom, positionSnapshotTo) => {
   return positionSnapshotFrom &&
     positionSnapshotFrom.playerId &&
@@ -794,6 +811,15 @@ export const canSetLineup = (selectionInfo) => {
   return selections &&
     selections.length === 2 &&
     !selections[0].playerId === !!selections[1].playerId;
+};
+
+// Returns true when all selections are currently in positions.
+export const canRemoveFromLineup = (selectionInfo) => {
+  const {selections} = selectionInfo;
+  return selections &&
+    _.every(selections, (selection) => selection.event
+      && selection.event.position
+      && selection.playerId);
 };
 
 export const getPlayerPositionAssignmentRelatedToPositionSnapshot = (
