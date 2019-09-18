@@ -65,24 +65,30 @@ class Games extends React.Component {
                         }}
                       >
                         <View style={styles.gameItem}>
-                          {item.game.scheduledStartTime && (
-                            <Text style={{ color: "black", fontWeight: "bold" }}>
-                              {moment(item.game.scheduledStartTime).format("M/D")}
+                          <View style={styles.gameDateTime}>
+                            {item.game.scheduledStartTime && (
+                              <Text style={styles.gameDate}>
+                                {moment(item.game.scheduledStartTime).format("M/D")}
+                              </Text>
+                            )}
+                            {item.game.scheduledStartTime && (
+                              <Text style={styles.gameTime}>
+                                {moment(item.game.scheduledStartTime).format("LT")}
+                              </Text>
+                            )}
+                          </View>
+                          <View style={styles.gameName}>
+                            <Text style={styles.gameNameText}>
+                              {item.name}
                             </Text>
-                          )}
-                          {item.game.scheduledStartTime && (
-                            <Text style={{ color: "green", fontWeight: "bold" }}>
-                              {moment(item.game.scheduledStartTime).format("LT")}
-                            </Text>
-                          )}
-                          <Text style={{ color: "black" }}>
-                            {item.name}
-                          </Text>
-                          {item.game.location && (
-                            <Text style={{ color: "green" }}>
-                              {item.game.location}
-                            </Text>
-                          )}
+                          </View>
+                          <View style={styles.gameLocation}>
+                            {item.game.location && (
+                              <Text style={styles.gameLocationText}>
+                                {item.game.location}
+                              </Text>
+                            )}
+                          </View>
                         </View>
                       </TouchableOpacity>
                     )}
@@ -117,10 +123,40 @@ let styles = StyleSheet.create({
   },
   gameItem: {
     margin: 10,
+    // marginRight: 18,
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: "100%",
+    width: "95%",
+  },
+  gameDateTime: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    width: "20%",
+  },
+  gameDate: {
+    color: "black",
+    // fontWeight: "bold"
+  },
+  gameTime: {
+    color: "green",
+    fontWeight: "bold",
+    fontSize: 12
+  },
+  gameName: {
+    width: "45%",
+  },
+  gameNameText: {
+    color: "black",
+    fontSize: 15
+  },
+  gameLocation: {
+    width: "35%",
+  },
+  gameLocationText: {
+    color: "green",
+    fontSize: 12
   },
 });
