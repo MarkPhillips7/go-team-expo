@@ -2,11 +2,11 @@ import React, {
     Component
 } from 'react';
 import _ from 'lodash';
-import { Svg } from 'expo';
+import * as ReactNativeSvg from 'react-native-svg';
 const {
     Path,
-    Text
-} = Svg;
+    Svg,
+} = ReactNativeSvg;
 
 const arrowStrokeWidth = 0.2;
 

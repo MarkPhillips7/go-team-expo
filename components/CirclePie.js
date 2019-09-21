@@ -3,11 +3,12 @@ import React, {
 } from 'react';
 import {PropTypes} from 'prop-types';
 import _ from 'lodash';
-import { Svg } from 'expo';
+import * as ReactNativeSvg from 'react-native-svg';
 const {
     Circle,
     Path,
-} = Svg;
+    Svg,
+} = ReactNativeSvg;
 
 const circleBorderWidth = 0.08;
 

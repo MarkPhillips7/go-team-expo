@@ -1,11 +1,16 @@
 import React from 'react';
 import {PropTypes} from 'prop-types';
 import { Platform, StatusBar, StyleSheet, View } from 'react-native';
-import { AppLoading, Asset, Font, Icon } from 'expo';
+import { AppLoading } from 'expo';
+import * as Icon from '@expo/vector-icons';
+import * as Font from 'expo-font';
+import { Asset } from 'expo-asset';
 import AppNavigator from './navigation/AppNavigator';
 import ApolloClient from "apollo-boost";
 import { InMemoryCache } from 'apollo-cache-inmemory';
 import {typedefs, resolvers, defaults} from './clientState';
+import { ThemeProvider } from 'react-native-elements';
+
 
 const cache = new InMemoryCache();
 
@@ -58,10 +63,12 @@ export default class App extends React.Component {
     } else {
       return (
         <ApolloProvider client={client}>
-          <View style={styles.container}>
-            {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
-            <AppContainer />
-          </View>
+          <ThemeProvider>
+            <View style={styles.container}>
+              {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
+              <AppContainer />
+            </View>
+          </ThemeProvider>
         </ApolloProvider>
       );
     }

@@ -13,13 +13,14 @@
   "dependencies": {
     "@expo/samples": "2.1.1",
     "apollo-boost": "^0.1.23",
-    "expo": "^32.0.0",
+    "expo": "^33.0.0",
     "graphql": "^14.0.2",
     "lodash": "^4.17.15",
     "moment": "^2.23.0",
-    "react": "16.5.0",
+    "react": "16.8.3",
     "react-apollo": "^2.3.3",
-    "react-native": "https://github.com/expo/react-native/archive/sdk-32.0.0.tar.gz",
+    "react-native": "https://github.com/expo/react-native/archive/sdk-33.0.0.tar.gz",
+    "react-native-elements": "^1.2.1",
     "react-navigation": "^3.0.9"
   },
   "devDependencies": {

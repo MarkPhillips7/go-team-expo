@@ -2,12 +2,13 @@ import React, {
     Component
 } from 'react';
 import _ from 'lodash';
-import { Svg } from 'expo';
+import * as ReactNativeSvg from 'react-native-svg';
 const {
-    Path,
-    Rect,
-    Text
-} = Svg;
+  Path,
+  Rect,
+  Svg,
+  Text,
+} = ReactNativeSvg;
 
 export default class ColoredTextBox extends Component {
   state = {rootWidth: 100};

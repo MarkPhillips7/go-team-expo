@@ -1,6 +1,7 @@
 import React, {Fragment} from 'react';
 import {PropTypes} from 'prop-types';
-import { Button, Dimensions, ScrollView, Slider, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, ScrollView, Slider, StyleSheet, Text, View } from 'react-native';
+import { Button } from 'react-native-elements';
 import {withApollo} from 'react-apollo';
 // import gql from "graphql-tag";
 import GameHeader from '../components/GameHeader';

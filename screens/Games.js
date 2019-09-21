@@ -1,6 +1,7 @@
 import React from 'react';
 import { Query } from "react-apollo";
-import { Button, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Button } from 'react-native-elements';
 import {TEAM_SEASON} from '../graphql/games';
 import {createGameEtc} from '../graphql/game';
 import {withApollo} from 'react-apollo';
