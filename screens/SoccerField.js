@@ -3,6 +3,7 @@ import {PropTypes} from 'prop-types';
 import { Dimensions, ScrollView, Slider, StyleSheet, Text, View } from 'react-native';
 import { Button } from 'react-native-elements';
 import {withApollo} from 'react-apollo';
+import { activateKeepAwake, deactivateKeepAwake } from 'expo-keep-awake';
 // import gql from "graphql-tag";
 import GameHeader from '../components/GameHeader';
 import FormationLine from '../components/FormationLine';
@@ -117,6 +118,7 @@ class SoccerField extends React.Component {
 
   componentDidMount() {
     this.startOrStopGameTimer();
+    activateKeepAwake();
   }
 
   startOrStopGameTimer() {
@@ -147,6 +149,7 @@ class SoccerField extends React.Component {
     if (this.state.updateGameTimer) {
       clearTimeout(this.state.updateGameTimer);
     }
+    deactivateKeepAwake();
   }
 
   onPressManageRoster() {
