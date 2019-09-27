@@ -7,6 +7,7 @@ import HomeScreen from '../screens/HomeScreen';
 import LinksScreen from '../screens/LinksScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import Game from '../screens/Game';
+import GameDetails from '../screens/GameDetails';
 import Games from '../screens/Games';
 
 const HomeStack = createStackNavigator({
@@ -44,6 +45,7 @@ LinksStack.navigationOptions = {
 const GamesStack = createStackNavigator({
     Games: Games,
     Game: Game,
+    GameDetails: GameDetails,
   }, {
     initialRouteName: "Games"
   }

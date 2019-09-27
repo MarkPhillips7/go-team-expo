@@ -5,7 +5,6 @@ import { Button } from 'react-native-elements';
 import {withApollo} from 'react-apollo';
 // import gql from "graphql-tag";
 import GameHeader from '../components/GameHeader';
-import GameDetails from '../components/GameDetails';
 import FormationLine from '../components/FormationLine';
 import Player from '../components/Player';
 import Roster from '../components/Roster';
@@ -160,12 +159,8 @@ class SoccerField extends React.Component {
   }
 
   onPressGameDetails() {
-    this.setState((previousState) => {
-      return {
-        ...previousState,
-        mode: previousState.mode === modes.gameDetails ? modes.default : modes.gameDetails,
-      };
-    });
+    const {gameTeamSeason, navigation} = this.props;
+    navigation.navigate('GameDetails', { gameTeamSeasonId: gameTeamSeason.id });
   }
 
   onPressPlayer(positionSnapshot, {gameSnapshot}) {
@@ -654,14 +649,6 @@ class SoccerField extends React.Component {
 }
           </ScrollView>
         )}
-        {this.state.mode === modes.gameDetails && (
-          <View style={styles.gameDetails}>
-            <GameDetails
-              gamePlayers={gamePlayers}
-              gameTeamSeason={gameTeamSeason}
-            />
-          </View>
-        )}
         {this.state.mode === modes.roster && (
           <Roster
             gameRoster={gamePlayers}
@@ -934,7 +921,6 @@ const modes = {
   "default": "default",
   debug: "debug",
   roster: "roster",
-  gameDetails: "gameDetails",
 };
 //
 // let gamePositions = this.props.players.map((player, index) => {
@@ -972,11 +958,6 @@ let styles = StyleSheet.create({
   // },
   gameHeader: {
     flex: 1,
-    width: '100%',
-  },
-  gameDetails: {
-    flex: 12,
-    flexBasis: '70%',
     width: '100%',
   },
   park: {
