@@ -7,23 +7,11 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Mutation } from "react-apollo";
-import gql from "graphql-tag";
 import {
   playerAvailability,
 } from '../constants/Soccer';
-
-const updateGamePlayerMutation = gql`
-mutation UpdateGamePlayer($id: ID!,$availability: Availability!){
-  updateGamePlayer(
-    id: $id
-    availability: $availability
-  ) {
-    id
-    availability
-  }
-}
-`;
+import { Mutation } from "react-apollo";
+import {updateGamePlayerMutation} from '../graphql/game';
 
 export default class Roster extends React.Component {
   static propTypes = {
@@ -57,6 +45,7 @@ export default class Roster extends React.Component {
   render() {
     return (
       <View style={styles.roster}>
+        <Text>Available Roster</Text>
         <FlatList
           data={this.props.gameRoster}
           renderItem={({item}) => {

@@ -5,6 +5,7 @@ import { Button } from 'react-native-elements';
 import {withApollo} from 'react-apollo';
 // import gql from "graphql-tag";
 import GameHeader from '../components/GameHeader';
+import GameDetails from '../components/GameDetails';
 import FormationLine from '../components/FormationLine';
 import Player from '../components/Player';
 import Roster from '../components/Roster';
@@ -92,6 +93,7 @@ class SoccerField extends React.Component {
     this.updateGame = this.updateGame.bind(this);
     this.onPressPlayer = this.onPressPlayer.bind(this);
     this.onPressCancel = this.onPressCancel.bind(this);
+    this.onPressGameDetails = this.onPressGameDetails.bind(this);
     this.startOrStopGameTimer = this.startOrStopGameTimer.bind(this);
   }
 
@@ -153,6 +155,15 @@ class SoccerField extends React.Component {
       return {
         ...previousState,
         mode: previousState.mode === modes.roster ? modes.default : modes.roster,
+      };
+    });
+  }
+
+  onPressGameDetails() {
+    this.setState((previousState) => {
+      return {
+        ...previousState,
+        mode: previousState.mode === modes.gameDetails ? modes.default : modes.gameDetails,
       };
     });
   }
@@ -643,6 +654,14 @@ class SoccerField extends React.Component {
 }
           </ScrollView>
         )}
+        {this.state.mode === modes.gameDetails && (
+          <View style={styles.gameDetails}>
+            <GameDetails
+              gamePlayers={gamePlayers}
+              gameTeamSeason={gameTeamSeason}
+            />
+          </View>
+        )}
         {this.state.mode === modes.roster && (
           <Roster
             gameRoster={gamePlayers}
@@ -837,6 +856,11 @@ class SoccerField extends React.Component {
                 />
                 <Button
                   style={styles.button}
+                  onPress={this.onPressGameDetails}
+                  title="Edit"
+                />
+                <Button
+                  style={styles.button}
                   onPress={this.onPressLineup}
                   title="Lineup"
                 />
@@ -910,6 +934,7 @@ const modes = {
   "default": "default",
   debug: "debug",
   roster: "roster",
+  gameDetails: "gameDetails",
 };
 //
 // let gamePositions = this.props.players.map((player, index) => {
@@ -947,6 +972,11 @@ let styles = StyleSheet.create({
   // },
   gameHeader: {
     flex: 1,
+    width: '100%',
+  },
+  gameDetails: {
+    flex: 12,
+    flexBasis: '70%',
     width: '100%',
   },
   park: {
@@ -996,7 +1026,8 @@ let styles = StyleSheet.create({
     width: '100%',
   },
   button: {
-    margin: 10,
+    margin: 3,
+    //height: 30,
   },
   instructions: {
     display: 'flex',

@@ -80,7 +80,7 @@ class Games extends React.Component {
                           </View>
                           <View style={styles.gameName}>
                             <Text style={styles.gameNameText}>
-                              {item.name}
+                              {item.game.name}
                             </Text>
                           </View>
                           <View style={styles.gameLocation}>

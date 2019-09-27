@@ -16,6 +16,18 @@ import {
 } from './gamePlan';
 import {TEAM_SEASON} from '../graphql/games';
 
+export const updateGamePlayerMutation = gql`
+mutation UpdateGamePlayer($id: ID!,$availability: Availability!){
+  updateGamePlayer(
+    id: $id
+    availability: $availability
+  ) {
+    id
+    availability
+  }
+}
+`;
+
 export const GAME_TEAM_SEASON_INFO = gql`
 query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
   allPositionCategories {
@@ -217,7 +229,7 @@ mutation CreateGamePlayer (
 }
 `;
 
-const UPDATE_GAME = gql`
+export const UPDATE_GAME = gql`
 mutation UpdateGame(
   $id: ID!
   $name: String!
