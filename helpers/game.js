@@ -415,19 +415,14 @@ export const getGameTimeline = ({
       playerPositionAssignment.gameActivityStatus === "COMPLETED") {
         return;
       }
-      // Do not alter times if substitution is overdue (isOverdue on event will help determine what to do with events)
-      const isOverdue = gameStatus === "IN_PROGRESS" &&
-      substitution.gameActivityType === "PLAN" &&
-      substitution.gameSeconds < gameSeconds;
-      const timeInfo = getTimeInfo(substitution, playerPositionAssignment, {});
-      const playerTimeline = initializePlayerTimeline(gameTimeline, playerPositionAssignment.playerPosition.player);
-
-      playerTimeline.events.push({
-        eventType: playerPositionAssignment.playerPositionAssignmentType,
-        position: playerPositionAssignment.playerPosition.position,
-        timeInfo,
-        isOverdue,
+      const event = getEvent({
+        gameStatus,
+        substitution,
+        playerPositionAssignment,
+        gameSeconds,
       });
+      playerTimeline.events.push(event);
+      const playerTimeline = initializePlayerTimeline(gameTimeline, playerPositionAssignment.playerPosition.player);
     });
   });
 
@@ -470,42 +465,154 @@ const isEventBefore = (eventA, eventB) => {
 };
 
 const updatePositionsSnapshot = (positionsSnapshot, event, playerId) => {
+  if (event.eventType === "OUT" ||
+  event.eventType === "UNAVAILABLE") {
+    const currentPositionSnapshot = _.find(positionsSnapshot,
+    (positionSnapshot) => positionSnapshot.playerId === playerId);
+    if (currentPositionSnapshot &&
+      currentPositionSnapshot.event.position
+    ) {
+      positionsSnapshot[currentPositionSnapshot.event.position.id] = {
+        event: {
+          eventType: event.eventType,
+          position: currentPositionSnapshot.event.position,
+          timeInfo: event.timeInfo,
+        },
+        playerId: undefined,
+      };
+    }
+  } else {
   if (event.position &&
-  (!positionsSnapshot[event.position.id] ||
-  !positionsSnapshot[event.position.id].playerId ||
-  isEventBefore(positionsSnapshot[event.position.id].event, event))) {
-    positionsSnapshot[event.position.id] = {
-      event,
-      playerId,
-    };
+    (!positionsSnapshot[event.position.id] ||
+    !positionsSnapshot[event.position.id].playerId ||
+    isEventBefore(positionsSnapshot[event.position.id].event, event))
+  ) {
+      positionsSnapshot[event.position.id] = {
+        event,
+        playerId,
+      };
+    }
   }
 };
 
-export const getGameSnapshot = ({
-  gameTimeline,
-  positionCategories,
+const getEvent = ({
+  gameStatus,
+  substitution,
+  playerPositionAssignment,
+  gameSeconds,
+}) => {
+  // Do not alter times if substitution is overdue (isOverdue on event will help determine what to do with events)
+  const isOverdue = gameStatus === "IN_PROGRESS" &&
+  substitution.gameActivityType === "PLAN" &&
+  substitution.gameSeconds < gameSeconds;
+  const timeInfo = getTimeInfo(substitution, playerPositionAssignment, {});
+
+  return {
+    eventType: playerPositionAssignment.playerPositionAssignmentType,
+    position: playerPositionAssignment.playerPosition.position,
+    timeInfo,
+    isOverdue,
+  };
+}
+
+const getPositionsSnapshot = ({
   gameTeamSeason,
   totalSeconds,
   gameSeconds,
+  gameStatus,
   timestamp,
+}) => {
+  const positionsSnapshot = {};
+
+  _.forEach(gameTeamSeason.substitutions, (substitution) => {
+    if (gameStatus === "IN_PROGRESS" &&
+    substitution.gameActivityType === "PLAN" &&
+    substitution.gameActivityStatus === "COMPLETED") {
+      return;
+    }
+    // Need to process OUT, UNAVAILABLE before CHANGE, IN, INITIAL
+    const sortedPlayerPositionAssignments = _.sortBy(substitution.playerPositionAssignments,
+      (playerPositionAssignment) =>
+        playerPositionAssignment.playerPositionAssignmentType === "OUT" ||
+        playerPositionAssignment.playerPositionAssignmentType === "UNAVAILABLE"
+        ? 1
+        : 2);
+
+    _.forEach(sortedPlayerPositionAssignments, (playerPositionAssignment) => {
+      if (gameStatus === "IN_PROGRESS" &&
+      substitution.gameActivityType === "PLAN" &&
+      playerPositionAssignment.gameActivityStatus === "COMPLETED") {
+        return;
+      }
+
+      const playerId = playerPositionAssignment.playerPosition &&
+        playerPositionAssignment.playerPosition.player &&
+        playerPositionAssignment.playerPosition.player.id;
+      const event = getEvent({
+        gameStatus,
+        substitution,
+        playerPositionAssignment,
+        gameSeconds,
+      });
+
+      // Returning false here essentially prevents event from being included in snapshot
+      if (event.eventType !== "INITIAL" &&
+      (event.isOverdue || event.timeInfo.gameSeconds > gameSeconds)) {
+          return false;
+      }
+      updatePositionsSnapshot(positionsSnapshot, event, playerId);
+    });
+  });
+
+  // Make sure each position got included in the positionsSnapshot
+  if (gameTeamSeason.formationSubstitutions && gameTeamSeason.formationSubstitutions.length) {
+    _.forEach(gameTeamSeason.formationSubstitutions[0].formation.positions, (position) => {
+      if (!positionsSnapshot[position.id]) {
+        const timeInfo = {
+          gameSeconds,
+          totalSeconds,
+          timestamp,
+        };
+        positionsSnapshot[position.id] = {
+          event:{
+            eventType: "INITIAL",
+            position,
+            timeInfo,
+            isOverdue: false,
+          }
+        };
+      }
+    });
+  }
+
+  return positionsSnapshot;
+};
+
+const getPlayersSnapshot = ({
+  gameTimeline,
+  positionCategories,
+  gameTeamSeason,
+  gameSeconds,
   gameDurationSeconds,
 }) => {
   const maxSeconds = gameDurationSeconds;
   const minSeconds = 0.0;
-  const positionsSnapshot = {};
+
   // Only show pending moves for the next substitution. Identify it by futureEventGameSeconds.
   const nextPlannedSubstitution = getNextPlannedSubstitution({
     gameTeamSeason,
     excludeInitial: true
   });
   let nextPlannedSubstitutionGameSeconds = nextPlannedSubstitution ? nextPlannedSubstitution.gameSeconds : Number.MAX_SAFE_INTEGER;
-  const playersSnapshot = _.mapValues(gameTimeline.players, (playerTimeline, playerId) => {
+
+  const playersSnapshot = _.mapValues(gameTimeline.players, (playerTimeline) => {
     let secondsCounter = minSeconds;
     let previousEvent = undefined;
     let pendingMove = undefined;
     let activeEvent = undefined;
     let cumulativeInGameSeconds = 0;
     const piePieces = [];
+
     _.forEach(playerTimeline.events, (event, index) => {
       const startSecondsSinceGameStart = secondsCounter;
       const endSecondsSinceGameStart = event.isOverdue
@@ -568,8 +675,6 @@ export const getGameSnapshot = ({
       }
 
       activeEvent = event;
-      updatePositionsSnapshot(positionsSnapshot, event, playerId);
-
       secondsCounter += (endSecondsSinceGameStart - startSecondsSinceGameStart);
       previousEvent = event;
 
@@ -595,26 +700,6 @@ export const getGameSnapshot = ({
           }, gameSeconds);
       }
     });
-    // Make sure each position got included in the positionsSnapshot
-    if (gameTeamSeason.formationSubstitutions && gameTeamSeason.formationSubstitutions.length) {
-      _.forEach(gameTeamSeason.formationSubstitutions[0].formation.positions, (position) => {
-        if (!positionsSnapshot[position.id]) {
-          const timeInfo = {
-            gameSeconds,
-            totalSeconds,
-            timestamp,
-          };
-          positionsSnapshot[position.id] = {
-            event:{
-              eventType: "INITIAL",
-              position,
-              timeInfo,
-              isOverdue: false,
-            }
-          };
-        }
-      });
-    }
     return {
       activeEvent,
       cumulativeInGameSeconds,
@@ -622,17 +707,37 @@ export const getGameSnapshot = ({
       pendingMove,
     };
   });
-  let gameSnapshot = {
-    players: playersSnapshot,
-    positions: positionsSnapshot,
-  }
-  // positionSnapshot can indicate a player that is actually on the bench, so fix that
-  _.each(positionsSnapshot, (positionSnapshot) => {
-    if (positionSnapshot.playerId && playerIsOnBench(
-    positionSnapshot.playerId, gameSnapshot, playerAvailability.active)) {
-      positionSnapshot.playerId = null;
-    }
+  return playersSnapshot;
+}
+
+export const getGameSnapshot = ({
+  gameTimeline,
+  positionCategories,
+  gameTeamSeason,
+  totalSeconds,
+  gameSeconds,
+  gameStatus,
+  timestamp,
+  gameDurationSeconds,
+}) => {
+  const players = getPlayersSnapshot({
+    gameTimeline,
+    positionCategories,
+    gameTeamSeason,
+    gameSeconds,
+    gameDurationSeconds,
   });
+  const positions = getPositionsSnapshot({
+    gameTeamSeason,
+    totalSeconds,
+    gameSeconds,
+    gameStatus,
+    timestamp,
+  });
+  let gameSnapshot = {
+    players,
+    positions,
+  }
   return gameSnapshot;
 };
 
@@ -894,6 +999,13 @@ const getPlannedSubstitutionPositionsFor = (
     }
   } while (!done);
   return positionSnapshots;
+};
+
+export const getAllFieldPlayersSelectionInfo = (gameSnapshot) => {
+  return {
+    selections: gameSnapshot.positions,
+    hasPlannedSubstitutionAssignments: false,
+  };
 };
 
 export const getPlayerPressedSelectionInfo = (

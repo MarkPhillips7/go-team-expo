@@ -39,6 +39,7 @@ import {
   canRemoveSelectedSubs,
   canSetLineup,
   canSubstitute,
+  getAllFieldPlayersSelectionInfo,
   getCurrentTimeInfo,
   getCancelPressedSelectionInfo,
   getGamePeriodAfter,
@@ -88,7 +89,7 @@ class SoccerField extends React.Component {
     this.onPressRemoveSelectedSubs = this.onPressRemoveSelectedSubs.bind(this);
     this.onPressStart = this.onPressStart.bind(this);
     this.onPressStop = this.onPressStop.bind(this);
-    this.onPressReset = this.onPressReset.bind(this);
+    this.onPressClearLineup = this.onPressClearLineup.bind(this);
     this.onPressLineup = this.onPressLineup.bind(this);
     this.updateGame = this.updateGame.bind(this);
     this.onPressPlayer = this.onPressPlayer.bind(this);
@@ -326,10 +327,12 @@ class SoccerField extends React.Component {
   }
 
   onPressRemoveFromLineup() {
-    // Either delete INITIAL player position assignment
-    // or add substitution with only OUT player position assignment
-    const {client, gameTeamSeason} = this.props;
     const {selectionInfo} = this.state;
+    this.handleRemoveFromLineup(selectionInfo);
+  }
+
+  handleRemoveFromLineup(selectionInfo) {
+    const {client, gameTeamSeason} = this.props;
     const {
       timestamp,
       gameSeconds,
@@ -357,13 +360,78 @@ class SoccerField extends React.Component {
     });
   }
 
-  onPressReset() {
-    this.setState(() => {
-      return this.getInitialState();
+  onPressClearLineup() {
+    const {
+      gameTeamSeason,
+      positionCategories
+    } = this.props;
+    const {
+      timestamp,
+      totalSeconds,
+      gameSeconds,
+    } = this.state;
+    const gameStatusInfo = getGameStatusInfo({
+      gameTeamSeason,
     });
+    const {
+      gameStatus,
+      gameDurationSeconds
+    } = gameStatusInfo;
+    const gameTimeline = getGameTimeline({
+      gameStatus,
+      gameTeamSeason,
+      totalSeconds,
+      gameSeconds,
+      timestamp,
+    });
+    const gameSnapshot = getGameSnapshot({
+      gameTimeline,
+      positionCategories,
+      gameTeamSeason,
+      totalSeconds,
+      gameSeconds,
+      timestamp,
+      gameDurationSeconds,
+    });
+    const selectionInfo = getAllFieldPlayersSelectionInfo(gameSnapshot);
+    this.handleRemoveFromLineup(selectionInfo);
   }
 
   onPressDebug() {
+    const {
+      gameTeamSeason,
+      positionCategories
+    } = this.props;
+    const {
+      timestamp,
+      totalSeconds,
+      gameSeconds,
+    } = this.state;
+    const gameStatusInfo = getGameStatusInfo({
+      gameTeamSeason,
+    });
+    const {
+      gameStatus,
+      gameDurationSeconds
+    } = gameStatusInfo;
+    const gameTimeline = getGameTimeline({
+      gameStatus,
+      gameTeamSeason,
+      totalSeconds,
+      gameSeconds,
+      timestamp,
+    });
+    const gameSnapshot = getGameSnapshot({
+      gameTimeline,
+      positionCategories,
+      gameTeamSeason,
+      totalSeconds,
+      gameSeconds,
+      timestamp,
+      gameDurationSeconds,
+    });
+    console.log(`gameSnapshot`, gameSnapshot);
+    // console.log(`gameTimeline`, gameTimeline);
     this.setState((previousState) => {
       return {
         ...previousState,
@@ -821,8 +889,8 @@ class SoccerField extends React.Component {
                 }
                 <Button
                   style={styles.button}
-                  onPress={this.onPressReset}
-                  title="Reset"
+                  onPress={this.onPressClearLineup}
+                  title="ClearLineup"
                 />
                 <Button
                   style={styles.button}

@@ -353,6 +353,7 @@ const getSubstitutionAtSpecificTime = ({
   return gameTeamSeason.substitutions &&
     _.find(gameTeamSeason.substitutions, (sub) =>
     sub.gameActivityType === gameActivityType &&
+    sub.gameActivityStatus !== "COMPLETED" &&
     sub.gameSeconds === gameSeconds);
 };
 
@@ -499,12 +500,13 @@ const positionSnapshotRepresentsBench = (positionSnapshot) => {
 const substituteSelectedPlayers = (client, {
   selectionInfo,
   substitution,
+  forceOut,
 }) => {
   let playerPosition;
 
   return Promise.all(_.map(selectionInfo.selections, (positionSnapshotFrom, index) => {
     // If only one selection, then just sub player OUT
-    const positionSnapshotTo = selectionInfo.selections.length === 1
+    const positionSnapshotTo = forceOut || selectionInfo.selections.length === 1
     ? {}
     : selectionInfo.selections[(index + 1) % selectionInfo.selections.length];
     let playerPositionAssignmentType;
@@ -654,6 +656,7 @@ export const createSubstitutionForSelections = (client, {
   timestamp,
   gameSeconds,
   totalSeconds,
+  forceOut,
 }) => {
   // ToDo: Get formation substitution based on the gameSeconds
   // const formationSubstitution =
@@ -671,6 +674,7 @@ export const createSubstitutionForSelections = (client, {
   .then(() => substituteSelectedPlayers(client, {
     selectionInfo,
     substitution,
+    forceOut,
   })).then(result => {console.log(result)})
   .then(() => console.log("createSubstitutionForSelections succeeded"))
   .catch((error) => console.log(`error: ${error}`));
@@ -850,6 +854,7 @@ const addOutPlayerPositionAssignments = (client, {
     timestamp,
     gameSeconds,
     totalSeconds,
+    forceOut: true,
   });
 };
 
