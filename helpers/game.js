@@ -421,8 +421,8 @@ export const getGameTimeline = ({
         playerPositionAssignment,
         gameSeconds,
       });
-      playerTimeline.events.push(event);
       const playerTimeline = initializePlayerTimeline(gameTimeline, playerPositionAssignment.playerPosition.player);
+      playerTimeline.events.push(event);
     });
   });
 
