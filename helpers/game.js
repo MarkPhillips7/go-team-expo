@@ -194,7 +194,8 @@ export const getGameStats = ({
     playerStats.lastEventTotalSeconds = timeInfo.totalSeconds;
     playerStats.lastEventTimestamp = timeInfo.timestamp;
     playerStats.lastEventType = "UNAVAILABLE";
-  });
+  })
+  .value();
 
   _.forEach(gameTeamSeason.substitutions, (substitution) => {
     // if (substitution.gameActivityType === "PLAN" &&

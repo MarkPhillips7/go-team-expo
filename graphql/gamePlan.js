@@ -568,7 +568,7 @@ const substituteMaxPlayersFromBench = (client, {
     gameSeconds,
     timestamp,
   });
-  console.log(JSON.stringify(gameStats, {indent: true}));
+  console.log(`gameStats`, gameStats);
 
   // Identify the players that are on the bench (either no stats yet or currently OUT)
   const subInCandidates = _.filter(gameTeamSeason.gamePlayers,
