@@ -1,6 +1,6 @@
 import React, {Fragment} from 'react';
 import {PropTypes} from 'prop-types';
-import { Dimensions, ScrollView, Slider, StyleSheet, Text, View } from 'react-native';
+import { Alert, Dimensions, ScrollView, Slider, StyleSheet, Text, View } from 'react-native';
 import { Button } from 'react-native-elements';
 import {withApollo} from 'react-apollo';
 import { activateKeepAwake, deactivateKeepAwake } from 'expo-keep-awake';
@@ -351,13 +351,28 @@ class SoccerField extends React.Component {
 
   onPressDelete() {
     const {client, gameTeamSeason} = this.props;
-    deleteGameEtc(client, {
-      gameTeamSeason
-    })
-    // .then(this.props.onSubsChange);
-    .then(() => {
-      this.props.navigation.navigate('Games');
-    });
+    Alert.alert(
+      'Are you sure?',
+      'This game will be permanently deleted.',
+      [
+        {
+          text: 'Cancel',
+          onPress: () => console.log('Cancel Pressed'),
+          style: 'cancel',
+        },
+        {text: 'Yes, Delete', onPress: () => {
+          console.log('Delete Pressed');
+          deleteGameEtc(client, {
+            gameTeamSeason
+          })
+          // .then(this.props.onSubsChange);
+          .then(() => {
+            this.props.navigation.navigate('Games');
+          });
+        }},
+      ],
+      {cancelable: true},
+    );
   }
 
   onPressClearLineup() {
@@ -887,11 +902,16 @@ class SoccerField extends React.Component {
                     title="Sub Now"
                   />
                 }
-                <Button
-                  style={styles.button}
-                  onPress={this.onPressClearLineup}
-                  title="ClearLineup"
-                />
+                {gamePeriod &&
+                  gameStatus === "IN_PROGRESS" &&
+                  gameActivityType === "OFFICIAL" &&
+                  gameActivityStatus === "STOPPED" &&
+                  <Button
+                    style={styles.button}
+                    onPress={this.onPressClearLineup}
+                    title="Clear Lineup"
+                  />
+                }
                 <Button
                   style={styles.button}
                   onPress={this.onPressAutoSubs}
@@ -907,11 +927,11 @@ class SoccerField extends React.Component {
                   onPress={this.onPressDebug}
                   title="Debug"
                 />
-                <Button
+                {/*<Button
                   style={styles.button}
                   onPress={this.onPressManageRoster}
                   title="Roster"
-                />
+                />*/}
                 <Button
                   style={styles.button}
                   onPress={this.onPressGameDetails}

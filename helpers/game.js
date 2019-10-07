@@ -198,10 +198,9 @@ export const getGameStats = ({
   .value();
 
   _.forEach(gameTeamSeason.substitutions, (substitution) => {
-    // if (substitution.gameActivityType === "PLAN" &&
-    // substitution.gameActivityStatus === "COMPLETED") {
-    //   return;
-    // }
+    if (substitution.gameActivityType === "PLAN") {
+      return;
+    }
     _.forEach(substitution.playerPositionAssignments, (playerPositionAssignment) => {
       const timeInfo = getTimeInfo(substitution, playerPositionAssignment, {gameSeconds, totalSeconds, timestamp});
       const playerStats = initializePlayerStats(gameStats, playerPositionAssignment.playerPosition.player);
@@ -598,6 +597,9 @@ const getPlayersSnapshot = ({
 }) => {
   const maxSeconds = gameDurationSeconds;
   const minSeconds = 0.0;
+  const gameStatus = gameTeamSeason &&
+  gameTeamSeason.game &&
+  gameTeamSeason.game.gameStatus;
 
   // Only show pending moves for the next substitution. Identify it by futureEventGameSeconds.
   const nextPlannedSubstitution = getNextPlannedSubstitution({
@@ -637,7 +639,8 @@ const getPlayersSnapshot = ({
         }
       }
 
-      if (event.eventType !== "INITIAL" &&
+      if (gameStatus !== "COMPLETED" &&
+      event.eventType !== "INITIAL" &&
       (event.isOverdue || event.timeInfo.gameSeconds > gameSeconds) &&
       event.timeInfo.gameSeconds <= nextPlannedSubstitutionGameSeconds) {
         const pendingMoveSeconds = event.timeInfo.gameSeconds - endSecondsSinceGameStart;
