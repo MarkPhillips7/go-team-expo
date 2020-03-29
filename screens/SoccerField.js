@@ -854,7 +854,7 @@ class SoccerField extends React.Component {
             <Slider
               style={styles.slider}
               minimumValue={0}
-              maximumValue={gameDurationSeconds}
+              maximumValue={Math.min(7200, gameDurationSeconds)}
               onValueChange={(gameSeconds) => {
                 // console.log(`hello ${gameSeconds}`);
                 // only update gameSeconds after so much time since last slider move
@@ -866,7 +866,7 @@ class SoccerField extends React.Component {
                 });
                 setTimeout(() => this.onSliderMove(gameSeconds), millisecondsBeforeSliderAction);
               }}
-              value={this.state.gameSeconds}
+              value={gameSeconds}
             />
             )}
             {playersSelected === 0 && (

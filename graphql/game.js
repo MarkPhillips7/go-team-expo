@@ -81,6 +81,7 @@ query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
           position {
             id
             name
+            leftToRightPercent
             positionCategory {
               id
               name
