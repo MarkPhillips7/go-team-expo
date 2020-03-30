@@ -720,9 +720,9 @@ export const getGameSnapshot = ({
   gameTeamSeason,
   totalSeconds,
   gameSeconds,
-  gameStatus,
   timestamp,
   gameDurationSeconds,
+  gameStatus,
 }) => {
   const players = getPlayersSnapshot({
     gameTimeline,

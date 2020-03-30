@@ -407,6 +407,7 @@ class SoccerField extends React.Component {
       gameSeconds,
       timestamp,
       gameDurationSeconds,
+      gameStatus,
     });
     const selectionInfo = getAllFieldPlayersSelectionInfo(gameSnapshot);
     this.handleRemoveFromLineup(selectionInfo);
@@ -444,6 +445,7 @@ class SoccerField extends React.Component {
       gameSeconds,
       timestamp,
       gameDurationSeconds,
+      gameStatus,
     });
     console.log(`gameSnapshot`, gameSnapshot);
     // console.log(`gameTimeline`, gameTimeline);
@@ -667,6 +669,7 @@ class SoccerField extends React.Component {
       gameSeconds,
       timestamp,
       gameDurationSeconds,
+      gameStatus,
     });
     const playersSelected = selectionInfo &&
       selectionInfo.selections &&
