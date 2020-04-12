@@ -1,5 +1,5 @@
 # source: https://api.graph.cool/simple/v1/cjpeel49p81sr0135wsewoo11
-# timestamp: Tue Aug 20 2019 19:25:47 GMT-0400 (EDT)
+# timestamp: Sun Apr 12 2020 19:03:03 GMT-0400 (Eastern Daylight Time)
 
 enum _ModelMutationType {
   CREATED
@@ -20,6 +20,11 @@ type AddToChildrenParentsGuardiansPayload {
 type AddToFormationOnFormationSubstitutionPayload {
   formationSubstitutionFormationSubstitution: FormationSubstitution
   formationFormation: Formation
+}
+
+type AddToFormationOnLineupPayload {
+  formationFormation: Formation
+  lineupsLineup: Lineup
 }
 
 type AddToFormationsPositionsPayload {
@@ -90,6 +95,11 @@ type AddToLeagueSeasonOnTeamSeasonPayload {
 type AddToLeaguesSeasonsPayload {
   leaguesLeague: League
   seasonsSeason: Season
+}
+
+type AddToLineupOnPlayerPositionPayload {
+  lineupLineup: Lineup
+  playerPositionsPlayerPosition: PlayerPosition
 }
 
 type AddToOrganizationOnLeaguePayload {
@@ -202,6 +212,8 @@ input CreateFormation {
   name: String!
   formationSubstitutionIds: [ID!]
   formationSubstitution: [FormationformationSubstitutionFormationSubstitution!]
+  lineupsIds: [ID!]
+  lineups: [FormationlineupsLineup!]
   positionsIds: [ID!]
   positions: [FormationpositionsPosition!]
 }
@@ -332,6 +344,14 @@ input CreateLeagueSeason {
   teamSeasons: [LeagueSeasonteamSeasonsTeamSeason!]
 }
 
+input CreateLineup {
+  name: String!
+  formationId: ID
+  formation: LineupformationFormation
+  playerPositionsIds: [ID!]
+  playerPositions: [LineupplayerPositionsPlayerPosition!]
+}
+
 input CreateOrganization {
   location: String
   name: String!
@@ -343,6 +363,8 @@ input CreateOrganization {
 }
 
 input CreatePlayerPosition {
+  lineupId: ID
+  lineup: PlayerPositionlineupLineup
   playerId: ID
   player: PlayerPositionplayerUser
   positionId: ID
@@ -362,6 +384,7 @@ input CreatePlayerPositionAssignment {
 }
 
 input CreatePosition {
+  backToFrontPercent: Float
   lateralLocation: LateralLocation
   leftToRightPercent: Float
   name: String!
@@ -493,11 +516,15 @@ type Formation implements Node {
   formationCode: String
   formationSubstitution(filter: FormationSubstitutionFilter, orderBy: FormationSubstitutionOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): [FormationSubstitution!]
   id: ID!
+  lineups(filter: LineupFilter, orderBy: LineupOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): [Lineup!]
   name: String!
   positions(filter: PositionFilter, orderBy: PositionOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): [Position!]
 
   """Meta information about the query."""
   _formationSubstitutionMeta(filter: FormationSubstitutionFilter, orderBy: FormationSubstitutionOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): _QueryMeta!
+
+  """Meta information about the query."""
+  _lineupsMeta(filter: LineupFilter, orderBy: LineupOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): _QueryMeta!
 
   """Meta information about the query."""
   _positionsMeta(filter: PositionFilter, orderBy: PositionOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): _QueryMeta!
@@ -632,6 +659,9 @@ input FormationFilter {
   formationSubstitution_every: FormationSubstitutionFilter
   formationSubstitution_some: FormationSubstitutionFilter
   formationSubstitution_none: FormationSubstitutionFilter
+  lineups_every: LineupFilter
+  lineups_some: LineupFilter
+  lineups_none: LineupFilter
   positions_every: PositionFilter
   positions_some: PositionFilter
   positions_none: PositionFilter
@@ -647,6 +677,12 @@ input FormationformationSubstitutionFormationSubstitution {
   gameTeamSeason: FormationSubstitutiongameTeamSeasonGameTeamSeason
 }
 
+input FormationlineupsLineup {
+  name: String!
+  playerPositionsIds: [ID!]
+  playerPositions: [LineupplayerPositionsPlayerPosition!]
+}
+
 enum FormationOrderBy {
   formationCode_ASC
   formationCode_DESC
@@ -657,6 +693,7 @@ enum FormationOrderBy {
 }
 
 input FormationpositionsPosition {
+  backToFrontPercent: Float
   lateralLocation: LateralLocation
   leftToRightPercent: Float
   name: String!
@@ -825,6 +862,9 @@ input FormationSubscriptionFilterNode {
   formationSubstitution_every: FormationSubstitutionFilter
   formationSubstitution_some: FormationSubstitutionFilter
   formationSubstitution_none: FormationSubstitutionFilter
+  lineups_every: LineupFilter
+  lineups_some: LineupFilter
+  lineups_none: LineupFilter
   positions_every: PositionFilter
   positions_some: PositionFilter
   positions_none: PositionFilter
@@ -989,6 +1029,8 @@ input FormationSubstitutionformationFormation {
   name: String!
   formationSubstitutionIds: [ID!]
   formationSubstitution: [FormationformationSubstitutionFormationSubstitution!]
+  lineupsIds: [ID!]
+  lineups: [FormationlineupsLineup!]
   positionsIds: [ID!]
   positions: [FormationpositionsPosition!]
 }
@@ -4691,8 +4733,263 @@ input LeagueteamsTeam {
   teamSeasons: [TeamteamSeasonsTeamSeason!]
 }
 
+type Lineup implements Node {
+  formation(filter: FormationFilter): Formation!
+  id: ID!
+  name: String!
+  playerPositions(filter: PlayerPositionFilter, orderBy: PlayerPositionOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): [PlayerPosition!]
+
+  """Meta information about the query."""
+  _playerPositionsMeta(filter: PlayerPositionFilter, orderBy: PlayerPositionOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): _QueryMeta!
+}
+
+input LineupFilter {
+  """Logical AND on all given filters."""
+  AND: [LineupFilter!]
+
+  """Logical OR on all given filters."""
+  OR: [LineupFilter!]
+  id: ID
+
+  """All values that are not equal to given value."""
+  id_not: ID
+
+  """All values that are contained in given list."""
+  id_in: [ID!]
+
+  """All values that are not contained in given list."""
+  id_not_in: [ID!]
+
+  """All values less than the given value."""
+  id_lt: ID
+
+  """All values less than or equal the given value."""
+  id_lte: ID
+
+  """All values greater than the given value."""
+  id_gt: ID
+
+  """All values greater than or equal the given value."""
+  id_gte: ID
+
+  """All values containing the given string."""
+  id_contains: ID
+
+  """All values not containing the given string."""
+  id_not_contains: ID
+
+  """All values starting with the given string."""
+  id_starts_with: ID
+
+  """All values not starting with the given string."""
+  id_not_starts_with: ID
+
+  """All values ending with the given string."""
+  id_ends_with: ID
+
+  """All values not ending with the given string."""
+  id_not_ends_with: ID
+  name: String
+
+  """All values that are not equal to given value."""
+  name_not: String
+
+  """All values that are contained in given list."""
+  name_in: [String!]
+
+  """All values that are not contained in given list."""
+  name_not_in: [String!]
+
+  """All values less than the given value."""
+  name_lt: String
+
+  """All values less than or equal the given value."""
+  name_lte: String
+
+  """All values greater than the given value."""
+  name_gt: String
+
+  """All values greater than or equal the given value."""
+  name_gte: String
+
+  """All values containing the given string."""
+  name_contains: String
+
+  """All values not containing the given string."""
+  name_not_contains: String
+
+  """All values starting with the given string."""
+  name_starts_with: String
+
+  """All values not starting with the given string."""
+  name_not_starts_with: String
+
+  """All values ending with the given string."""
+  name_ends_with: String
+
+  """All values not ending with the given string."""
+  name_not_ends_with: String
+  formation: FormationFilter
+  playerPositions_every: PlayerPositionFilter
+  playerPositions_some: PlayerPositionFilter
+  playerPositions_none: PlayerPositionFilter
+}
+
+input LineupformationFormation {
+  formationCode: String
+  name: String!
+  formationSubstitutionIds: [ID!]
+  formationSubstitution: [FormationformationSubstitutionFormationSubstitution!]
+  lineupsIds: [ID!]
+  lineups: [FormationlineupsLineup!]
+  positionsIds: [ID!]
+  positions: [FormationpositionsPosition!]
+}
+
+enum LineupOrderBy {
+  id_ASC
+  id_DESC
+  name_ASC
+  name_DESC
+}
+
+input LineupplayerPositionsPlayerPosition {
+  playerId: ID
+  player: PlayerPositionplayerUser
+  positionId: ID
+  position: PlayerPositionpositionPosition
+  playerPositionAssignmentsIds: [ID!]
+  playerPositionAssignments: [PlayerPositionplayerPositionAssignmentsPlayerPositionAssignment!]
+}
+
+type LineupPreviousValues {
+  id: ID!
+  name: String!
+}
+
+input LineupSubscriptionFilter {
+  """Logical AND on all given filters."""
+  AND: [LineupSubscriptionFilter!]
+
+  """Logical OR on all given filters."""
+  OR: [LineupSubscriptionFilter!]
+
+  """The subscription event gets dispatched when it's listed in mutation_in"""
+  mutation_in: [_ModelMutationType!]
+
+  """
+  The subscription event gets only dispatched when one of the updated fields names is included in this list
+  """
+  updatedFields_contains: String
+
+  """
+  The subscription event gets only dispatched when all of the field names included in this list have been updated
+  """
+  updatedFields_contains_every: [String!]
+
+  """
+  The subscription event gets only dispatched when some of the field names included in this list have been updated
+  """
+  updatedFields_contains_some: [String!]
+  node: LineupSubscriptionFilterNode
+}
+
+input LineupSubscriptionFilterNode {
+  id: ID
+
+  """All values that are not equal to given value."""
+  id_not: ID
+
+  """All values that are contained in given list."""
+  id_in: [ID!]
+
+  """All values that are not contained in given list."""
+  id_not_in: [ID!]
+
+  """All values less than the given value."""
+  id_lt: ID
+
+  """All values less than or equal the given value."""
+  id_lte: ID
+
+  """All values greater than the given value."""
+  id_gt: ID
+
+  """All values greater than or equal the given value."""
+  id_gte: ID
+
+  """All values containing the given string."""
+  id_contains: ID
+
+  """All values not containing the given string."""
+  id_not_contains: ID
+
+  """All values starting with the given string."""
+  id_starts_with: ID
+
+  """All values not starting with the given string."""
+  id_not_starts_with: ID
+
+  """All values ending with the given string."""
+  id_ends_with: ID
+
+  """All values not ending with the given string."""
+  id_not_ends_with: ID
+  name: String
+
+  """All values that are not equal to given value."""
+  name_not: String
+
+  """All values that are contained in given list."""
+  name_in: [String!]
+
+  """All values that are not contained in given list."""
+  name_not_in: [String!]
+
+  """All values less than the given value."""
+  name_lt: String
+
+  """All values less than or equal the given value."""
+  name_lte: String
+
+  """All values greater than the given value."""
+  name_gt: String
+
+  """All values greater than or equal the given value."""
+  name_gte: String
+
+  """All values containing the given string."""
+  name_contains: String
+
+  """All values not containing the given string."""
+  name_not_contains: String
+
+  """All values starting with the given string."""
+  name_starts_with: String
+
+  """All values not starting with the given string."""
+  name_not_starts_with: String
+
+  """All values ending with the given string."""
+  name_ends_with: String
+
+  """All values not ending with the given string."""
+  name_not_ends_with: String
+  formation: FormationFilter
+  playerPositions_every: PlayerPositionFilter
+  playerPositions_some: PlayerPositionFilter
+  playerPositions_none: PlayerPositionFilter
+}
+
+type LineupSubscriptionPayload {
+  mutation: _ModelMutationType!
+  node: Lineup
+  updatedFields: [String!]
+  previousValues: LineupPreviousValues
+}
+
 type Mutation {
-  createFormation(formationCode: String, name: String!, formationSubstitutionIds: [ID!], formationSubstitution: [FormationformationSubstitutionFormationSubstitution!], positionsIds: [ID!], positions: [FormationpositionsPosition!]): Formation
+  createFormation(formationCode: String, name: String!, formationSubstitutionIds: [ID!], formationSubstitution: [FormationformationSubstitutionFormationSubstitution!], lineupsIds: [ID!], lineups: [FormationlineupsLineup!], positionsIds: [ID!], positions: [FormationpositionsPosition!]): Formation
   createFormationSubstitution(gameActivityStatus: GameActivityStatus!, gameActivityType: GameActivityType!, gameSeconds: Int, timestamp: DateTime, totalSeconds: Int, formationId: ID, formation: FormationSubstitutionformationFormation, gameTeamSeasonId: ID, gameTeamSeason: FormationSubstitutiongameTeamSeasonGameTeamSeason): FormationSubstitution
   createGame(gameStatus: GameStatus!, location: String, name: String!, scheduledStartTime: DateTime, gameActivitiesIds: [ID!], gameActivities: [GamegameActivitiesGameActivity!], gameTeamSeasonsIds: [ID!], gameTeamSeasons: [GamegameTeamSeasonsGameTeamSeason!]): Game
   createGameActivity(gameActivityStatus: GameActivityStatus!, gameActivityType: GameActivityType!, gameSeconds: Int, name: String, timestamp: DateTime!, totalSeconds: Int, gameId: ID, game: GameActivitygameGame, gamePeriodId: ID, gamePeriod: GameActivitygamePeriodGamePeriod): GameActivity
@@ -4703,10 +5000,11 @@ type Mutation {
   createGameTeamSeason(isHomeTeam: Boolean, name: String!, gameId: ID, game: GameTeamSeasongameGame, gamePlanId: ID, gamePlan: GameTeamSeasongamePlanGamePlan, teamSeasonId: ID, teamSeason: GameTeamSeasonteamSeasonTeamSeason, formationSubstitutionsIds: [ID!], formationSubstitutions: [GameTeamSeasonformationSubstitutionsFormationSubstitution!], gamePlayersIds: [ID!], gamePlayers: [GameTeamSeasongamePlayersGamePlayer!], substitutionsIds: [ID!], substitutions: [GameTeamSeasonsubstitutionsSubstitution!]): GameTeamSeason
   createLeague(name: String!, tags: [String!], gameDefinitionId: ID, gameDefinition: LeaguegameDefinitionGameDefinition, organizationId: ID, organization: LeagueorganizationOrganization, sportId: ID, sport: LeaguesportSport, leagueSeasonsIds: [ID!], leagueSeasons: [LeagueleagueSeasonsLeagueSeason!], seasonsIds: [ID!], seasons: [LeagueseasonsSeason!], teamsIds: [ID!], teams: [LeagueteamsTeam!]): League
   createLeagueSeason(endDate: DateTime, maximumBirthDate: DateTime, minimumBirthDate: DateTime, name: String!, startDate: DateTime, tags: [String!], leagueId: ID, league: LeagueSeasonleagueLeague, seasonId: ID, season: LeagueSeasonseasonSeason, teamSeasonsIds: [ID!], teamSeasons: [LeagueSeasonteamSeasonsTeamSeason!]): LeagueSeason
+  createLineup(name: String!, formationId: ID, formation: LineupformationFormation, playerPositionsIds: [ID!], playerPositions: [LineupplayerPositionsPlayerPosition!]): Lineup
   createOrganization(location: String, name: String!, tags: [String!], leaguesIds: [ID!], leagues: [OrganizationleaguesLeague!], sportsIds: [ID!], sports: [OrganizationsportsSport!]): Organization
-  createPlayerPosition(playerId: ID, player: PlayerPositionplayerUser, positionId: ID, position: PlayerPositionpositionPosition, playerPositionAssignmentsIds: [ID!], playerPositionAssignments: [PlayerPositionplayerPositionAssignmentsPlayerPositionAssignment!]): PlayerPosition
+  createPlayerPosition(lineupId: ID, lineup: PlayerPositionlineupLineup, playerId: ID, player: PlayerPositionplayerUser, positionId: ID, position: PlayerPositionpositionPosition, playerPositionAssignmentsIds: [ID!], playerPositionAssignments: [PlayerPositionplayerPositionAssignmentsPlayerPositionAssignment!]): PlayerPosition
   createPlayerPositionAssignment(gameActivityStatus: GameActivityStatus, playerPositionAssignmentType: PlayerPositionAssignmentType, timestamp: DateTime, playerPositionId: ID, playerPosition: PlayerPositionAssignmentplayerPositionPlayerPosition, substitutionsIds: [ID!], substitutions: [PlayerPositionAssignmentsubstitutionsSubstitution!]): PlayerPositionAssignment
-  createPosition(lateralLocation: LateralLocation, leftToRightPercent: Float, name: String!, positionCategoryId: ID, positionCategory: PositionpositionCategoryPositionCategory, formationsIds: [ID!], formations: [PositionformationsFormation!], playerPositionsIds: [ID!], playerPositions: [PositionplayerPositionsPlayerPosition!]): Position
+  createPosition(backToFrontPercent: Float, lateralLocation: LateralLocation, leftToRightPercent: Float, name: String!, positionCategoryId: ID, positionCategory: PositionpositionCategoryPositionCategory, formationsIds: [ID!], formations: [PositionformationsFormation!], playerPositionsIds: [ID!], playerPositions: [PositionplayerPositionsPlayerPosition!]): Position
   createPositionCategory(color: String, name: String!, parkLocation: ParkLocation, pitchLocation: PitchLocation, positionCategoryPreferencesIds: [ID!], positionCategoryPreferences: [PositionCategorypositionCategoryPreferencesPositionCategoryPreference!], positionsIds: [ID!], positions: [PositionCategorypositionsPosition!]): PositionCategory
   createPositionCategoryPreference(playerId: ID, player: PositionCategoryPreferenceplayerUser, positionCategoryId: ID, positionCategory: PositionCategoryPreferencepositionCategoryPositionCategory, prefererId: ID, preferer: PositionCategoryPreferenceprefererUser): PositionCategoryPreference
   createPost(title: String!, authorId: ID, author: PostauthorUser): Post
@@ -4715,7 +5013,7 @@ type Mutation {
   createSubstitution(gameActivityStatus: GameActivityStatus!, gameActivityType: GameActivityType!, gameSeconds: Int, timestamp: DateTime, totalSeconds: Int, gameTeamSeasonId: ID, gameTeamSeason: SubstitutiongameTeamSeasonGameTeamSeason, playerPositionAssignmentsIds: [ID!], playerPositionAssignments: [SubstitutionplayerPositionAssignmentsPlayerPositionAssignment!]): Substitution
   createTeam(name: String!, tags: [String!], leagueId: ID, league: TeamleagueLeague, fansIds: [ID!], fans: [TeamfansUser!], teamSeasonsIds: [ID!], teamSeasons: [TeamteamSeasonsTeamSeason!]): Team
   createTeamSeason(name: String!, tags: [String!], leagueSeasonId: ID, leagueSeason: TeamSeasonleagueSeasonLeagueSeason, teamId: ID, team: TeamSeasonteamTeam, coachesIds: [ID!], coaches: [TeamSeasoncoachesUser!], gameTeamSeasonsIds: [ID!], gameTeamSeasons: [TeamSeasongameTeamSeasonsGameTeamSeason!], parentsIds: [ID!], parents: [TeamSeasonparentsUser!], playersIds: [ID!], players: [TeamSeasonplayersUser!]): TeamSeason
-  updateFormation(formationCode: String, id: ID!, name: String, formationSubstitutionIds: [ID!], formationSubstitution: [FormationformationSubstitutionFormationSubstitution!], positionsIds: [ID!], positions: [FormationpositionsPosition!]): Formation
+  updateFormation(formationCode: String, id: ID!, name: String, formationSubstitutionIds: [ID!], formationSubstitution: [FormationformationSubstitutionFormationSubstitution!], lineupsIds: [ID!], lineups: [FormationlineupsLineup!], positionsIds: [ID!], positions: [FormationpositionsPosition!]): Formation
   updateFormationSubstitution(gameActivityStatus: GameActivityStatus, gameActivityType: GameActivityType, gameSeconds: Int, id: ID!, timestamp: DateTime, totalSeconds: Int, formationId: ID, formation: FormationSubstitutionformationFormation, gameTeamSeasonId: ID, gameTeamSeason: FormationSubstitutiongameTeamSeasonGameTeamSeason): FormationSubstitution
   updateGame(gameStatus: GameStatus, id: ID!, location: String, name: String, scheduledStartTime: DateTime, gameActivitiesIds: [ID!], gameActivities: [GamegameActivitiesGameActivity!], gameTeamSeasonsIds: [ID!], gameTeamSeasons: [GamegameTeamSeasonsGameTeamSeason!]): Game
   updateGameActivity(gameActivityStatus: GameActivityStatus, gameActivityType: GameActivityType, gameSeconds: Int, id: ID!, name: String, timestamp: DateTime, totalSeconds: Int, gameId: ID, game: GameActivitygameGame, gamePeriodId: ID, gamePeriod: GameActivitygamePeriodGamePeriod): GameActivity
@@ -4726,10 +5024,11 @@ type Mutation {
   updateGameTeamSeason(id: ID!, isHomeTeam: Boolean, name: String, gameId: ID, game: GameTeamSeasongameGame, gamePlanId: ID, gamePlan: GameTeamSeasongamePlanGamePlan, teamSeasonId: ID, teamSeason: GameTeamSeasonteamSeasonTeamSeason, formationSubstitutionsIds: [ID!], formationSubstitutions: [GameTeamSeasonformationSubstitutionsFormationSubstitution!], gamePlayersIds: [ID!], gamePlayers: [GameTeamSeasongamePlayersGamePlayer!], substitutionsIds: [ID!], substitutions: [GameTeamSeasonsubstitutionsSubstitution!]): GameTeamSeason
   updateLeague(id: ID!, name: String, tags: [String!], gameDefinitionId: ID, gameDefinition: LeaguegameDefinitionGameDefinition, organizationId: ID, organization: LeagueorganizationOrganization, sportId: ID, sport: LeaguesportSport, leagueSeasonsIds: [ID!], leagueSeasons: [LeagueleagueSeasonsLeagueSeason!], seasonsIds: [ID!], seasons: [LeagueseasonsSeason!], teamsIds: [ID!], teams: [LeagueteamsTeam!]): League
   updateLeagueSeason(endDate: DateTime, id: ID!, maximumBirthDate: DateTime, minimumBirthDate: DateTime, name: String, startDate: DateTime, tags: [String!], leagueId: ID, league: LeagueSeasonleagueLeague, seasonId: ID, season: LeagueSeasonseasonSeason, teamSeasonsIds: [ID!], teamSeasons: [LeagueSeasonteamSeasonsTeamSeason!]): LeagueSeason
+  updateLineup(id: ID!, name: String, formationId: ID, formation: LineupformationFormation, playerPositionsIds: [ID!], playerPositions: [LineupplayerPositionsPlayerPosition!]): Lineup
   updateOrganization(id: ID!, location: String, name: String, tags: [String!], leaguesIds: [ID!], leagues: [OrganizationleaguesLeague!], sportsIds: [ID!], sports: [OrganizationsportsSport!]): Organization
-  updatePlayerPosition(id: ID!, playerId: ID, player: PlayerPositionplayerUser, positionId: ID, position: PlayerPositionpositionPosition, playerPositionAssignmentsIds: [ID!], playerPositionAssignments: [PlayerPositionplayerPositionAssignmentsPlayerPositionAssignment!]): PlayerPosition
+  updatePlayerPosition(id: ID!, lineupId: ID, lineup: PlayerPositionlineupLineup, playerId: ID, player: PlayerPositionplayerUser, positionId: ID, position: PlayerPositionpositionPosition, playerPositionAssignmentsIds: [ID!], playerPositionAssignments: [PlayerPositionplayerPositionAssignmentsPlayerPositionAssignment!]): PlayerPosition
   updatePlayerPositionAssignment(gameActivityStatus: GameActivityStatus, id: ID!, playerPositionAssignmentType: PlayerPositionAssignmentType, timestamp: DateTime, playerPositionId: ID, playerPosition: PlayerPositionAssignmentplayerPositionPlayerPosition, substitutionsIds: [ID!], substitutions: [PlayerPositionAssignmentsubstitutionsSubstitution!]): PlayerPositionAssignment
-  updatePosition(id: ID!, lateralLocation: LateralLocation, leftToRightPercent: Float, name: String, positionCategoryId: ID, positionCategory: PositionpositionCategoryPositionCategory, formationsIds: [ID!], formations: [PositionformationsFormation!], playerPositionsIds: [ID!], playerPositions: [PositionplayerPositionsPlayerPosition!]): Position
+  updatePosition(backToFrontPercent: Float, id: ID!, lateralLocation: LateralLocation, leftToRightPercent: Float, name: String, positionCategoryId: ID, positionCategory: PositionpositionCategoryPositionCategory, formationsIds: [ID!], formations: [PositionformationsFormation!], playerPositionsIds: [ID!], playerPositions: [PositionplayerPositionsPlayerPosition!]): Position
   updatePositionCategory(color: String, id: ID!, name: String, parkLocation: ParkLocation, pitchLocation: PitchLocation, positionCategoryPreferencesIds: [ID!], positionCategoryPreferences: [PositionCategorypositionCategoryPreferencesPositionCategoryPreference!], positionsIds: [ID!], positions: [PositionCategorypositionsPosition!]): PositionCategory
   updatePositionCategoryPreference(id: ID!, playerId: ID, player: PositionCategoryPreferenceplayerUser, positionCategoryId: ID, positionCategory: PositionCategoryPreferencepositionCategoryPositionCategory, prefererId: ID, preferer: PositionCategoryPreferenceprefererUser): PositionCategoryPreference
   updatePost(id: ID!, title: String, authorId: ID, author: PostauthorUser): Post
@@ -4750,6 +5049,7 @@ type Mutation {
   updateOrCreateGameTeamSeason(update: UpdateGameTeamSeason!, create: CreateGameTeamSeason!): GameTeamSeason
   updateOrCreateLeague(update: UpdateLeague!, create: CreateLeague!): League
   updateOrCreateLeagueSeason(update: UpdateLeagueSeason!, create: CreateLeagueSeason!): LeagueSeason
+  updateOrCreateLineup(update: UpdateLineup!, create: CreateLineup!): Lineup
   updateOrCreateOrganization(update: UpdateOrganization!, create: CreateOrganization!): Organization
   updateOrCreatePlayerPosition(update: UpdatePlayerPosition!, create: CreatePlayerPosition!): PlayerPosition
   updateOrCreatePlayerPositionAssignment(update: UpdatePlayerPositionAssignment!, create: CreatePlayerPositionAssignment!): PlayerPositionAssignment
@@ -4774,6 +5074,7 @@ type Mutation {
   deleteGameTeamSeason(id: ID!): GameTeamSeason
   deleteLeague(id: ID!): League
   deleteLeagueSeason(id: ID!): LeagueSeason
+  deleteLineup(id: ID!): Lineup
   deleteOrganization(id: ID!): Organization
   deletePlayerPosition(id: ID!): PlayerPosition
   deletePlayerPositionAssignment(id: ID!): PlayerPositionAssignment
@@ -4789,6 +5090,7 @@ type Mutation {
   deleteUser(id: ID!): User
   addToChildrenParentsGuardians(parentsGuardiansUserId: ID!, childrenUserId: ID!): AddToChildrenParentsGuardiansPayload
   addToFormationOnFormationSubstitution(formationFormationId: ID!, formationSubstitutionFormationSubstitutionId: ID!): AddToFormationOnFormationSubstitutionPayload
+  addToFormationOnLineup(lineupsLineupId: ID!, formationFormationId: ID!): AddToFormationOnLineupPayload
   addToFormationsPositions(positionsPositionId: ID!, formationsFormationId: ID!): AddToFormationsPositionsPayload
   addToGameDefinitionOnLeague(leaguesLeagueId: ID!, gameDefinitionGameDefinitionId: ID!): AddToGameDefinitionOnLeaguePayload
   addToGameDefinitionsGamePeriods(gameDefinitionsGameDefinitionId: ID!, gamePeriodsGamePeriodId: ID!): AddToGameDefinitionsGamePeriodsPayload
@@ -4803,6 +5105,7 @@ type Mutation {
   addToLeagueOnTeam(teamsTeamId: ID!, leagueLeagueId: ID!): AddToLeagueOnTeamPayload
   addToLeagueSeasonOnTeamSeason(teamSeasonsTeamSeasonId: ID!, leagueSeasonLeagueSeasonId: ID!): AddToLeagueSeasonOnTeamSeasonPayload
   addToLeaguesSeasons(seasonsSeasonId: ID!, leaguesLeagueId: ID!): AddToLeaguesSeasonsPayload
+  addToLineupOnPlayerPosition(playerPositionsPlayerPositionId: ID!, lineupLineupId: ID!): AddToLineupOnPlayerPositionPayload
   addToOrganizationOnLeague(leaguesLeagueId: ID!, organizationOrganizationId: ID!): AddToOrganizationOnLeaguePayload
   addToPlayerOnGamePlayers(gamePlayersGamePlayerId: ID!, playerUserId: ID!): AddToPlayerOnGamePlayersPayload
   addToPlayerOnPlayerPosition(playerPositionsPlayerPositionId: ID!, playerUserId: ID!): AddToPlayerOnPlayerPositionPayload
@@ -4832,6 +5135,7 @@ type Mutation {
   removeFromGameTeamSeasonOnSubstitution(gameTeamSeasonGameTeamSeasonId: ID!, substitutionsSubstitutionId: ID!): RemoveFromGameTeamSeasonOnSubstitutionPayload
   removeFromLeagueOnTeam(teamsTeamId: ID!, leagueLeagueId: ID!): RemoveFromLeagueOnTeamPayload
   removeFromLeaguesSeasons(seasonsSeasonId: ID!, leaguesLeagueId: ID!): RemoveFromLeaguesSeasonsPayload
+  removeFromLineupOnPlayerPosition(playerPositionsPlayerPositionId: ID!, lineupLineupId: ID!): RemoveFromLineupOnPlayerPositionPayload
   removeFromPositionCategoryOnPosition(positionsPositionId: ID!, positionCategoryPositionCategoryId: ID!): RemoveFromPositionCategoryOnPositionPayload
   removeFromPositionOnPlayerPosition(playerPositionsPlayerPositionId: ID!, positionPositionId: ID!): RemoveFromPositionOnPlayerPositionPayload
   removeFromSportsOrganizations(organizationsOrganizationId: ID!, sportsSportId: ID!): RemoveFromSportsOrganizationsPayload
@@ -5218,6 +5522,7 @@ enum PitchLocation {
 
 type PlayerPosition implements Node {
   id: ID!
+  lineup(filter: LineupFilter): Lineup
   player(filter: UserFilter): User!
   playerPositionAssignments(filter: PlayerPositionAssignmentFilter, orderBy: PlayerPositionAssignmentOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): [PlayerPositionAssignment!]
   position(filter: PositionFilter): Position
@@ -5344,6 +5649,8 @@ enum PlayerPositionAssignmentOrderBy {
 }
 
 input PlayerPositionAssignmentplayerPositionPlayerPosition {
+  lineupId: ID
+  lineup: PlayerPositionlineupLineup
   playerId: ID
   player: PlayerPositionplayerUser
   positionId: ID
@@ -5548,11 +5855,20 @@ input PlayerPositionFilter {
 
   """All values not ending with the given string."""
   id_not_ends_with: ID
+  lineup: LineupFilter
   player: UserFilter
   playerPositionAssignments_every: PlayerPositionAssignmentFilter
   playerPositionAssignments_some: PlayerPositionAssignmentFilter
   playerPositionAssignments_none: PlayerPositionAssignmentFilter
   position: PositionFilter
+}
+
+input PlayerPositionlineupLineup {
+  name: String!
+  formationId: ID
+  formation: LineupformationFormation
+  playerPositionsIds: [ID!]
+  playerPositions: [LineupplayerPositionsPlayerPosition!]
 }
 
 enum PlayerPositionOrderBy {
@@ -5597,6 +5913,7 @@ input PlayerPositionplayerUser {
 }
 
 input PlayerPositionpositionPosition {
+  backToFrontPercent: Float
   lateralLocation: LateralLocation
   leftToRightPercent: Float
   name: String!
@@ -5680,6 +5997,7 @@ input PlayerPositionSubscriptionFilterNode {
 
   """All values not ending with the given string."""
   id_not_ends_with: ID
+  lineup: LineupFilter
   player: UserFilter
   playerPositionAssignments_every: PlayerPositionAssignmentFilter
   playerPositionAssignments_some: PlayerPositionAssignmentFilter
@@ -5695,6 +6013,7 @@ type PlayerPositionSubscriptionPayload {
 }
 
 type Position implements Node {
+  backToFrontPercent: Float
   formations(filter: FormationFilter, orderBy: FormationOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): [Formation!]
   id: ID!
   lateralLocation: LateralLocation
@@ -5901,6 +6220,7 @@ input PositionCategorypositionCategoryPreferencesPositionCategoryPreference {
 }
 
 input PositionCategorypositionsPosition {
+  backToFrontPercent: Float
   lateralLocation: LateralLocation
   leftToRightPercent: Float
   name: String!
@@ -6321,6 +6641,28 @@ input PositionFilter {
 
   """Logical OR on all given filters."""
   OR: [PositionFilter!]
+  backToFrontPercent: Float
+
+  """All values that are not equal to given value."""
+  backToFrontPercent_not: Float
+
+  """All values that are contained in given list."""
+  backToFrontPercent_in: [Float!]
+
+  """All values that are not contained in given list."""
+  backToFrontPercent_not_in: [Float!]
+
+  """All values less than the given value."""
+  backToFrontPercent_lt: Float
+
+  """All values less than or equal the given value."""
+  backToFrontPercent_lte: Float
+
+  """All values greater than the given value."""
+  backToFrontPercent_gt: Float
+
+  """All values greater than or equal the given value."""
+  backToFrontPercent_gte: Float
   id: ID
 
   """All values that are not equal to given value."""
@@ -6447,11 +6789,15 @@ input PositionformationsFormation {
   name: String!
   formationSubstitutionIds: [ID!]
   formationSubstitution: [FormationformationSubstitutionFormationSubstitution!]
+  lineupsIds: [ID!]
+  lineups: [FormationlineupsLineup!]
   positionsIds: [ID!]
   positions: [FormationpositionsPosition!]
 }
 
 enum PositionOrderBy {
+  backToFrontPercent_ASC
+  backToFrontPercent_DESC
   id_ASC
   id_DESC
   lateralLocation_ASC
@@ -6463,6 +6809,8 @@ enum PositionOrderBy {
 }
 
 input PositionplayerPositionsPlayerPosition {
+  lineupId: ID
+  lineup: PlayerPositionlineupLineup
   playerId: ID
   player: PlayerPositionplayerUser
   playerPositionAssignmentsIds: [ID!]
@@ -6481,6 +6829,7 @@ input PositionpositionCategoryPositionCategory {
 }
 
 type PositionPreviousValues {
+  backToFrontPercent: Float
   id: ID!
   lateralLocation: LateralLocation
   leftToRightPercent: Float
@@ -6515,6 +6864,28 @@ input PositionSubscriptionFilter {
 }
 
 input PositionSubscriptionFilterNode {
+  backToFrontPercent: Float
+
+  """All values that are not equal to given value."""
+  backToFrontPercent_not: Float
+
+  """All values that are contained in given list."""
+  backToFrontPercent_in: [Float!]
+
+  """All values that are not contained in given list."""
+  backToFrontPercent_not_in: [Float!]
+
+  """All values less than the given value."""
+  backToFrontPercent_lt: Float
+
+  """All values less than or equal the given value."""
+  backToFrontPercent_lte: Float
+
+  """All values greater than the given value."""
+  backToFrontPercent_gt: Float
+
+  """All values greater than or equal the given value."""
+  backToFrontPercent_gte: Float
   id: ID
 
   """All values that are not equal to given value."""
@@ -6908,6 +7279,7 @@ type Query {
   allGameTeamSeasons(filter: GameTeamSeasonFilter, orderBy: GameTeamSeasonOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): [GameTeamSeason!]!
   allLeagues(filter: LeagueFilter, orderBy: LeagueOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): [League!]!
   allLeagueSeasons(filter: LeagueSeasonFilter, orderBy: LeagueSeasonOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): [LeagueSeason!]!
+  allLineups(filter: LineupFilter, orderBy: LineupOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): [Lineup!]!
   allOrganizations(filter: OrganizationFilter, orderBy: OrganizationOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): [Organization!]!
   allPlayerPositions(filter: PlayerPositionFilter, orderBy: PlayerPositionOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): [PlayerPosition!]!
   allPlayerPositionAssignments(filter: PlayerPositionAssignmentFilter, orderBy: PlayerPositionAssignmentOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): [PlayerPositionAssignment!]!
@@ -6932,6 +7304,7 @@ type Query {
   _allGameTeamSeasonsMeta(filter: GameTeamSeasonFilter, orderBy: GameTeamSeasonOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): _QueryMeta!
   _allLeaguesMeta(filter: LeagueFilter, orderBy: LeagueOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): _QueryMeta!
   _allLeagueSeasonsMeta(filter: LeagueSeasonFilter, orderBy: LeagueSeasonOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): _QueryMeta!
+  _allLineupsMeta(filter: LineupFilter, orderBy: LineupOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): _QueryMeta!
   _allOrganizationsMeta(filter: OrganizationFilter, orderBy: OrganizationOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): _QueryMeta!
   _allPlayerPositionsMeta(filter: PlayerPositionFilter, orderBy: PlayerPositionOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): _QueryMeta!
   _allPlayerPositionAssignmentsMeta(filter: PlayerPositionAssignmentFilter, orderBy: PlayerPositionAssignmentOrderBy, skip: Int, after: String, before: String, first: Int, last: Int): _QueryMeta!
@@ -6956,6 +7329,7 @@ type Query {
   GameTeamSeason(id: ID): GameTeamSeason
   League(id: ID): League
   LeagueSeason(id: ID): LeagueSeason
+  Lineup(id: ID): Lineup
   Organization(id: ID): Organization
   PlayerPosition(id: ID): PlayerPosition
   PlayerPositionAssignment(id: ID): PlayerPositionAssignment
@@ -7024,6 +7398,11 @@ type RemoveFromLeagueOnTeamPayload {
 type RemoveFromLeaguesSeasonsPayload {
   leaguesLeague: League
   seasonsSeason: Season
+}
+
+type RemoveFromLineupOnPlayerPositionPayload {
+  lineupLineup: Lineup
+  playerPositionsPlayerPosition: PlayerPosition
 }
 
 type RemoveFromPositionCategoryOnPositionPayload {
@@ -7698,6 +8077,7 @@ type Subscription {
   GameTeamSeason(filter: GameTeamSeasonSubscriptionFilter): GameTeamSeasonSubscriptionPayload
   League(filter: LeagueSubscriptionFilter): LeagueSubscriptionPayload
   LeagueSeason(filter: LeagueSeasonSubscriptionFilter): LeagueSeasonSubscriptionPayload
+  Lineup(filter: LineupSubscriptionFilter): LineupSubscriptionPayload
   Organization(filter: OrganizationSubscriptionFilter): OrganizationSubscriptionPayload
   PlayerPosition(filter: PlayerPositionSubscriptionFilter): PlayerPositionSubscriptionPayload
   PlayerPositionAssignment(filter: PlayerPositionAssignmentSubscriptionFilter): PlayerPositionAssignmentSubscriptionPayload
@@ -8798,6 +9178,8 @@ input UpdateFormation {
   name: String
   formationSubstitutionIds: [ID!]
   formationSubstitution: [FormationformationSubstitutionFormationSubstitution!]
+  lineupsIds: [ID!]
+  lineups: [FormationlineupsLineup!]
   positionsIds: [ID!]
   positions: [FormationpositionsPosition!]
 }
@@ -8938,6 +9320,15 @@ input UpdateLeagueSeason {
   teamSeasons: [LeagueSeasonteamSeasonsTeamSeason!]
 }
 
+input UpdateLineup {
+  id: ID!
+  name: String
+  formationId: ID
+  formation: LineupformationFormation
+  playerPositionsIds: [ID!]
+  playerPositions: [LineupplayerPositionsPlayerPosition!]
+}
+
 input UpdateOrganization {
   id: ID!
   location: String
@@ -8951,6 +9342,8 @@ input UpdateOrganization {
 
 input UpdatePlayerPosition {
   id: ID!
+  lineupId: ID
+  lineup: PlayerPositionlineupLineup
   playerId: ID
   player: PlayerPositionplayerUser
   positionId: ID
@@ -8971,6 +9364,7 @@ input UpdatePlayerPositionAssignment {
 }
 
 input UpdatePosition {
+  backToFrontPercent: Float
   id: ID!
   lateralLocation: LateralLocation
   leftToRightPercent: Float
@@ -9356,6 +9750,8 @@ enum UserOrderBy {
 }
 
 input UserplayerPositionsPlayerPosition {
+  lineupId: ID
+  lineup: PlayerPositionlineupLineup
   positionId: ID
   position: PlayerPositionpositionPosition
   playerPositionAssignmentsIds: [ID!]
