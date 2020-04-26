@@ -357,9 +357,14 @@ export const getGameStatusInfo = ({
   const gameActivityStatus = mostRecentGameActivity
   ? mostRecentGameActivity.gameActivityStatus
   : "PENDING";
+  const isFormationSet = gameTeamSeason &&
+  gameTeamSeason.formationSubstitutions &&
+  gameTeamSeason.formationSubstitutions.length > 0;
+
 
   return {
     isFirstPeriod,
+    isFormationSet,
     gameStatus,
     gamePeriod,
     mostRecentGameActivity,
@@ -805,6 +810,11 @@ const positionSnapshotsMatch = (positionSnapshot1, positionSnapshot2) => {
 
 export const getPlayerDisplayMode = (positionSnapshot, state) => {
   const {selectionInfo} = state;
+
+  // There may not be a positionSnapshot when called by Lineup
+  if (!positionSnapshot) {
+    return playerDisplayModes.unselected;
+  }
 
   if (!positionSnapshot.playerId) {
     if (selectionInfo &&

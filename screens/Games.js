@@ -1,7 +1,7 @@
 import React from 'react';
 import { Query } from "react-apollo";
-import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { Button } from 'react-native-elements';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Button, Icon } from 'react-native-elements';
 import {TEAM_SEASON} from '../graphql/games';
 import {createGameEtc} from '../graphql/game';
 import {withApollo} from 'react-apollo';
@@ -32,9 +32,12 @@ class Games extends React.Component {
   onPressNewGame(teamSeason) {
     const {client} = this.props;
     createGameEtc(client, {
-      name: this.state.newGameName,
+      name: "New Game",
       teamSeason,
       secondsBetweenSubs: 500,
+    })
+    .then((gameTeamSeason) => {
+      this.props.navigation.navigate('Game', { gameTeamSeasonId: gameTeamSeason.id });
     });
   }
 
@@ -94,14 +97,17 @@ class Games extends React.Component {
                       </TouchableOpacity>
                     )}
                   />
-                  <TextInput
-                    style={{height: 40, borderColor: 'gray', borderWidth: 1}}
-                    onChangeText={(newGameName) => this.setState({newGameName})}
-                    value={this.state.newGameName}
-                  />
                   <Button
+                    type="clear"
                     onPress={() => this.onPressNewGame(teamSeasonData.TeamSeason)}
-                    title="New Game"
+                    icon={
+                      <Icon
+                        name="add-circle"
+                        size={35}
+                        color="blue"
+                      />
+                    }
+                    iconRight={true}
                     accessibilityLabel="Create new game"
                   />
                 </View>

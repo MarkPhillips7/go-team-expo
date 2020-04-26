@@ -10,7 +10,7 @@ import {
   createPlayerPosition,
   createPlayerPositionAssignment,
   createSubstitution,
-  getOrCreateFormationSubstitution,
+  // getOrCreateFormationSubstitution,
   updateSubstitution,
   updatePlayerPositionAssignment,
 } from './gamePlan';
@@ -40,6 +40,7 @@ query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
   GameTeamSeason(id: $gameTeamSeasonId) {
     id
     teamSeason {
+      id
       team {
         league {
           gameDefinition {
@@ -612,7 +613,7 @@ export const createGameEtc = (client, {
   let game;
   let gameTeamSeason;
 
-  createGame(client, {
+  return createGame(client, {
     name
   }).then(result => {game = result; console.log(result)})
   .then(() => createGameTeamSeason(client, {
@@ -626,15 +627,16 @@ export const createGameEtc = (client, {
     gameTeamSeason,
     teamSeason,
   })).then(result => {console.log(result)})
-  .then(() => getOrCreateFormationSubstitution(client, {
-    formationId: "cjqcfvx3167k30128b70ieu58",
-    gameActivityType: "PLAN",
-    gameActivityStatus: "PENDING",
-    gameTeamSeason,
-    totalSeconds: 0,
-    gameSeconds: 0,
-  }))
+  // .then(() => getOrCreateFormationSubstitution(client, {
+  //   formationId: "cjqcfvx3167k30128b70ieu58",
+  //   gameActivityType: "PLAN",
+  //   gameActivityStatus: "PENDING",
+  //   gameTeamSeason,
+  //   totalSeconds: 0,
+  //   gameSeconds: 0,
+  // }))
   .then(() => console.log("createGameEtc succeeded"))
+  .then(() => gameTeamSeason)
   .catch((error) => console.log(`error: ${error}`));
 };
 

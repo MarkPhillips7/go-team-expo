@@ -4,18 +4,16 @@ import { Alert, Dimensions, ScrollView, Slider, StyleSheet, Text, View } from 'r
 import { Button } from 'react-native-elements';
 import {withApollo} from 'react-apollo';
 import { activateKeepAwake, deactivateKeepAwake } from 'expo-keep-awake';
-// import gql from "graphql-tag";
+import ChooseLineup from '../components/ChooseLineup';
 import GameHeader from '../components/GameHeader';
+import Lineup from '../components/Lineup';
 import FormationLine from '../components/FormationLine';
 import Player from '../components/Player';
 import Roster from '../components/Roster';
 import moment from 'moment';
 import _ from 'lodash';
 import {
-  // gameRoster as theGameRoster,
   playerAvailability,
-  // specialPositions,
-  // positionCategories,
 } from '../constants/Soccer';
 import {
   addToLineup,
@@ -56,7 +54,6 @@ import {
 const millisecondsBeforeSliderAction = 500;
 
 export default withApollo(
-// export default
 class SoccerField extends React.Component {
   static propTypes = {
     gameDefinition: PropTypes.object,
@@ -78,6 +75,7 @@ class SoccerField extends React.Component {
     // Don't call this.setState() here!
     this.state = this.getInitialState();
 
+    this.onLineupChange = this.onLineupChange.bind(this);
     this.onPressAutoSubs = this.onPressAutoSubs.bind(this);
     this.onPressAddToLineup = this.onPressAddToLineup.bind(this);
     this.onPressRemoveFromLineup = this.onPressRemoveFromLineup.bind(this);
@@ -90,7 +88,8 @@ class SoccerField extends React.Component {
     this.onPressStart = this.onPressStart.bind(this);
     this.onPressStop = this.onPressStop.bind(this);
     this.onPressClearLineup = this.onPressClearLineup.bind(this);
-    this.onPressLineup = this.onPressLineup.bind(this);
+    this.onPressAutomaticLineup = this.onPressAutomaticLineup.bind(this);
+    this.onPressManageLineup = this.onPressManageLineup.bind(this);
     this.updateGame = this.updateGame.bind(this);
     this.onPressPlayer = this.onPressPlayer.bind(this);
     this.onPressCancel = this.onPressCancel.bind(this);
@@ -99,20 +98,28 @@ class SoccerField extends React.Component {
   }
 
   getInitialState() {
+    const {gameTeamSeason} = this.props;
     const {
       timestamp,
       totalSeconds,
       gameSeconds,
       isGameOver,
-    } = getCurrentTimeInfo(this.props.gameTeamSeason);
+    } = getCurrentTimeInfo(gameTeamSeason);
+    const gameStatusInfo = getGameStatusInfo({
+      gameTeamSeason,
+    });
+    const {
+      isFormationSet
+    } = gameStatusInfo;
     const state = {
       clockMultiplier: 1.0,
       isClockRunning: true,
       isGameOver,
-      mode: modes.default,
+      mode: isFormationSet ? modes.default : modes.lineup,
       totalSeconds,
       gameSeconds,
       timestamp,
+      selectedLineup: null
     };
     return state;
   }
@@ -162,6 +169,15 @@ class SoccerField extends React.Component {
     });
   }
 
+  onPressManageLineup() {
+    this.setState((previousState) => {
+      return {
+        ...previousState,
+        mode: previousState.mode === modes.lineup ? modes.default : modes.lineup,
+      };
+    });
+  }
+
   onPressGameDetails() {
     const {gameTeamSeason, navigation} = this.props;
     navigation.navigate('GameDetails', { gameTeamSeasonId: gameTeamSeason.id });
@@ -188,7 +204,7 @@ class SoccerField extends React.Component {
     });
   }
 
-  onPressLineup(){
+  onPressAutomaticLineup(){
     const {client, gameTeamSeason} = this.props;
     createInitialLineup(client, {
       gameTeamSeason,
@@ -283,6 +299,16 @@ class SoccerField extends React.Component {
       totalSeconds,
     })
     .then(this.props.onSubsChange);
+  }
+
+  onLineupChange(selectedLineup){
+    this.setState((previousState) => {
+      // console.log(`selectedLineup`, selectedLineup);
+      return {
+        ...previousState,
+        selectedLineup,
+      };
+    });
   }
 
   onPressAutoSubs(){
@@ -454,7 +480,7 @@ class SoccerField extends React.Component {
         ...previousState,
         mode: previousState.mode === modes.debug ? modes.default : modes.debug,
       };
-    })
+    });
   }
 
 
@@ -625,7 +651,7 @@ class SoccerField extends React.Component {
       flexBasis: playerBasis,
     };
     return {benchStyles, fieldStyles, playerStyles};
-}
+  }
 
   render() {
     const {
@@ -643,6 +669,7 @@ class SoccerField extends React.Component {
       totalSeconds,
       gameSeconds,
       selectionInfo,
+      selectedLineup,
     } = this.state;
     const gameStatusInfo = getGameStatusInfo({
       gameTeamSeason,
@@ -652,7 +679,7 @@ class SoccerField extends React.Component {
       gamePeriod,
       gameActivityType,
       gameActivityStatus,
-      gameDurationSeconds
+      gameDurationSeconds,
     } = gameStatusInfo;
     const gameTimeline = getGameTimeline({
       gameStatus,
@@ -676,6 +703,7 @@ class SoccerField extends React.Component {
       selectionInfo.selections.length || 0;
     const multiplier = Dimensions.get('window').width / 450;
     const {benchStyles, fieldStyles, playerStyles} = this.getDynamicStyles(gameSnapshot, gamePlayers, multiplier);
+    const teamSeasonId = gameTeamSeason.teamSeason.id;
     return (
       <View style={styles.screen}>
         {this.state.mode === modes.debug && (
@@ -707,35 +735,6 @@ class SoccerField extends React.Component {
               }}
               title="State"
             />
-{
-//             <Button
-//               style={styles.button}
-//               onPress={() => {
-//                 const gamePlayers = this.props.client.readQuery({
-//   query: gql`
-//     query {
-//       allGamePlayers(
-//         filter: {
-//           gameTeamSeason: {
-//             id: ${this.props.gameTeamSeasonId}
-//           }
-//         }
-//       ) {
-//         id
-//         availability
-//         player {
-//           id
-//           name
-//         }
-//       }
-//     }
-//   `,
-// });
-//                 console.log("cache: " + JSON.stringify(gamePlayers));
-//               }}
-//               title="GamePlayers Cache"
-//             />
-}
           </ScrollView>
         )}
         {this.state.mode === modes.roster && (
@@ -748,6 +747,22 @@ class SoccerField extends React.Component {
           style={styles.gameHeader}
           gameSeconds={gameSeconds}
           gameTeamSeason={gameTeamSeason}
+        />)}
+        {this.state.mode === modes.lineup && (
+        <Lineup
+          gameSeconds={gameSeconds}
+          gamePlan={gamePlan}
+          gamePlayers={gamePlayers}
+          gameSnapshot={gameSnapshot}
+          isGameOver={this.state.isGameOver}
+          multiplier={multiplier}
+          positionCategories={positionCategories}
+          styles={styles}
+          benchStyles={benchStyles}
+          fieldStyles={fieldStyles}
+          playerStyles={playerStyles}
+          teamSeasonId={teamSeasonId}
+          selectedLineup={selectedLineup}
         />)}
         {this.state.mode === modes.default && (
         <View style={styles.park}>
@@ -852,6 +867,13 @@ class SoccerField extends React.Component {
             )}
           </View>
           <View style={styles.buttons}>
+            {this.state.mode === modes.lineup && (
+              <ChooseLineup
+                onLineupChange={this.onLineupChange}
+                selectedLineup={selectedLineup}
+                teamSeasonId={teamSeasonId}
+              />
+            )}
             {this.state.mode === modes.default &&
               playersSelected === 0 && (
             <Slider
@@ -930,11 +952,6 @@ class SoccerField extends React.Component {
                   onPress={this.onPressDebug}
                   title="Debug"
                 />
-                {/*<Button
-                  style={styles.button}
-                  onPress={this.onPressManageRoster}
-                  title="Roster"
-                />*/}
                 <Button
                   style={styles.button}
                   onPress={this.onPressGameDetails}
@@ -942,7 +959,7 @@ class SoccerField extends React.Component {
                 />
                 <Button
                   style={styles.button}
-                  onPress={this.onPressLineup}
+                  onPress={this.onPressManageLineup}
                   title="Lineup"
                 />
               </Fragment>
@@ -1008,35 +1025,12 @@ class SoccerField extends React.Component {
   }
 });
 
-// const numberOfLineups = 8;
-// const totalDemoSeconds = 15;
-
 const modes = {
   "default": "default",
   debug: "debug",
   roster: "roster",
+  lineup: "lineup",
 };
-//
-// let gamePositions = this.props.players.map((player, index) => {
-//   switch (index) {
-//     case 0:
-//       return specialPositions.keeper;
-//     case 1:
-//       return specialPositions.leftBack;
-//     case 2:
-//       return specialPositions.rightBack;
-//     case 3:
-//       return specialPositions.leftMid;
-//     case 4:
-//       return specialPositions.rightMid;
-//     case 5:
-//       return specialPositions.leftForward;
-//     case 6:
-//       return specialPositions.rightForward;
-//     default:
-//       return specialPositions.substitute;
-//   }
-// });
 
 // let CIRCLE_RADIUS = 30;
 let styles = StyleSheet.create({
@@ -1047,9 +1041,6 @@ let styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // roster: {
-  //   paddingTop: 15,
-  // },
   gameHeader: {
     flex: 1,
     width: '100%',
@@ -1112,17 +1103,4 @@ let styles = StyleSheet.create({
     justifyContent: 'space-around',
     width: '100%',
   },
-  // switch: {
-  //   marginRight: 10,
-  // },
-  // playerAvailability: {
-  //   alignItems: 'center',
-  //   flexDirection: 'row',
-  //   margin: 10,
-  // }
 });
-// player: {
-//   width: CIRCLE_RADIUS * 2 + 40,
-//   height: CIRCLE_RADIUS * 2 + 40,
-//   margin: 10,
-// },
