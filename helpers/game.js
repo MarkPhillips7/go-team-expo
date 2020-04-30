@@ -813,7 +813,7 @@ export const getPlayerDisplayMode = (positionSnapshot, state) => {
 
   // There may not be a positionSnapshot when called by Lineup
   if (!positionSnapshot) {
-    return playerDisplayModes.unselected;
+    return playerDisplayModes.unassigned;
   }
 
   if (!positionSnapshot.playerId) {

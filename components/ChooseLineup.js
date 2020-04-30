@@ -3,8 +3,10 @@ import { Query , withApollo} from 'react-apollo';
 import {PropTypes} from 'prop-types';
 import { Picker, Text } from 'react-native';
 import _ from 'lodash';
-import {RECENT_LINEUPS} from '../graphql/lineup';
+import {RECENT_FORMATIONS_AND_LINEUPS} from '../graphql/lineup';
+// import {RECENT_FORMATIONS} from '../graphql/formation';
 import {
+  getBlankLineupFromFormation,
   getLineupFromGameTeamSeason,
 } from '../helpers/lineup';
 
@@ -24,7 +26,7 @@ class ChooseLineup extends React.Component {
     } = this.props;
     return (
       <Query
-        query={RECENT_LINEUPS}
+        query={RECENT_FORMATIONS_AND_LINEUPS}
         variables={{teamSeasonId}}
         notifyOnNetworkStatusChange
       >
@@ -33,25 +35,29 @@ class ChooseLineup extends React.Component {
           if (loading) return <Text>Loading...</Text>;
           if (error) { console.log(JSON.stringify(error)); return <Text>Error</Text>;}
 
-          const lineupOptions = data &&
+          const recentLineupOptions = data &&
             data.TeamSeason &&
             data.TeamSeason.gameTeamSeasons &&
             data.TeamSeason.gameTeamSeasons.map(getLineupFromGameTeamSeason);
+          const recentBlankFormationOptions = data &&
+            data.allFormations &&
+            data.allFormations.map(getBlankLineupFromFormation);
+          const lineupOptions = [
+            ...recentLineupOptions,
+            ...recentBlankFormationOptions,
+          ]
           return (
             <Picker
-              selectedValue={selectedLineup}
-              style={{ height: 50, width: 150 }}
-              onValueChange={onLineupChange}
+              prompt="Select a lineup"
+              selectedValue={selectedLineup && selectedLineup.id}
+              style={{ height: 50, width: 250 }}
+              onValueChange={(lineupId) => onLineupChange(_.find(lineupOptions, (lineupOption) => lineupOption.id == lineupId))}
             >
-              <Picker.Item
-                label="Select a formation or lineup"
-                value={null} 
-              />
               {_.map(lineupOptions, (lineupOption, index) => (
                 <Picker.Item
                   label={lineupOption.name}
                   key={index}
-                  value={lineupOption}
+                  value={lineupOption.id}
                 />
               ))}
 

@@ -1,20 +1,21 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import {PropTypes} from 'prop-types';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 export default class FormationLine extends React.Component {
+  static propTypes = {
+    lineOrientation: PropTypes.string,
+    children: PropTypes.array,
+    positionCategory: PropTypes.object.isRequired,
+  };
   render() {
     const formationColor = this.props.positionCategory ? this.props.positionCategory.color : "white";
-    // const containerStyle = {
-    //   ...(this.props.style || {}),
-    //   ...(styles.formationContainer || {})
-    // };
-    const flexDirection = "row";//this.props.lineOrientation === "horizontal" ? "row" : "column";
+    const horizontal = this.props.lineOrientation === "horizontal";
+    const flexDirection = horizontal ? "row" : "column";
     const _formationLineStyle = {
       flex: 1,
-      flexWrap: 'wrap',
-      //alignItems: 'flex-start',//'center',
       justifyContent: 'center',
-      flexDirection,
+      flexDirection: 'row',
       height: "97%",
     }
 
@@ -24,6 +25,12 @@ export default class FormationLine extends React.Component {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'flex-start',
+      },
+      playerContainerStyle: {
+        flexGrow: 1, // https://medium.com/@peterpme/taming-react-natives-scrollview-with-flex-144e6ff76c08
+        flexDirection,
+        alignItems: 'center',
+        justifyContent: 'space-evenly',
       },
       formationLineStyle: _formationLineStyle,
     });
@@ -39,7 +46,13 @@ export default class FormationLine extends React.Component {
         <View
           style={formationLineStyle}
         >
-          {this.props.children}
+          <ScrollView
+             horizontal={horizontal}
+             contentContainerStyle={styles.playerContainerStyle}
+             persistentScrollbar={true}
+          >
+            {this.props.children}
+          </ScrollView>
         </View>
       </View>
     );

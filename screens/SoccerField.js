@@ -1069,7 +1069,7 @@ let styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     margin: 10,
-    width: 100,
+    //width: 70,
   },
   slider: {
     width: 100,

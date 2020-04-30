@@ -68,7 +68,7 @@ class Lineup extends React.Component {
     };
     const fieldStyles = {
       ...styles.field,
-      flex: 2,
+      flex: 3,
     };
     return (
       <View style={styles.park}>
@@ -91,10 +91,11 @@ class Lineup extends React.Component {
                 .map((position, positionIndex) => {
                   const playerPosition = _.find(selectedLineup.playerPositions, (playerPosition) => playerPosition.position.id == position.id);
                   const gamePlayer = playerPosition && _.find(gamePlayers, (gamePlayer) =>
-                    gamePlayer.availability !== playerAvailability.unavailable && 
+                    gamePlayer.availability !== playerAvailability.unavailable &&
                     gamePlayer.player.id === playerPosition.player.id);
                   const playerId = gamePlayer && gamePlayer.player.id;
-                  const positionSnapshot = _.find(gameSnapshot.positions, (positionSnapshot) => positionSnapshot.playerId == playerId);
+                  const positionSnapshot = _.find(gameSnapshot.positions, (positionSnapshot) => positionSnapshot.playerId == playerId)
+                    || {playerId};
                   return (
                     <Player
                       key={positionIndex}
