@@ -50,6 +50,9 @@ import {
   playerIsOnBench,
   selectionsPartOfPlannedSubstitution,
 } from '../helpers/game';
+import {
+  addToSelectedLineup,
+} from '../helpers/lineup';
 
 const millisecondsBeforeSliderAction = 500;
 
@@ -119,7 +122,8 @@ class SoccerField extends React.Component {
       totalSeconds,
       gameSeconds,
       timestamp,
-      selectedLineup: null
+      selectedLineup: null,
+      selectionInfo: undefined
     };
     return state;
   }
@@ -325,7 +329,8 @@ class SoccerField extends React.Component {
   }
 
   onPressAddToLineup() {
-    const {client, gameTeamSeason} = this.props;
+    const {client, gamePlayers, gameTeamSeason} = this.props;
+    const {mode, selectedLineup} = this.state;
     const {
       // timestamp,
       gameSeconds,
@@ -338,18 +343,34 @@ class SoccerField extends React.Component {
     }
     const positionSnapshotFrom = _.find(selectionInfo.selections, (selection) => selection.playerId);
     const positionSnapshotTo = _.find(selectionInfo.selections, (selection) => !selection.playerId);
-    const playerPositionAssignmentType = gameSeconds === 0 ? "INITIAL" : "IN";
-    addToLineup(client, {
-      gameTeamSeason,
-      gameActivityType: gameSeconds === 0 ? "PLAN" : "OFFICIAL",
-      gameActivityStatus: gameSeconds === 0 ? "PENDING" : "COMPLETED",
-      gameSeconds,
-      totalSeconds,
-      positionSnapshotFrom,
-      positionSnapshotTo,
-      playerPositionAssignmentType,
-    })
-    .then(this.props.onSubsChange);
+    if (mode === modes.lineup) {
+      const newSelectedLineup = addToSelectedLineup({
+        gamePlayers,
+        selectedLineup,
+        positionSnapshotFrom,
+        positionSnapshotTo,
+      });
+      this.setState((previousState) => {
+        return {
+          ...previousState,
+          selectedLineup: newSelectedLineup,
+          selectionInfo: undefined
+        };
+      });
+    } else {
+      const playerPositionAssignmentType = gameSeconds === 0 ? "INITIAL" : "IN";
+      addToLineup(client, {
+        gameTeamSeason,
+        gameActivityType: gameSeconds === 0 ? "PLAN" : "OFFICIAL",
+        gameActivityStatus: gameSeconds === 0 ? "PENDING" : "COMPLETED",
+        gameSeconds,
+        totalSeconds,
+        positionSnapshotFrom,
+        positionSnapshotTo,
+        playerPositionAssignmentType,
+      })
+      .then(this.props.onSubsChange);
+    }
   }
 
   onPressRemoveFromLineup() {
@@ -750,8 +771,10 @@ class SoccerField extends React.Component {
         />)}
         {this.state.mode === modes.lineup && (
         <Lineup
+          state={this.state}
           gameSeconds={gameSeconds}
           gamePlan={gamePlan}
+          gameTeamSeason={gameTeamSeason}
           gamePlayers={gamePlayers}
           gameSnapshot={gameSnapshot}
           isGameOver={this.state.isGameOver}
@@ -763,6 +786,7 @@ class SoccerField extends React.Component {
           playerStyles={playerStyles}
           teamSeasonId={teamSeasonId}
           selectedLineup={selectedLineup}
+          onPressPlayer={this.onPressPlayer}
         />)}
         {this.state.mode === modes.default && (
         <View style={styles.park}>

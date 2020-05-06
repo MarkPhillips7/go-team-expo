@@ -7,5 +7,6 @@ export const lineupPropTypes = {
   id: PropTypes.string, // May not actually be a saved lineup, so not required
   name: PropTypes.string.isRequired,
   formation: PropTypes.object,
-  playerPositions: PropTypes.array
+  playerPositions: PropTypes.array,
+  isCustom: PropTypes.bool,
 };

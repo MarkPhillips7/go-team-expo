@@ -42,9 +42,16 @@ class ChooseLineup extends React.Component {
           const recentBlankFormationOptions = data &&
             data.allFormations &&
             data.allFormations.map(getBlankLineupFromFormation);
+          const selectedLineupsIfNotExisting =
+            selectedLineup && 
+            !_.find(recentLineupOptions, (option) => option.id == selectedLineup.id) &&
+            !_.find(recentBlankFormationOptions, (option) => option.id == selectedLineup.id)
+            ? [selectedLineup]
+            : [];
           const lineupOptions = [
             ...recentLineupOptions,
             ...recentBlankFormationOptions,
+            ...selectedLineupsIfNotExisting,
           ]
           return (
             <Picker
@@ -53,6 +60,10 @@ class ChooseLineup extends React.Component {
               style={{ height: 50, width: 250 }}
               onValueChange={(lineupId) => onLineupChange(_.find(lineupOptions, (lineupOption) => lineupOption.id == lineupId))}
             >
+              <Picker.Item
+                label="Select a lineup"
+                value={null}
+              />
               {_.map(lineupOptions, (lineupOption, index) => (
                 <Picker.Item
                   label={lineupOption.name}

@@ -7,6 +7,7 @@ import _ from 'lodash';
 // import {withApollo} from 'react-apollo';
 import {
   getPlayerDisplayMode,
+  // getPlayerPressedSelectionInfo,
 } from '../helpers/game';
 import {
   playerAvailability,
@@ -15,42 +16,45 @@ import {
 export default //withApollo(
 class Lineup extends React.Component {
   static propTypes = {
+    state: PropTypes.object,
     gameSnapshot: PropTypes.object,
+    gameTeamSeason: PropTypes.object,
     gamePlan: PropTypes.object,
     gamePlayers: PropTypes.array,
     gameSeconds: PropTypes.number,
     isGameOver: PropTypes.bool,
     multiplier: PropTypes.number,
     positionCategories: PropTypes.array,
-    // onLineupChange: PropTypes.func.isRequired,
+    onPressPlayer: PropTypes.func.isRequired,
     styles: PropTypes.object,
     benchStyles: PropTypes.object,
     fieldStyles: PropTypes.object,
     playerStyles: PropTypes.object,
     selectedLineup: PropTypes.object,
   }
-
-  constructor(props) {
-    super(props);
-    // Don't call this.setState() here!
-    this.state = {}//this.getInitialState();
-
-    this.onPressPlayer = this.onPressPlayer.bind(this);
-  }
-
-  onPressPlayer() {//(positionSnapshot, {gameSnapshot}) {
-    // this.setState((previousState) => {
-    //   const {gameTeamSeason} = this.props;
-    //   const selectionInfo = getPlayerPressedSelectionInfo(previousState, positionSnapshot, {gameTeamSeason, gameSnapshot});
-    //   return {
-    //     ...previousState,
-    //     selectionInfo,
-    //   };
-    // });
-  }
+  //
+  // constructor(props) {
+  //   super(props);
+  //   // Don't call this.setState() here!
+  //   // this.state = {}//this.getInitialState();
+  //
+  //   this.onPressPlayer = this.onPressPlayer.bind(this);
+  // }
+  //
+  // onPressPlayer(positionSnapshot, {gameSnapshot}) {
+  //   this.setState((previousState) => {
+  //     const {gameTeamSeason} = this.props;
+  //     const selectionInfo = getPlayerPressedSelectionInfo(previousState, positionSnapshot, {gameTeamSeason, gameSnapshot});
+  //     return {
+  //       ...previousState,
+  //       selectionInfo,
+  //     };
+  //   });
+  // }
 
   render() {
     const {
+      state,
       styles,
       playerStyles,
       gameSeconds,
@@ -61,6 +65,7 @@ class Lineup extends React.Component {
       multiplier,
       positionCategories,
       selectedLineup,
+      onPressPlayer,
     } = this.props;
     const benchStyles = {
       ...styles.bench,
@@ -70,6 +75,7 @@ class Lineup extends React.Component {
       ...styles.field,
       flex: 3,
     };
+    // console.log(selectedLineup);
     return (
       <View style={styles.park}>
         <View style={fieldStyles}>
@@ -94,8 +100,13 @@ class Lineup extends React.Component {
                     gamePlayer.availability !== playerAvailability.unavailable &&
                     gamePlayer.player.id === playerPosition.player.id);
                   const playerId = gamePlayer && gamePlayer.player.id;
-                  const positionSnapshot = _.find(gameSnapshot.positions, (positionSnapshot) => positionSnapshot.playerId == playerId)
-                    || {playerId};
+                  const positionSnapshot = _.find(gameSnapshot.positions, (positionSnapshot) => positionSnapshot.playerId && positionSnapshot.playerId == playerId)
+                    || {
+                      playerId,
+                      event: {
+                        position
+                      }
+                    };
                   return (
                     <Player
                       key={positionIndex}
@@ -111,8 +122,8 @@ class Lineup extends React.Component {
                       playerStats={gameSnapshot.players[playerId]}
                       pendingMove={gameSnapshot.players[playerId] && gameSnapshot.players[playerId].pendingMove}
                       piePieces={gameSnapshot.players[playerId] && gameSnapshot.players[playerId].piePieces}
-                      playerDisplayMode={getPlayerDisplayMode(positionSnapshot, this.state)}
-                      onPress={() => this.onPressPlayer(positionSnapshot, {gameSnapshot})}
+                      playerDisplayMode={getPlayerDisplayMode(positionSnapshot, state)}
+                      onPress={() => onPressPlayer(positionSnapshot, {gameSnapshot})}
                     />
                   );
                 })
@@ -154,8 +165,8 @@ class Lineup extends React.Component {
                     playerStats={gameSnapshot.players[gamePlayer.player.id]}
                     pendingMove={gameSnapshot.players[gamePlayer.player.id].pendingMove}
                     piePieces={gameSnapshot.players[gamePlayer.player.id].piePieces}
-                    playerDisplayMode={getPlayerDisplayMode({playerId:gamePlayer.player.id}, this.state)}
-                    onPress={() => this.onPressPlayer({playerId:gamePlayer.player.id}, {gameSnapshot})}
+                    playerDisplayMode={getPlayerDisplayMode({playerId:gamePlayer.player.id}, state)}
+                    onPress={() => onPressPlayer({playerId:gamePlayer.player.id}, {gameSnapshot})}
                   />
                 ))
                 .value()

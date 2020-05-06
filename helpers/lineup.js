@@ -1,3 +1,4 @@
+import _ from 'lodash';
 
 export const getLineupFromGameTeamSeason = (gameTeamSeason) => {
   const lineupName = `${gameTeamSeason && gameTeamSeason.name} starting lineup`;
@@ -29,5 +30,35 @@ export const getBlankLineupFromFormation = (formation) => {
     name: lineupName,
     formation,
     playerPositions,
+  };
+}
+
+export const addToSelectedLineup = ({
+  gamePlayers,
+  selectedLineup,
+  positionSnapshotFrom,
+  positionSnapshotTo,
+}) => {
+  const id =  selectedLineup.isCustom ? selectedLineup.id : `CustomFrom${selectedLineup.id}`;
+  const name =  selectedLineup.isCustom ? selectedLineup.name : `Custom from ${selectedLineup.name}`;
+  const {player} = _.find(gamePlayers, (gamePlayer) => gamePlayer.player.id === positionSnapshotFrom.playerId);
+  const position = positionSnapshotTo.event.position;
+  const playerPositionToRemoveIndex = _.findIndex(selectedLineup.playerPositions,
+    (playerPosition) => playerPosition.position.id === positionSnapshotTo.event.position.id);
+  const newPlayerPosition = {
+    player,
+    position,
+  };
+  const playerPositions = [
+    ..._.slice(selectedLineup.playerPositions, 0, playerPositionToRemoveIndex),
+    newPlayerPosition,
+    ..._.slice(selectedLineup.playerPositions, playerPositionToRemoveIndex + 1),
+  ]
+  return {
+    ...selectedLineup,
+    id,
+    name,
+    playerPositions,
+    isCustom: true,
   };
 }
