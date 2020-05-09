@@ -1,11 +1,11 @@
-import React, {Fragment} from 'react';
+import React from 'react';
 import {PropTypes} from 'prop-types';
-import { Alert, Dimensions, ScrollView, Slider, StyleSheet, Text, View } from 'react-native';
-import { Button } from 'react-native-elements';
+import { Alert, Dimensions, StyleSheet, View } from 'react-native';
 import {withApollo} from 'react-apollo';
 import { activateKeepAwake, deactivateKeepAwake } from 'expo-keep-awake';
-import ChooseLineup from '../components/ChooseLineup';
 import GameHeader from '../components/GameHeader';
+import GameFooter from '../components/GameFooter';
+import DebugGame from '../components/DebugGame';
 import Lineup from '../components/Lineup';
 import ActiveGame from '../components/ActiveGame';
 import Roster from '../components/Roster';
@@ -29,10 +29,6 @@ import {
 } from '../graphql/game';
 import {
   canApplyPlannedSubstitution,
-  canRemoveFromLineup,
-  canRemoveSelectedSubs,
-  canSetLineup,
-  canSubstitute,
   getAllFieldPlayersSelectionInfo,
   getCurrentTimeInfo,
   getCancelPressedSelectionInfo,
@@ -47,7 +43,7 @@ import {
 import {
   addToSelectedLineup,
 } from '../helpers/lineup';
-
+import {gameManagerModes} from '../constants/Game';
 const millisecondsBeforeSliderAction = 500;
 
 export default withApollo(
@@ -55,7 +51,6 @@ class GameManager extends React.Component {
   static propTypes = {
     gameDefinition: PropTypes.object,
     gameTeamSeasonId: PropTypes.string.isRequired,
-    gameState: PropTypes.object,
     gamePlan: PropTypes.object,
     gameTeamSeason: PropTypes.object,
     gamePlayers: PropTypes.array,
@@ -109,10 +104,9 @@ class GameManager extends React.Component {
       isFormationSet
     } = gameStatusInfo;
     const state = {
-      clockMultiplier: 1.0,
       isClockRunning: true,
       isGameOver,
-      mode: isFormationSet ? modes.default : modes.lineup,
+      mode: isFormationSet ? gameManagerModes.default : gameManagerModes.lineup,
       totalSeconds,
       gameSeconds,
       timestamp,
@@ -135,7 +129,7 @@ class GameManager extends React.Component {
 
     console.log(`gameStatusInfo`,gameStatusInfo);
 
-    // If the game is in progress we need to update clocks every second
+    // If the game is in progress we need to update clock every second
     if (gameStatusInfo.gameStatus === "IN_PROGRESS") {
       if (!this.state.updateGameTimer) {
         const updateGameTimer = setTimeout(this.updateGame, 0);
@@ -162,7 +156,7 @@ class GameManager extends React.Component {
     this.setState((previousState) => {
       return {
         ...previousState,
-        mode: previousState.mode === modes.roster ? modes.default : modes.roster,
+        mode: previousState.mode === gameManagerModes.roster ? gameManagerModes.default : gameManagerModes.roster,
       };
     });
   }
@@ -171,7 +165,7 @@ class GameManager extends React.Component {
     this.setState((previousState) => {
       return {
         ...previousState,
-        mode: previousState.mode === modes.lineup ? modes.default : modes.lineup,
+        mode: previousState.mode === gameManagerModes.lineup ? gameManagerModes.default : gameManagerModes.lineup,
       };
     });
   }
@@ -337,7 +331,7 @@ class GameManager extends React.Component {
     }
     const positionSnapshotFrom = _.find(selectionInfo.selections, (selection) => selection.playerId);
     const positionSnapshotTo = _.find(selectionInfo.selections, (selection) => !selection.playerId);
-    if (mode === modes.lineup) {
+    if (mode === gameManagerModes.lineup) {
       const newSelectedLineup = addToSelectedLineup({
         gamePlayers,
         selectedLineup,
@@ -493,7 +487,7 @@ class GameManager extends React.Component {
     this.setState((previousState) => {
       return {
         ...previousState,
-        mode: previousState.mode === modes.debug ? modes.default : modes.debug,
+        mode: previousState.mode === gameManagerModes.debug ? gameManagerModes.default : gameManagerModes.debug,
       };
     });
   }
@@ -633,7 +627,6 @@ class GameManager extends React.Component {
     const {
       gamePlan,
       gamePlayers,
-      gameState,
       gameTeamSeason,
       positionCategories
     } = this.props;
@@ -644,7 +637,6 @@ class GameManager extends React.Component {
       timestamp,
       totalSeconds,
       gameSeconds,
-      selectionInfo,
       selectedLineup,
     } = this.state;
     const gameStatusInfo = getGameStatusInfo({
@@ -652,9 +644,6 @@ class GameManager extends React.Component {
     });
     const {
       gameStatus,
-      gamePeriod,
-      gameActivityType,
-      gameActivityStatus,
       gameDurationSeconds,
     } = gameStatusInfo;
     const gameTimeline = getGameTimeline({
@@ -674,56 +663,27 @@ class GameManager extends React.Component {
       gameDurationSeconds,
       gameStatus,
     });
-    const playersSelected = selectionInfo &&
-      selectionInfo.selections &&
-      selectionInfo.selections.length || 0;
     const multiplier = Dimensions.get('window').width / 450;
-    const teamSeasonId = gameTeamSeason.teamSeason.id;
     return (
       <View style={styles.screen}>
-        {this.state.mode === modes.debug && (
-          <ScrollView>
-            <Text>
-              gameDurationSeconds {this.state && this.state.gameDurationSeconds}
-            </Text>
-            <Text>
-              isGameOver {this.state && this.state.isGameOver}
-            </Text>
-            <Slider
-              minimumValue={1}
-              maximumValue={200}
-              onValueChange={(clockMultiplier) => {
-                // console.log(`hello ${clockMultiplier}`);
-                this.setState((previousState) => {
-                  return {
-                    ...previousState,
-                    clockMultiplier
-                  }
-                });
-              }}
-              value={gameState.clockMultiplier}
-            />
-            <Button
-              style={styles.button}
-              onPress={() => {
-                console.log(JSON.stringify(this.state));
-              }}
-              title="State"
-            />
-          </ScrollView>
+        {this.state.mode === gameManagerModes.debug && (
+          <DebugGame
+            gameState={this.state}
+          />
         )}
-        {this.state.mode === modes.roster && (
+        {this.state.mode === gameManagerModes.roster && (
           <Roster
             gameRoster={gamePlayers}
           />
         )}
-        {this.state.mode === modes.default && (
-        <GameHeader
-          style={styles.gameHeader}
-          gameSeconds={gameSeconds}
-          gameTeamSeason={gameTeamSeason}
-        />)}
-        {this.state.mode === modes.lineup && (
+        {(this.state.mode === gameManagerModes.default ||
+          this.state.mode === gameManagerModes.lineup) && (
+          <GameHeader
+            gameSeconds={gameSeconds}
+            gameTeamSeason={gameTeamSeason}
+          />
+        )}
+        {this.state.mode === gameManagerModes.lineup && (
         <Lineup
           gameState={this.state}
           gameSnapshot={gameSnapshot}
@@ -735,7 +695,7 @@ class GameManager extends React.Component {
           styles={styles}
           selectedLineup={selectedLineup}
         />)}
-        {this.state.mode === modes.default && (
+        {this.state.mode === gameManagerModes.default && (
         <ActiveGame
           gameState={this.state}
           gameSnapshot={gameSnapshot}
@@ -748,181 +708,32 @@ class GameManager extends React.Component {
           styles={styles}
         />
         )}
-        <View style={styles.inputArea}>
-          <View style={styles.instructions}>
-            {playersSelected === 1 && (
-              <Text>
-                Select another player for substitution
-              </Text>
-            )}
-          </View>
-          <View style={styles.buttons}>
-            {this.state.mode === modes.lineup && (
-              <ChooseLineup
-                onLineupChange={this.onLineupChange}
-                selectedLineup={selectedLineup}
-                teamSeasonId={teamSeasonId}
-              />
-            )}
-            {this.state.mode === modes.default &&
-              playersSelected === 0 && (
-            <Slider
-              style={styles.slider}
-              minimumValue={0}
-              maximumValue={Math.min(7200, gameDurationSeconds)}
-              onValueChange={(gameSeconds) => {
-                // console.log(`hello ${gameSeconds}`);
-                // only update gameSeconds after so much time since last slider move
-                this.setState((previousState) => {
-                  return {
-                    ...previousState,
-                    lastSliderMoveTime: moment(),
-                  }
-                });
-                setTimeout(() => this.onSliderMove(gameSeconds), millisecondsBeforeSliderAction);
-              }}
-              value={gameSeconds}
-            />
-            )}
-            {playersSelected === 0 && (
-              <Fragment>
-                {gamePeriod &&
-                  ((gameStatus === "SCHEDULED" && gameActivityType === "PLAN") ||
-                  (gameStatus === "IN_PROGRESS" && gameActivityType === "OFFICIAL" &&
-                  gameActivityStatus === "STOPPED")) &&
-                  <Button
-                    style={styles.button}
-                    onPress={this.onPressStart}
-                    title={`Start ${gamePeriod.name}`}
-                  />
-                }
-                {gamePeriod &&
-                  (gameStatus === "IN_PROGRESS" &&
-                  gameActivityType === "OFFICIAL" &&
-                  gameActivityStatus === "IN_PROGRESS") &&
-                  <Button
-                    style={styles.button}
-                    onPress={this.onPressStop}
-                    title={`End ${gamePeriod.name}`}
-                  />
-                }
-                {gamePeriod &&
-                  gameStatus === "IN_PROGRESS" &&
-                  gameActivityType === "OFFICIAL" &&
-                  // gameActivityStatus === "IN_PROGRESS" &&
-                  canApplyPlannedSubstitution(gameTeamSeason) &&
-                  <Button
-                    style={styles.button}
-                    onPress={this.onPressSubNow}
-                    title="Sub Now"
-                  />
-                }
-                {gamePeriod &&
-                  gameStatus === "IN_PROGRESS" &&
-                  gameActivityType === "OFFICIAL" &&
-                  gameActivityStatus === "STOPPED" &&
-                  <Button
-                    style={styles.button}
-                    onPress={this.onPressClearLineup}
-                    title="Clear Lineup"
-                  />
-                }
-                <Button
-                  style={styles.button}
-                  onPress={this.onPressAutoSubs}
-                  title="Auto Subs"
-                />
-                <Button
-                  style={styles.button}
-                  onPress={this.onPressDelete}
-                  title="Delete"
-                />
-                <Button
-                  style={styles.button}
-                  onPress={this.onPressDebug}
-                  title="Debug"
-                />
-                <Button
-                  style={styles.button}
-                  onPress={this.onPressGameDetails}
-                  title="Edit"
-                />
-                <Button
-                  style={styles.button}
-                  onPress={this.onPressManageLineup}
-                  title="Lineup"
-                />
-              </Fragment>
-            )}
-            {playersSelected > 0 && (
-              <Fragment>
-                <Button
-                  style={styles.button}
-                  onPress={this.onPressDelete}
-                  title="Delete"
-                />
-                <Button
-                  style={styles.button}
-                  onPress={this.onPressCancel}
-                  title="Cancel"
-                />
-                {canRemoveFromLineup(selectionInfo) &&
-                  <Button
-                    style={styles.button}
-                    onPress={this.onPressRemoveFromLineup}
-                    title="Remove from lineup"
-                  />
-                }
-              </Fragment>
-            )}
-            {playersSelected > 1 && (
-              <Fragment>
-                {gameStatus === "IN_PROGRESS" &&
-                canSubstitute({selectionInfo, gameActivityType: "OFFICIAL"}) && (
-                  <Button
-                    style={styles.button}
-                    onPress={this.onPressSubNow}
-                    title="Sub Now"
-                  />
-                )}
-                {canSubstitute({selectionInfo, gameActivityType: "PLAN"}) && (
-                  <Button
-                    style={styles.button}
-                    onPress={this.onPressSubNextTime}
-                    title="Sub Next Time"
-                  />
-                )}
-                {canRemoveSelectedSubs(selectionInfo) && (
-                  <Button
-                    style={styles.button}
-                    onPress={this.onPressRemoveSelectedSubs}
-                    title="Remove Selected Sub"
-                  />
-                )}
-                {canSetLineup(selectionInfo) && (
-                  <Button
-                    style={styles.button}
-                    onPress={this.onPressAddToLineup}
-                    title="Add to Lineup"
-                  />
-                )}
-              </Fragment>
-            )}
-          </View>
-        </View>
+        <GameFooter
+          gameState={this.state}
+          gameStatusInfo={gameStatusInfo}
+          gameTeamSeason={gameTeamSeason}
+          onLineupChange={this.onLineupChange}
+          onPressStart={this.onPressStart}
+          onPressStop={this.onPressStop}
+          onPressSubNow={this.onPressSubNow}
+          onPressClearLineup={this.onPressClearLineup}
+          onPressAutoSubs={this.onPressAutoSubs}
+          onSliderMove={this.onSliderMove}
+          onPressDelete={this.onPressDelete}
+          onPressDebug={this.onPressDebug}
+          onPressGameDetails={this.onPressGameDetails}
+          onPressManageLineup={this.onPressManageLineup}
+          onPressCancel={this.onPressCancel}
+          onPressRemoveFromLineup={this.onPressRemoveFromLineup}
+          onPressSubNextTime={this.onPressSubNextTime}
+          onPressRemoveSelectedSubs={this.onPressRemoveSelectedSubs}
+          onPressAddToLineup={this.onPressAddToLineup}
+        />
       </View>
     );
   }
 });
 
-const modes = {
-  "default": "default",
-  debug: "debug",
-  roster: "roster",
-  lineup: "lineup",
-};
-
-// let CIRCLE_RADIUS = 30;
 let styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -930,10 +741,6 @@ let styles = StyleSheet.create({
     backgroundColor: 'white',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  gameHeader: {
-    flex: 1,
-    width: '100%',
   },
   park: {
     flex: 12,
@@ -958,39 +765,8 @@ let styles = StyleSheet.create({
     flexBasis: 70,
     alignItems: 'center',
     justifyContent: 'center',
-    margin: 10,
-    //width: 70,
-  },
-  slider: {
-    width: 100,
-  },
-  inputArea: {
-    flex: 3,
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    height: '100%',
-    width: '100%',
-  },
-  buttons: {
-    display: 'flex',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    height: '100%',
-    width: '100%',
   },
   button: {
     margin: 3,
-    //height: 30,
-  },
-  instructions: {
-    display: 'flex',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    width: '100%',
   },
 });

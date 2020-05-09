@@ -34,7 +34,6 @@ class Game extends React.Component {
                 data.GameTeamSeason.teamSeason && data.GameTeamSeason.teamSeason.team &&
                 data.GameTeamSeason.teamSeason.team.league && data.GameTeamSeason.teamSeason.team.league.gameDefinition}
               gameTeamSeasonId={gameTeamSeasonId}
-              gameState={{clockMultiplier: 5.0}}
               gamePlan={data && data.GameTeamSeason && data.GameTeamSeason.gamePlan}
               gameTeamSeason={data && data.GameTeamSeason}
               gamePlayers={data && data.GameTeamSeason && data.GameTeamSeason.gamePlayers}

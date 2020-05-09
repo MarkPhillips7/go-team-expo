@@ -8,6 +8,7 @@ query {
     gameTeamSeasons {
       id
       game {
+        id
         scheduledStartTime
         name
         location
