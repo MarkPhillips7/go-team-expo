@@ -7,14 +7,10 @@ import { activateKeepAwake, deactivateKeepAwake } from 'expo-keep-awake';
 import ChooseLineup from '../components/ChooseLineup';
 import GameHeader from '../components/GameHeader';
 import Lineup from '../components/Lineup';
-import FormationLine from '../components/FormationLine';
-import Player from '../components/Player';
+import ActiveGame from '../components/ActiveGame';
 import Roster from '../components/Roster';
 import moment from 'moment';
 import _ from 'lodash';
-import {
-  playerAvailability,
-} from '../constants/Soccer';
 import {
   addToLineup,
   createInitialLineup,
@@ -45,9 +41,7 @@ import {
   getGameSnapshot,
   getGameStatusInfo,
   getNextPlannedSubstitution,
-  getPlayerDisplayMode,
   getPlayerPressedSelectionInfo,
-  playerIsOnBench,
   selectionsPartOfPlannedSubstitution,
 } from '../helpers/game';
 import {
@@ -57,7 +51,7 @@ import {
 const millisecondsBeforeSliderAction = 500;
 
 export default withApollo(
-class SoccerField extends React.Component {
+class GameManager extends React.Component {
   static propTypes = {
     gameDefinition: PropTypes.object,
     gameTeamSeasonId: PropTypes.string.isRequired,
@@ -635,45 +629,6 @@ class SoccerField extends React.Component {
     });
   }
 
-  getFlexValues(gameSnapshot, gamePlayers, multiplier) {
-    const positionCount = _.keys(gameSnapshot.positions).length;
-    const benchCount =
-    _.filter(gamePlayers, (gamePlayer) =>
-      gamePlayer.availability === playerAvailability.active &&
-      gameSnapshot.players[gamePlayer.player.id] &&
-      (!gameSnapshot.players[gamePlayer.player.id].activeEvent ||
-      !gameSnapshot.players[gamePlayer.player.id].activeEvent.position)).length;
-
-    // Intention is that the flex value would match max number of players from left right.
-    // Currently using 1-2-2-2 formation and fieldFlex is 2 as desired.
-    // This approximation would not work for 1-3-2-1 formation though.
-    const fieldFlex = Math.floor((positionCount - 1) / 4) + 1;
-    const benchFlex = Math.floor((benchCount - 1) / 4) + 1;
-    const playerBasis = Math.floor(280 / (fieldFlex + benchFlex)) * multiplier;
-    return {
-      fieldFlex,
-      benchFlex,
-      playerBasis,
-    };
-  }
-
-  getDynamicStyles(gameSnapshot, gamePlayers, multiplier) {
-    const {benchFlex, fieldFlex, playerBasis} = this.getFlexValues(gameSnapshot, gamePlayers, multiplier);
-    const benchStyles = {
-      ...styles.bench,
-      flex: benchFlex,
-    };
-    const fieldStyles = {
-      ...styles.field,
-      flex: fieldFlex,
-    };
-    const playerStyles = {
-      ...styles.player,
-      flexBasis: playerBasis,
-    };
-    return {benchStyles, fieldStyles, playerStyles};
-  }
-
   render() {
     const {
       gamePlan,
@@ -723,7 +678,6 @@ class SoccerField extends React.Component {
       selectionInfo.selections &&
       selectionInfo.selections.length || 0;
     const multiplier = Dimensions.get('window').width / 450;
-    const {benchStyles, fieldStyles, playerStyles} = this.getDynamicStyles(gameSnapshot, gamePlayers, multiplier);
     const teamSeasonId = gameTeamSeason.teamSeason.id;
     return (
       <View style={styles.screen}>
@@ -771,116 +725,28 @@ class SoccerField extends React.Component {
         />)}
         {this.state.mode === modes.lineup && (
         <Lineup
-          state={this.state}
-          gameSeconds={gameSeconds}
+          gameState={this.state}
+          gameSnapshot={gameSnapshot}
+          gamePlan={gamePlan}
+          gamePlayers={gamePlayers}
+          multiplier={multiplier}
+          positionCategories={positionCategories}
+          onPressPlayer={this.onPressPlayer}
+          styles={styles}
+          selectedLineup={selectedLineup}
+        />)}
+        {this.state.mode === modes.default && (
+        <ActiveGame
+          gameState={this.state}
+          gameSnapshot={gameSnapshot}
           gamePlan={gamePlan}
           gameTeamSeason={gameTeamSeason}
           gamePlayers={gamePlayers}
-          gameSnapshot={gameSnapshot}
-          isGameOver={this.state.isGameOver}
           multiplier={multiplier}
           positionCategories={positionCategories}
-          styles={styles}
-          benchStyles={benchStyles}
-          fieldStyles={fieldStyles}
-          playerStyles={playerStyles}
-          teamSeasonId={teamSeasonId}
-          selectedLineup={selectedLineup}
           onPressPlayer={this.onPressPlayer}
-        />)}
-        {this.state.mode === modes.default && (
-        <View style={styles.park}>
-          <View style={fieldStyles}>
-          {
-            _.chain(positionCategories)
-            .filter((category) => category.parkLocation === "FIELD")
-            .reverse()
-            .map((category, categoryIndex) => (
-              <FormationLine
-                key={categoryIndex}
-                style={{}}
-                lineOrientation="horizontal"
-                positionCategory={category}
-              >
-                {
-                  _.chain(gameSnapshot.positions)
-                  .filter((positionSnapshot) =>
-                  positionSnapshot.event.position.positionCategory.name === category.name)
-                  .sortBy((positionSnapshot) => positionSnapshot.event.position.leftToRightPercent)
-                  .map((positionSnapshot, positionSnapshotIndex) => {
-                    const gamePlayer = _.find(gamePlayers, (gamePlayer) =>
-                      gamePlayer.player.id === positionSnapshot.playerId &&
-                      !playerIsOnBench(gamePlayer.player.id, gameSnapshot, gamePlayer.availability));
-                    const playerId = gamePlayer && gamePlayer.player.id;
-                    return (
-                      <Player
-                        key={positionSnapshotIndex}
-                        style={playerStyles}
-                        position={positionSnapshot.event.position}
-                        positionCategory={category}
-                        player={gamePlayer && gamePlayer.player}
-                        gamePlan={gamePlan}
-                        gamePlayers={gamePlayers}
-                        gameSeconds={gameSeconds}
-                        isGameOver={this.state.isGameOver}
-                        multiplier={multiplier}
-                        playerStats={gameSnapshot.players[playerId]}
-                        pendingMove={gameSnapshot.players[playerId] && gameSnapshot.players[playerId].pendingMove}
-                        piePieces={gameSnapshot.players[playerId] && gameSnapshot.players[playerId].piePieces}
-                        playerDisplayMode={getPlayerDisplayMode(positionSnapshot, this.state)}
-                        onPress={() => this.onPressPlayer(positionSnapshot, {gameSnapshot})}
-                      />
-                    );
-                  })
-                  .value()
-                }
-              </FormationLine>
-            ))
-            .value()
-          }
-          </View>
-          <View style={benchStyles}>
-          {
-            _.chain(positionCategories)
-            .filter((category) => category.parkLocation === "BENCH")
-            .reverse()
-            .map((category, categoryIndex) => (
-              <FormationLine
-                key={categoryIndex}
-                style={{}}
-                lineOrientation="vertical"
-                positionCategory={category}
-              >
-                {
-                  _.chain(gamePlayers)
-                  .filter((gamePlayer) => playerIsOnBench(gamePlayer.player.id, gameSnapshot, gamePlayer.availability))
-                  .sortBy((gamePlayer) => gameSnapshot.players[gamePlayer.player.id].cumulativeInGameSeconds)
-                  .map((gamePlayer, gamePlayerIndex) => (
-                    <Player
-                      key={gamePlayerIndex}
-                      style={playerStyles}
-                      position={undefined}
-                      positionCategory={category}
-                      player={gamePlayer.player}
-                      gamePlan={gamePlan}
-                      gamePlayers={gamePlayers}
-                      isGameOver={this.state.isGameOver}
-                      multiplier={multiplier}
-                      playerStats={gameSnapshot.players[gamePlayer.player.id]}
-                      pendingMove={gameSnapshot.players[gamePlayer.player.id].pendingMove}
-                      piePieces={gameSnapshot.players[gamePlayer.player.id].piePieces}
-                      playerDisplayMode={getPlayerDisplayMode({playerId:gamePlayer.player.id}, this.state)}
-                      onPress={() => this.onPressPlayer({playerId:gamePlayer.player.id}, {gameSnapshot})}
-                    />
-                  ))
-                  .value()
-                }
-              </FormationLine>
-            ))
-            .value()
-          }
-          </View>
-        </View>
+          styles={styles}
+        />
         )}
         <View style={styles.inputArea}>
           <View style={styles.instructions}>

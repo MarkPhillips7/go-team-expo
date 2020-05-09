@@ -520,6 +520,28 @@ const getEvent = ({
   };
 }
 
+// Return the active formation given the gameSeconds
+const getFormationSnapshot = ({
+  gameTeamSeason,
+  gameSeconds,
+  gameStatus,
+}) => {
+  let formationSnapshot = undefined;
+
+  _.forEach(gameTeamSeason.formationSubstitutions, (formationSubstitution) => {
+    if (gameStatus === "IN_PROGRESS" &&
+    formationSubstitution.gameActivityType === "PLAN" &&
+    formationSubstitution.gameActivityStatus === "COMPLETED") {
+      return;
+    }
+    if (formationSubstitution.gameSeconds > gameSeconds) {
+        return false;
+    }
+    formationSnapshot = formationSubstitution.formation;
+  });
+  return formationSnapshot;
+};
+
 const getPositionsSnapshot = ({
   gameTeamSeason,
   totalSeconds,
@@ -743,7 +765,15 @@ export const getGameSnapshot = ({
     gameStatus,
     timestamp,
   });
+  const formation = getFormationSnapshot({
+    gameTeamSeason,
+    totalSeconds,
+    gameSeconds,
+    gameStatus,
+    timestamp,
+})
   let gameSnapshot = {
+    formation,
     players,
     positions,
   }
@@ -1085,3 +1115,45 @@ export const getPlayerPressedSelectionInfo = (
 };
 
 export const getCancelPressedSelectionInfo = () => {};
+
+const getMaxPlayersPerPositionCategory = (formation) => {
+  if (!formation) {
+    return 2;
+  }
+  
+  return _.chain(formation.positions)
+  .countBy((position) => position.positionCategory.id)
+  .values()
+  .max()
+  .value();
+};
+
+const getFlexValues = (playerCountLeftToRight, multiplier) => {
+  // Intention is that the flex value would match max number of players from left to right.
+  // Assumption is that bench is only one player wide
+  const fieldFlex = playerCountLeftToRight;
+  const benchFlex = 1;
+  const playerBasis = Math.floor(280 / (fieldFlex + benchFlex)) * multiplier;
+  return {
+    fieldFlex,
+    benchFlex,
+    playerBasis,
+  };
+};
+
+export const getDynamicStylesForFormation = (formation, multiplier, styles) => {
+  const {benchFlex, fieldFlex, playerBasis} = getFlexValues(getMaxPlayersPerPositionCategory(formation), multiplier);
+  const benchStyles = {
+    ...styles.bench,
+    flex: benchFlex,
+  };
+  const fieldStyles = {
+    ...styles.field,
+    flex: fieldFlex,
+  };
+  const playerStyles = {
+    ...styles.player,
+    flexBasis: playerBasis,
+  };
+  return {benchStyles, fieldStyles, playerStyles};
+};

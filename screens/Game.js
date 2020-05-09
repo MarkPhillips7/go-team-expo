@@ -1,6 +1,6 @@
 import React from 'react';
 import { Query , withApollo} from 'react-apollo';
-import SoccerField from './SoccerField';
+import GameManager from '../components/GameManager';
 import { Text } from 'react-native';
 import {GAME_TEAM_SEASON_INFO} from '../graphql/game';
 
@@ -29,7 +29,7 @@ class Game extends React.Component {
 
           // console.log(`rendering game`);//data && JSON.stringify(data));
           return (
-            <SoccerField
+            <GameManager
               gameDefinition={data && data.GameTeamSeason && data.GameTeamSeason.teamSeason &&
                 data.GameTeamSeason.teamSeason && data.GameTeamSeason.teamSeason.team &&
                 data.GameTeamSeason.teamSeason.team.league && data.GameTeamSeason.teamSeason.team.league.gameDefinition}

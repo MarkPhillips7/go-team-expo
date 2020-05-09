@@ -7,22 +7,20 @@ import _ from 'lodash';
 import {
   getDynamicStylesForFormation,
   getPlayerDisplayMode,
+  playerIsOnBench,
 } from '../helpers/game';
-import {
-  playerAvailability,
-} from '../constants/Soccer';
 
-export default class Lineup extends React.Component {
+export default class ActiveGame extends React.Component {
   static propTypes = {
     gameState: PropTypes.object,
     gameSnapshot: PropTypes.object,
     gamePlan: PropTypes.object,
+    gameTeamSeason: PropTypes.object,
     gamePlayers: PropTypes.array,
     multiplier: PropTypes.number,
     positionCategories: PropTypes.array,
     onPressPlayer: PropTypes.func.isRequired,
     styles: PropTypes.object,
-    selectedLineup: PropTypes.object,
   }
 
   render() {
@@ -32,26 +30,19 @@ export default class Lineup extends React.Component {
       gameSnapshot,
       gameState,
       multiplier,
+      gameTeamSeason,
       onPressPlayer,
       positionCategories,
-      selectedLineup,
       styles,
     } = this.props;
+    if (!gameTeamSeason) {
+      return <View></View>;
+    }
     const {
       gameSeconds,
       isGameOver,
     } = gameState;
-    // const benchStyles = {
-    //   ...styles.bench,
-    //   flex: 1,
-    // };
-    // const fieldStyles = {
-    //   ...styles.field,
-    //   flex: 3,
-    // };
-    const formation = selectedLineup && selectedLineup.formation;
-    const {benchStyles, fieldStyles, playerStyles} = getDynamicStylesForFormation(formation, multiplier, styles);
-    // console.log(selectedLineup);
+    const {benchStyles, fieldStyles, playerStyles} = getDynamicStylesForFormation(gameSnapshot.formation, multiplier, styles);
     return (
       <View style={styles.park}>
         <View style={fieldStyles}>
@@ -67,27 +58,20 @@ export default class Lineup extends React.Component {
               positionCategory={category}
             >
               {
-                _.chain(selectedLineup && selectedLineup.formation && selectedLineup.formation.positions)
-                .filter((position) => position.positionCategory.name === category.name)
-                .sortBy((position) => position.leftToRightPercent)
-                .map((position, positionIndex) => {
-                  const playerPosition = _.find(selectedLineup.playerPositions, (playerPosition) => playerPosition.position.id == position.id);
-                  const gamePlayer = playerPosition && _.find(gamePlayers, (gamePlayer) =>
-                    gamePlayer.availability !== playerAvailability.unavailable &&
-                    gamePlayer.player.id === playerPosition.player.id);
+                _.chain(gameSnapshot.positions)
+                .filter((positionSnapshot) =>
+                positionSnapshot.event.position.positionCategory.name === category.name)
+                .sortBy((positionSnapshot) => positionSnapshot.event.position.leftToRightPercent)
+                .map((positionSnapshot, positionSnapshotIndex) => {
+                  const gamePlayer = _.find(gamePlayers, (gamePlayer) =>
+                    gamePlayer.player.id === positionSnapshot.playerId &&
+                    !playerIsOnBench(gamePlayer.player.id, gameSnapshot, gamePlayer.availability));
                   const playerId = gamePlayer && gamePlayer.player.id;
-                  const positionSnapshot = _.find(gameSnapshot.positions, (positionSnapshot) => positionSnapshot.playerId && positionSnapshot.playerId == playerId)
-                    || {
-                      playerId,
-                      event: {
-                        position
-                      }
-                    };
                   return (
                     <Player
-                      key={positionIndex}
+                      key={positionSnapshotIndex}
                       style={playerStyles}
-                      position={position}
+                      position={positionSnapshot.event.position}
                       positionCategory={category}
                       player={gamePlayer && gamePlayer.player}
                       gamePlan={gamePlan}
@@ -124,8 +108,7 @@ export default class Lineup extends React.Component {
             >
               {
                 _.chain(gamePlayers)
-                .filter((gamePlayer) => gamePlayer.availability !== playerAvailability.unavailable && selectedLineup &&
-                  !_.find(selectedLineup.playerPositions, (playerPosition) => playerPosition.player.id == gamePlayer.player.id))
+                .filter((gamePlayer) => playerIsOnBench(gamePlayer.player.id, gameSnapshot, gamePlayer.availability))
                 .sortBy((gamePlayer) => gameSnapshot.players[gamePlayer.player.id].cumulativeInGameSeconds)
                 .map((gamePlayer, gamePlayerIndex) => (
                   <Player
@@ -155,4 +138,4 @@ export default class Lineup extends React.Component {
       </View>
     );
   }
-}//);
+}
