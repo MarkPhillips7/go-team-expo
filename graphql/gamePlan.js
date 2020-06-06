@@ -11,6 +11,46 @@ import {
   playerIsCurrentlyPlaying
 } from '../helpers/game';
 
+const CREATE_LINEUP = gql`
+mutation CreateLineup(
+  $name: String!
+  $formationId: ID!
+  $playerPositionsIds: [ID!]!
+){
+  createLineup (
+    name: $name
+    formationId: $formationId
+    playerPositionsIds: $playerPositionsIds
+  ) {
+    id
+  }
+}
+`;
+
+const CREATE_LINEUP_SUBSTITUTION = gql`
+mutation CreateLineupSubstitution(
+  $lineupId: ID!
+  $gameActivityType: GameActivityType!
+  $gameActivityStatus: GameActivityStatus!
+  $gameTeamSeasonId: ID!
+  $timestamp: DateTime
+  $totalSeconds: Int
+  $gameSeconds:  Int
+){
+  createLineupSubstitution (
+    gameActivityType: $gameActivityType
+    gameActivityStatus: $gameActivityStatus
+    lineupId: $lineupId
+    gameTeamSeasonId: $gameTeamSeasonId
+    timestamp: $timestamp
+    totalSeconds: $totalSeconds
+    gameSeconds: $gameSeconds
+  ) {
+    id
+  }
+}
+`;
+
 const CREATE_FORMATION_SUBSTITUTION = gql`
 mutation CreateFormationSubstitution(
   $formationId: ID!
@@ -280,6 +320,72 @@ const deleteSubstitutionIfAppropriate = (client, {
 //   .then((result) => result.data);
 // };
 
+export const createLineup = (client, {
+  name,
+  formationId,
+  playerPositionsIds,
+}) => {
+  return client.mutate({
+    mutation: CREATE_LINEUP,
+    variables: {
+      name,
+      formationId,
+      playerPositionsIds,
+    }
+  })
+  .then((result) => result.data.createLineup);
+};
+
+export const getOrCreateLineup = (client, {
+  lineup,
+}) => {
+  // When a lineup has been changed its isCustom will be true and it will need to be created
+  if (lineup.isCustom) {
+    const name = lineup.name;
+    const formationId = lineup.formation.id;
+    let playerPositionsIds;
+    // lineup.playerPositions items may not be persisted objects with id values
+    // and even if they are we want to create new ones since they can get deleted.
+    return Promise.all(lineup.playerPositions.map((playerPosition) =>
+      createPlayerPosition(client, {
+        playerId: playerPosition.player.id,
+        positionId: playerPosition.position.id,
+      })
+    )).then((result) => {console.log(result);playerPositionsIds = result.map((playerPosition) => playerPosition.id);})
+    .then(() => createLineup(client, {
+      name,
+      formationId,
+      playerPositionsIds,
+    }));
+  }
+  return Promise.resolve(lineup);
+};
+
+export const createLineupSubstitution = (client, {
+  lineupId,
+  gameActivityStatus,
+  gameActivityType,
+  gameTeamSeason,
+  timestamp,
+  totalSeconds,
+  gameSeconds,
+}) => {
+  const gameTeamSeasonId = gameTeamSeason.id;
+  return client.mutate({
+    mutation: CREATE_LINEUP_SUBSTITUTION,
+    variables: {
+      gameActivityType,
+      gameActivityStatus,
+      gameTeamSeasonId,
+      timestamp,
+      totalSeconds,
+      gameSeconds,
+      lineupId,
+    }
+  })
+  .then((result) => result.data.createLineupSubstitution);
+};
+
 export const getOrCreateFormationSubstitution = (client, {
   formationId,
   gameActivityStatus,
@@ -406,7 +512,7 @@ const getOrCreateInitialSubstitution = (client, {
   return Promise.resolve(gameTeamSeason.substitutions[0]);
 };
 
-const getOrCreatePlayerPositionsAndPlayerPositionAssignments = (client, {
+const getOrCreateRandomPlayerPositionsAndPlayerPositionAssignments = (client, {
   formationSubstitution,
   substitution,
   gameTeamSeason,
@@ -646,6 +752,178 @@ const substituteMaxPlayersFromBench = (client, {
   })
   .value()
   );
+};
+
+const createPlayerPositionAndPlayerPositionAssignment = (client, {
+  playerId,
+  positionId,
+  playerPositionAssignmentType,
+  substitution,
+}) => {
+  let playerPosition;
+  return createPlayerPosition(client, {
+    playerId,
+    positionId,
+  })
+  .then(result => {playerPosition = result; console.log(result)})
+  .then(() => createPlayerPositionAssignment(client, {
+    playerPositionAssignmentType,
+    playerPositionId: playerPosition.id,
+    substitutionId: substitution.id,
+  }));
+};
+
+const createInPlayerPositionAndAssignmentForLineup = (client, {
+  substitution,
+  lineupPlayerPosition,
+  positionSnapshots,
+  gameSeconds,
+}) => {
+  const fromPositionSnapshot = _.find(positionSnapshots, (positionSnapshot) =>
+    positionSnapshot.playerId === lineupPlayerPosition.player.id);
+  const playerPositionAssignmentType = fromPositionSnapshot
+    ? "CHANGE"
+    : (gameSeconds === 0)
+      ? "INITIAL"
+      : "IN";
+  const playerId = lineupPlayerPosition.player.id;
+  const positionId = lineupPlayerPosition.position.id;
+  return createPlayerPositionAndPlayerPositionAssignment(client, {
+    playerId,
+    positionId,
+    playerPositionAssignmentType,
+    substitution,
+  });
+};
+
+const createOutPlayerPositionAndAssignment = (client, {
+  substitution,
+  positionSnapshot,
+}) => {
+  const playerPositionAssignmentType = "OUT";
+  const playerId = positionSnapshot.playerId;
+  const positionId = undefined;
+  return createPlayerPositionAndPlayerPositionAssignment(client, {
+    playerId,
+    positionId,
+    playerPositionAssignmentType,
+    substitution,
+  });
+};
+
+const addInPlayerPositionAndAssignmentForLineupIfAppropriate = (client, {
+  playerPositionAssignments,
+  substitution,
+  lineupPlayerPosition,
+  positionSnapshots,
+  gameSeconds,
+}) => {
+  const positionSnapshot = _.find(positionSnapshots, (positionSnapshot) =>
+    positionSnapshot.event &&
+    positionSnapshot.event.position &&
+    positionSnapshot.event.position.id === lineupPlayerPosition.position.id);
+  if (positionSnapshot &&
+  positionSnapshot.playerId &&
+  positionSnapshot.playerId === lineupPlayerPosition.player.id) {
+    // Player is already in appropriate position
+    return;
+  }
+
+  playerPositionAssignments.push(createInPlayerPositionAndAssignmentForLineup(client, {
+    substitution,
+    lineupPlayerPosition,
+    positionSnapshots,
+    gameSeconds,
+  }));
+};
+
+const addOutPlayerPositionAndAssignmentForLineupIfAppropriate = (client, {
+  playerPositionAssignments,
+  substitution,
+  lineupPlayerPosition,
+  positionSnapshots,
+  lineup,
+}) => {
+  const positionSnapshot = _.find(positionSnapshots, (positionSnapshot) =>
+    positionSnapshot.event &&
+    positionSnapshot.event.position &&
+    positionSnapshot.event.position.id === lineupPlayerPosition.position.id);
+  if (!positionSnapshot ||
+  !positionSnapshot.playerId ||
+  positionSnapshot.playerId === lineupPlayerPosition.player.id) {
+    // Either no position or no player in the position or player is already in appropriate position
+    return;
+  }
+  if (_.find(lineup.playerPositions, (lineupPlayerPosition) =>
+  lineupPlayerPosition.player.id === positionSnapshot.playerId)) {
+    // This player is being moved to another position on the field
+    return;
+  }
+
+  playerPositionAssignments.push(createOutPlayerPositionAndAssignment(client, {
+    substitution,
+    positionSnapshot,
+  }));
+};
+
+const addOutPlayerPositionAndAssignmentIfPositionNotInLineUpAndPlayerNotInLineup = (client, {
+  playerPositionAssignments,
+  substitution,
+  positionSnapshot,
+  lineup,
+}) => {
+  if (positionSnapshot.event &&
+  positionSnapshot.event.position &&
+  positionSnapshot.event.position.id &&
+  _.find(lineup.playerPositions, (lineupPlayerPosition) =>
+  lineupPlayerPosition.position.id === positionSnapshot.event.position.id)) {
+    // This position is in the lineup
+    return;
+  }
+  if (_.find(lineup.playerPositions, (lineupPlayerPosition) =>
+  lineupPlayerPosition.player.id === positionSnapshot.playerId)) {
+    // This player is in the lineup
+    return;
+  }
+
+  playerPositionAssignments.push(createOutPlayerPositionAndAssignment(client, {
+    substitution,
+    positionSnapshot,
+  }));
+};
+
+export const updatePlayerPositionsAndPlayerPositionAssignmentsForLineup = (client, {
+  substitution,
+  positionSnapshots,
+  lineup,
+  gameSeconds,
+}) => {
+  const playerPositionAssignments = [];
+  _.forEach(lineup.playerPositions, (lineupPlayerPosition) => {
+    addInPlayerPositionAndAssignmentForLineupIfAppropriate(client, {
+      playerPositionAssignments,
+      substitution,
+      lineupPlayerPosition,
+      positionSnapshots,
+      gameSeconds,
+    });
+    addOutPlayerPositionAndAssignmentForLineupIfAppropriate(client, {
+      playerPositionAssignments,
+      substitution,
+      lineupPlayerPosition,
+      positionSnapshots,
+      lineup,
+    });
+  });
+  _.forEach(positionSnapshots, (positionSnapshot) => {
+    addOutPlayerPositionAndAssignmentIfPositionNotInLineUpAndPlayerNotInLineup(client, {
+      playerPositionAssignments,
+      substitution,
+      positionSnapshot,
+      lineup,
+    });
+  });
+  return Promise.all(playerPositionAssignments);
 };
 
 export const createSubstitutionForSelections = (client, {
@@ -894,7 +1172,7 @@ const deleteInitialPlayerPositionAssignments = (client, {
 };
 
 // gameTeamSeason is expected to have the shape found in getGameTeamSeasonInfo
-export const createInitialLineup = (client, {
+export const createInitialAutomaticLineup = (client, {
   gameActivityType,
   gameActivityStatus,
   gameTeamSeason
@@ -918,13 +1196,13 @@ export const createInitialLineup = (client, {
     totalSeconds,
     gameSeconds,
   })).then(result => {substitution = result; console.log(result)})
-  .then(() => getOrCreatePlayerPositionsAndPlayerPositionAssignments(client, {
+  .then(() => getOrCreateRandomPlayerPositionsAndPlayerPositionAssignments(client, {
     formationSubstitution,
     substitution,
     gameTeamSeason,
     playerPositionAssignmentType: "INITIAL"
   })).then(result => {console.log(result)})
-  .then(() => console.log("createInitialLineup succeeded"))
+  .then(() => console.log("createInitialAutomaticLineup succeeded"))
   .catch((error) => console.log(`error: ${error}`));
 };
 
@@ -961,4 +1239,58 @@ export const getNextSubstitutionInfo = (gameTeamSeason) => {
     gameSeconds,
     totalSeconds,
   }
+};
+
+// Create lineup if appropriate and set all player positions
+export const useLineup = (client, {
+  gameActivityType,
+  gameActivityStatus,
+  gameTeamSeason,
+  timestamp,
+  gameSeconds,
+  totalSeconds,
+  lineup,
+  positionSnapshots,
+}) => {
+  let _lineup;
+  let substitution;
+
+  return getOrCreateLineup(client, {
+    lineup,
+  }).then(result => {_lineup = result; console.log(result)})
+  .then(() => createLineupSubstitution(client, {
+    lineupId: _lineup.id,
+    gameActivityType,
+    gameActivityStatus,
+    gameTeamSeason,
+    timestamp,
+    totalSeconds,
+    gameSeconds,
+  })).then(result => {console.log(result)})
+  .then(() => getOrCreateFormationSubstitution(client, {
+    formationId: lineup.formation.id,
+    gameActivityType,
+    gameActivityStatus,
+    gameTeamSeason,
+    timestamp,
+    totalSeconds,
+    gameSeconds,
+  })).then(result => {console.log(result)})
+  .then(() => getOrCreateSubstitutionAtSpecificTime(client, {
+    gameActivityType,
+    gameActivityStatus,
+    gameTeamSeason,
+    timestamp,
+    totalSeconds,
+    gameSeconds,
+  })).then(result => {substitution = result; console.log(result)})
+  .then(() => updatePlayerPositionsAndPlayerPositionAssignmentsForLineup(client, {
+    substitution,
+    positionSnapshots,
+    lineup,
+    gameSeconds,
+  }))
+  .then(result => {console.log(result)})
+  .then(() => console.log("useLineup succeeded"))
+  .catch((error) => console.log(`error: ${error}`));
 };

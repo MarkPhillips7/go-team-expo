@@ -542,6 +542,28 @@ const getFormationSnapshot = ({
   return formationSnapshot;
 };
 
+// Return the most recent lineup (typically assigned at the start of a period) given the gameSeconds
+const getLineupSnapshot = ({
+  gameTeamSeason,
+  gameSeconds,
+  gameStatus,
+}) => {
+  let lineupSnapshot = undefined;
+
+  _.forEach(gameTeamSeason.lineupSubstitutions, (lineupSubstitution) => {
+    if (gameStatus === "IN_PROGRESS" &&
+    lineupSubstitution.gameActivityType === "PLAN" &&
+    lineupSubstitution.gameActivityStatus === "COMPLETED") {
+      return;
+    }
+    if (lineupSubstitution.gameSeconds > gameSeconds) {
+        return false;
+    }
+    lineupSnapshot = lineupSubstitution.lineup;
+  });
+  return lineupSnapshot;
+};
+
 const getPositionsSnapshot = ({
   gameTeamSeason,
   totalSeconds,
@@ -771,8 +793,16 @@ export const getGameSnapshot = ({
     gameSeconds,
     gameStatus,
     timestamp,
-})
+  });
+  const lineup = getLineupSnapshot({
+    gameTeamSeason,
+    totalSeconds,
+    gameSeconds,
+    gameStatus,
+    timestamp,
+  });
   let gameSnapshot = {
+    lineup,
     formation,
     players,
     positions,
@@ -1120,7 +1150,7 @@ const getMaxPlayersPerPositionCategory = (formation) => {
   if (!formation) {
     return 2;
   }
-  
+
   return _.chain(formation.positions)
   .countBy((position) => position.positionCategory.id)
   .values()

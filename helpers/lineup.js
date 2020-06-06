@@ -49,11 +49,17 @@ export const addToSelectedLineup = ({
     player,
     position,
   };
-  const playerPositions = [
+  const playerPositions = playerPositionToRemoveIndex === -1
+  ? [
+    ...selectedLineup.playerPositions,
+    newPlayerPosition,
+  ]
+  : [
     ..._.slice(selectedLineup.playerPositions, 0, playerPositionToRemoveIndex),
     newPlayerPosition,
     ..._.slice(selectedLineup.playerPositions, playerPositionToRemoveIndex + 1),
   ]
+  console.log(`playerPositionToRemoveIndex`, playerPositionToRemoveIndex, playerPositions);//positionSnapshotTo, selectedLineup);
   return {
     ...selectedLineup,
     id,
@@ -61,4 +67,21 @@ export const addToSelectedLineup = ({
     playerPositions,
     isCustom: true,
   };
+}
+
+export const isFullLineup = (lineup) => {
+  const isLineupFull = lineup &&
+  lineup.formation &&
+  lineup.formation.positions &&
+  lineup.playerPositions &&
+  lineup.formation.positions.length === lineup.playerPositions.length;
+  console.log(isLineupFull,
+    lineup &&
+    lineup.formation &&
+    lineup.formation.positions && lineup.formation.positions.length,
+    lineup &&
+    lineup.playerPositions &&
+    lineup.playerPositions.length
+  );
+  return isLineupFull;
 }

@@ -41,14 +41,6 @@ export default class Lineup extends React.Component {
       gameSeconds,
       isGameOver,
     } = gameState;
-    // const benchStyles = {
-    //   ...styles.bench,
-    //   flex: 1,
-    // };
-    // const fieldStyles = {
-    //   ...styles.field,
-    //   flex: 3,
-    // };
     const formation = selectedLineup && selectedLineup.formation;
     const {benchStyles, fieldStyles, playerStyles} = getDynamicStylesForFormation(formation, multiplier, styles);
     // console.log(selectedLineup);

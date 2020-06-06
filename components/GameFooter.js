@@ -11,6 +11,9 @@ import {
   canSetLineup,
   canSubstitute,
 } from '../helpers/game';
+import {
+  isFullLineup,
+} from '../helpers/lineup';
 import {gameManagerModes} from '../constants/Game';
 const millisecondsBeforeSliderAction = 500;
 
@@ -35,6 +38,7 @@ export default class GameFooter extends React.Component {
     onPressSubNextTime: PropTypes.func.isRequired,
     onPressRemoveSelectedSubs: PropTypes.func.isRequired,
     onPressAddToLineup: PropTypes.func.isRequired,
+    onPressUseLineup: PropTypes.func.isRequired,
   }
 
   render() {
@@ -58,8 +62,10 @@ export default class GameFooter extends React.Component {
       onPressSubNextTime,
       onPressRemoveSelectedSubs,
       onPressAddToLineup,
+      onPressUseLineup,
     } = this.props;
     const {
+      mostRecentLineup,
       gameSeconds,
       selectionInfo,
       selectedLineup,
@@ -90,6 +96,16 @@ export default class GameFooter extends React.Component {
               onLineupChange={onLineupChange}
               selectedLineup={selectedLineup}
               teamSeasonId={teamSeasonId}
+            />
+          )}
+          {gameState.mode === gameManagerModes.lineup &&
+            selectedLineup &&
+            (!mostRecentLineup || mostRecentLineup.id === selectedLineup.id) &&
+            isFullLineup(selectedLineup) && (
+            <Button
+              style={styles.button}
+              onPress={onPressUseLineup}
+              title={`Use`}
             />
           )}
           {gameState.mode === gameManagerModes.default &&

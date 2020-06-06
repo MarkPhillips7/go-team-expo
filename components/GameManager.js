@@ -13,12 +13,13 @@ import moment from 'moment';
 import _ from 'lodash';
 import {
   addToLineup,
-  createInitialLineup,
+  createInitialAutomaticLineup,
   createNextMassSubstitution,
   createSubstitutionForSelections,
   getNextSubstitutionInfo,
   deleteSelectedSubstitutions,
   removeFromLineup,
+  useLineup,
 } from '../graphql/gamePlan';
 import {
   deleteGameEtc,
@@ -82,11 +83,12 @@ class GameManager extends React.Component {
     this.onPressClearLineup = this.onPressClearLineup.bind(this);
     this.onPressAutomaticLineup = this.onPressAutomaticLineup.bind(this);
     this.onPressManageLineup = this.onPressManageLineup.bind(this);
-    this.updateGame = this.updateGame.bind(this);
+    this.updateGameClock = this.updateGameClock.bind(this);
     this.onPressPlayer = this.onPressPlayer.bind(this);
     this.onPressCancel = this.onPressCancel.bind(this);
     this.onPressGameDetails = this.onPressGameDetails.bind(this);
     this.startOrStopGameTimer = this.startOrStopGameTimer.bind(this);
+    this.onPressUseLineup = this.onPressUseLineup.bind(this);
   }
 
   getInitialState() {
@@ -132,7 +134,7 @@ class GameManager extends React.Component {
     // If the game is in progress we need to update clock every second
     if (gameStatusInfo.gameStatus === "IN_PROGRESS") {
       if (!this.state.updateGameTimer) {
-        const updateGameTimer = setTimeout(this.updateGame, 0);
+        const updateGameTimer = setTimeout(this.updateGameClock, 0);
         this.setState({
           isClockRunning: true,
           updateGameTimer,
@@ -198,7 +200,7 @@ class GameManager extends React.Component {
 
   onPressAutomaticLineup(){
     const {client, gameTeamSeason} = this.props;
-    createInitialLineup(client, {
+    createInitialAutomaticLineup(client, {
       gameTeamSeason,
       gameActivityType: "PLAN",
       gameActivityStatus: "PENDING",
@@ -359,6 +361,63 @@ class GameManager extends React.Component {
       })
       .then(this.props.onSubsChange);
     }
+  }
+
+  onPressUseLineup() {
+    const {
+      client,
+      gameTeamSeason,
+      positionCategories
+    } = this.props;
+    const {
+      timestamp,
+      totalSeconds,
+      gameSeconds,
+      selectedLineup,
+    } = this.state;
+    const gameStatusInfo = getGameStatusInfo({
+      gameTeamSeason,
+    });
+    const {
+      gameStatus,
+      gameDurationSeconds
+    } = gameStatusInfo;
+    const gameTimeline = getGameTimeline({
+      gameStatus,
+      gameTeamSeason,
+      totalSeconds,
+      gameSeconds,
+      timestamp,
+    });
+    const gameSnapshot = getGameSnapshot({
+      gameTimeline,
+      positionCategories,
+      gameTeamSeason,
+      totalSeconds,
+      gameSeconds,
+      timestamp,
+      gameDurationSeconds,
+      gameStatus,
+    });
+    useLineup(client, {
+      gameActivityType: "PLAN",
+      gameActivityStatus: "PENDING",
+      gameTeamSeason,
+      timestamp,
+      gameSeconds,
+      totalSeconds,
+      lineup: selectedLineup,
+      positionSnapshots: gameSnapshot.positions,
+    })
+    .then(() => {
+      this.setState((previousState) => {
+        return {
+          ...previousState,
+          mode: gameManagerModes.default,
+        };
+      });
+    });
+    //.then(this.props.onSubsChange);
   }
 
   onPressRemoveFromLineup() {
@@ -585,10 +644,10 @@ class GameManager extends React.Component {
     });
   }
 
-  updateGame() {
+  updateGameClock() {
     // Don't do anything if no updateGameTimer since that means the component was unmounted
     if (!this.state.updateGameTimer) {
-      console.log(`Doing nothing in updateGame because no updateGameTimer`);
+      console.log(`Doing nothing in updateGameClock because no updateGameTimer`);
       return;
     }
     this.setState((previousState) => {
@@ -609,7 +668,7 @@ class GameManager extends React.Component {
       isClockRunning = !isGameOver;
 
       if (!isGameOver) {
-        updateGameTimer = setTimeout(this.updateGame, 1000);
+        updateGameTimer = setTimeout(this.updateGameClock, 1000);
       }
 
       return {
@@ -728,6 +787,7 @@ class GameManager extends React.Component {
           onPressSubNextTime={this.onPressSubNextTime}
           onPressRemoveSelectedSubs={this.onPressRemoveSelectedSubs}
           onPressAddToLineup={this.onPressAddToLineup}
+          onPressUseLineup={this.onPressUseLineup}
         />
       </View>
     );
@@ -765,8 +825,5 @@ let styles = StyleSheet.create({
     flexBasis: 70,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  button: {
-    margin: 3,
   },
 });

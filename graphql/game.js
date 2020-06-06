@@ -54,6 +54,31 @@ query getGameTeamSeasonInfo($gameTeamSeasonId: ID!) {
         }
       }
     }
+    lineupSubstitutions (orderBy: gameSeconds_ASC) {
+      id
+      gameActivityStatus
+      gameActivityType
+      gameSeconds
+      lineup {
+        id
+        name
+        formation {
+          id
+          name
+        }
+        playerPositions {
+          id
+          player {
+            id
+            name
+          }
+          position {
+            id
+            name
+          }
+        }
+      }
+    }
     substitutions (orderBy: gameSeconds_ASC) {
       id
       timestamp
